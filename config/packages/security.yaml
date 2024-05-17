@@ -1,0 +1,69 @@
+framework:
+    rate_limiter:
+        username_ip_login:
+            policy: token_bucket
+            limit: 5
+            rate: { interval: '5 minutes' }
+
+        ip_login:
+            policy: sliding_window
+            limit: 50
+            interval: '15 minutes'
+
+services:
+    app.login_rate_limiter:
+        class: Symfony\Component\Security\Http\RateLimiter\DefaultLoginRateLimiter
+        arguments:
+            $globalFactory: '@limiter.ip_login'
+            $localFactory: '@limiter.username_ip_login'
+            $secret: '%kernel.secret%'
+
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: username
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+        main:
+            lazy: true
+            provider: app_user_provider
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                username_parameter: login_form[username]
+                password_parameter: login_form[password]
+                enable_csrf: true
+                csrf_parameter: login_form[csrf_token]
+                always_use_default_target_path: true
+                default_target_path: app_profile
+
+            remember_me:
+                secret: '%kernel.secret%' # required
+                lifetime: 604800 # 1 week in seconds
+                remember_me_parameter: login_form[remember_me]
+
+            login_throttling:
+                limiter: app.login_rate_limiter
+
+            logout:
+                path: app_logout
+
+    access_control:
+         - { path: ^/login, roles: PUBLIC_ACCESS }
+         - { path: ^/register, roles: PUBLIC_ACCESS }
+         - { path: ^/profile, roles: ROLE_USER }
+
+when@test:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4 # Lowest possible value for bcrypt
+                time_cost: 3 # Lowest possible value for argon
+                memory_cost: 10 # Lowest possible value for argon
