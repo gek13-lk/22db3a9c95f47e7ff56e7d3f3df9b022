@@ -58,12 +58,10 @@
             "assets:install %PUBLIC_DIR%": "symfony-cmd"
         },
         "post-install-cmd": [
-            "@auto-scripts",
-            "@boostrap:install"
+            "@auto-scripts"
         ],
         "post-update-cmd": [
-            "@auto-scripts",
-            "@boostrap:install"
+            "@auto-scripts"
         ]
     },
     "conflict": {
