@@ -10,27 +10,17 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class AlgorithmService
 {
-    private int $populationSize;
-    private float $mutationRate;
-    private float $crossoverRate;
-    private int $generations;
+    private int $populationSize = 20;
+    private float $mutationRate = 0.01;
+    private float $crossoverRate = 0.7;
+    private int $generations = 20;
     private array $population = [];
+
+    /** @var Doctor[] */
     private array $doctors;
     private array $studies;
 
     public function __construct(private readonly EntityManagerInterface $entityManager) {}
-
-    public function run(): array
-    {
-        $this->initializeEnv();
-        $this->initializePopulation();
-
-        for ($generation = 0; $generation < $this->generations; $generation++) {
-            $this->population = $this->evolve($this->population);
-        }
-
-        return $this->getBestSolution();
-    }
 
     private function initializeEnv(): void
     {
@@ -40,6 +30,25 @@ class AlgorithmService
         $this->studies = $data['studies'];
 
     }
+    public function run(): void
+    {
+        set_time_limit(600);
+        ini_set('memory_limit', '512M');
+        $this->initializeEnv();
+        $this->initializePopulation();
+
+        for ($generation = 0; $generation < $this->generations; $generation++) {
+            $this->population = $this->evolve($this->population);
+        }
+
+        $solution = $this->getBestSolution();
+
+        file_put_contents(
+            __DIR__.'/mocks/result.json',
+            $solution
+        );
+    }
+
     private function initializePopulation(): void
     {
         for ($i = 0; $i < $this->populationSize; $i++) {
@@ -107,7 +116,10 @@ class AlgorithmService
         $individual = [];
         foreach ($this->studies as $study) {
             $availableDoctors = array_filter($this->doctors, function ($doctor) use ($study) {
-                return in_array($study->competency, $doctor->competencies) && $this->hasAvailableTime($doctor, $study->duration);
+                /** @var Competencies|null $doctorCompetency */
+                $doctorCompetency = $this->entityManager->getRepository(Competencies::class)->findByDoctor($doctor, $study['Модальность']);
+
+                return $doctorCompetency && $this->hasAvailableTime($doctor, $doctorCompetency->getDuration());
             });
             if (!empty($availableDoctors)) {
                 $selectedDoctor = $availableDoctors[array_rand($availableDoctors)];
@@ -123,7 +135,10 @@ class AlgorithmService
     {
         $study = $this->studies[array_rand($this->studies)];
         $availableDoctors = array_filter($this->doctors, function ($doctor) use ($study) {
-            return in_array($study->competency, $doctor->competencies) && $this->hasAvailableTime($doctor, $study->duration);
+            /** @var Competencies|null $doctorCompetency */
+            $doctorCompetency = $this->entityManager->getRepository(Competencies::class)->findByDoctor($doctor, $study['Модальность']);
+
+            return $doctorCompetency && $this->hasAvailableTime($doctor, $doctorCompetency->getDuration());
         });
         if (!empty($availableDoctors)) {
             $selectedDoctor = $availableDoctors[array_rand($availableDoctors)];
@@ -135,7 +150,7 @@ class AlgorithmService
 
     private function hasAvailableTime(Doctor $doctor, int $duration): bool
     {
-        return array_sum($doctor->availableHours) >= $duration;
+        return array_sum($doctor->getAvailableHours()) >= $duration;
     }
 
     private function evaluateFitness(array $individual): int
