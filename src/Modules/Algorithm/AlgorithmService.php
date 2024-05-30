@@ -26,8 +26,7 @@ class AlgorithmService
     {
         $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
         $studiesJson = file_get_contents(__DIR__.'/mocks/generatedData.json', true);
-        $data = json_decode($studiesJson, true);
-        $this->studies = $data['studies'];
+        $this->studies = json_decode($studiesJson, true);
 
     }
     public function run(): void
@@ -133,6 +132,7 @@ class AlgorithmService
             }
         }
 
+        //Возвращаем пример составления расписания
         return $individual;
     }
 
@@ -145,6 +145,7 @@ class AlgorithmService
 
             return $doctorCompetency && $this->hasAvailableTime($doctor, $doctorCompetency->getDuration());
         });
+
         if (!empty($availableDoctors)) {
             $selectedDoctor = $availableDoctors[array_rand($availableDoctors)];
             return ['study' => $study, 'doctor' => $selectedDoctor];
@@ -155,6 +156,7 @@ class AlgorithmService
 
     private function hasAvailableTime(Doctor $doctor, int $duration): bool
     {
+        //Доработать алгоритм анализа осталось ли время для приема!
         return array_sum($doctor->getAvailableHours()) >= $duration;
     }
 
@@ -164,6 +166,13 @@ class AlgorithmService
         foreach ($individual as $gene) {
             if ($gene['doctor'] !== null) {
                 $fitness += 1; // Увеличиваем приспособленность за каждое корректное назначение
+                //В этой функции в целом надо будет добавить эвристические методы. Потому что сейчас по сути в дефолте сравнивается,
+                // что назначение для исследования есть и, соответственно, вернется вариант с наименьшим количеством пропусков врачей.
+                // Надо дорабатывать эту функцию различными проверками. Чтобы врач не был перенагружен
+                // + проверка, чтобы врач по нормам получал количество излучения
+                // Думаю дальше, в основном, работа будет вестись в калибровке входных данных (их дополнении) и в этой функции
+                // Возможно так же усложнение условий при создании гена / особи.
+                // Но в основном тут все остальные функции (создание гена и особи в том числе) тут абстрактные, поэтому нас удовлетворяют
             }
         }
         return $fitness;
