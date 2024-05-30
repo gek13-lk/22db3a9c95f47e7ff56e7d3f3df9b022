@@ -10,10 +10,10 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class AlgorithmService
 {
-    private int $populationSize = 20;
+    private int $populationSize = 100;
     private float $mutationRate = 0.01;
     private float $crossoverRate = 0.7;
-    private int $generations = 20;
+    private int $generations = 100;
     private array $population = [];
 
     /** @var Doctor[] */
@@ -26,8 +26,7 @@ class AlgorithmService
     {
         $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
         $studiesJson = file_get_contents(__DIR__.'/mocks/generatedData.json', true);
-        $data = json_decode($studiesJson, true);
-        $this->studies = $data['studies'];
+        $this->studies = json_decode($studiesJson, true);
 
     }
     public function run(): void
@@ -45,7 +44,7 @@ class AlgorithmService
 
         file_put_contents(
             __DIR__.'/mocks/result.json',
-            $solution
+            json_encode($solution, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
         );
     }
 
@@ -65,6 +64,7 @@ class AlgorithmService
             $parent2 = $this->selectParent($population);
 
             $offspring = $this->crossover($parent1, $parent2);
+
             $offspring = $this->mutate($offspring);
 
             $newPopulation[] = $offspring;
@@ -114,13 +114,16 @@ class AlgorithmService
     private function createRandomIndividual(): array
     {
         $individual = [];
+
         foreach ($this->studies as $study) {
+            //Находим врачей, которые могут взяться за это исследование учитывая компетенцию и время работы
             $availableDoctors = array_filter($this->doctors, function ($doctor) use ($study) {
                 /** @var Competencies|null $doctorCompetency */
                 $doctorCompetency = $this->entityManager->getRepository(Competencies::class)->findByDoctor($doctor, $study['Модальность']);
 
                 return $doctorCompetency && $this->hasAvailableTime($doctor, $doctorCompetency->getDuration());
             });
+
             if (!empty($availableDoctors)) {
                 $selectedDoctor = $availableDoctors[array_rand($availableDoctors)];
                 $individual[] = ['study' => $study, 'doctor' => $selectedDoctor];
@@ -128,6 +131,8 @@ class AlgorithmService
                 $individual[] = ['study' => $study, 'doctor' => null];
             }
         }
+
+        //Возвращаем пример составления расписания
         return $individual;
     }
 
@@ -140,6 +145,7 @@ class AlgorithmService
 
             return $doctorCompetency && $this->hasAvailableTime($doctor, $doctorCompetency->getDuration());
         });
+
         if (!empty($availableDoctors)) {
             $selectedDoctor = $availableDoctors[array_rand($availableDoctors)];
             return ['study' => $study, 'doctor' => $selectedDoctor];
@@ -150,6 +156,7 @@ class AlgorithmService
 
     private function hasAvailableTime(Doctor $doctor, int $duration): bool
     {
+        //Доработать алгоритм анализа осталось ли время для приема!
         return array_sum($doctor->getAvailableHours()) >= $duration;
     }
 
@@ -159,6 +166,13 @@ class AlgorithmService
         foreach ($individual as $gene) {
             if ($gene['doctor'] !== null) {
                 $fitness += 1; // Увеличиваем приспособленность за каждое корректное назначение
+                //В этой функции в целом надо будет добавить эвристические методы. Потому что сейчас по сути в дефолте сравнивается,
+                // что назначение для исследования есть и, соответственно, вернется вариант с наименьшим количеством пропусков врачей.
+                // Надо дорабатывать эту функцию различными проверками. Чтобы врач не был перенагружен
+                // + проверка, чтобы врач по нормам получал количество излучения
+                // Думаю дальше, в основном, работа будет вестись в калибровке входных данных (их дополнении) и в этой функции
+                // Возможно так же усложнение условий при создании гена / особи.
+                // Но в основном тут все остальные функции (создание гена и особи в том числе) тут абстрактные, поэтому нас удовлетворяют
             }
         }
         return $fitness;
