@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Algorithm;
 
-use App\Entity\Competencies;
 use App\Entity\Doctor;
+use App\Entity\DoctorWorkSchedule;
+use App\Entity\Studies;
 use Doctrine\ORM\EntityManagerInterface;
 
 class AlgorithmService
 {
+    //TODO: Перенести в БД
+    private float $maxCoefficientPerShift = 100; //Максимальная норма коэффициента за смену
     private int $populationSize = 100;
     private float $mutationRate = 0.01;
     private float $crossoverRate = 0.7;
@@ -18,6 +21,8 @@ class AlgorithmService
 
     /** @var Doctor[] */
     private array $doctors;
+
+    /** @var Studies[]  */
     private array $studies;
 
     public function __construct(private readonly EntityManagerInterface $entityManager) {}
@@ -25,10 +30,10 @@ class AlgorithmService
     private function initializeEnv(): void
     {
         $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
-        $studiesJson = file_get_contents(__DIR__.'/mocks/generatedData.json', true);
-        $this->studies = json_decode($studiesJson, true);
+        $this->studies = $this->entityManager->getRepository(Studies::class)->findBy(orderBy: ['date' => 'ASC']);
 
     }
+
     public function run(): void
     {
         set_time_limit(600);
@@ -105,7 +110,7 @@ class AlgorithmService
     {
         for ($i = 0; $i < count($individual); $i++) {
             if (rand(0, 100) / 100.0 < $this->mutationRate) {
-                $individual[$i] = $this->createRandomGene();
+                $individual[$i] = $this->createRandomGene($individual);
             }
         }
 
@@ -118,22 +123,8 @@ class AlgorithmService
 
         foreach ($this->studies as $study) {
             //Находим врачей, которые могут взяться за это исследование
-            $availableDoctors = array_filter($this->doctors, function ($doctor) use ($study, $individual) {
-                /** @var Competencies|null $doctorCompetency */
-                $doctorCompetency = $this->entityManager->getRepository(Competencies::class)->findByDoctor(
-                    $doctor,
-                    $study['Вид исследования'],
-                    $study['Модальность']
-                );
-
-                return
-                    $doctorCompetency &&
-                    $this->hasAvailableTime($doctor, $doctorCompetency->getDuration()) &&
-                    $this->isNorm(
-                        $doctor,
-                        $study,
-                        $individual
-                    );
+            $availableDoctors = array_filter($study->getCompetency()->getDoctors()->toArray(), function ($doctor) use ($study, $individual) {
+                return $this->can($doctor, $study, $individual);
             });
 
             if (!empty($availableDoctors)) {
@@ -148,25 +139,12 @@ class AlgorithmService
         return $individual;
     }
 
-    private function createRandomGene(): array
+    private function createRandomGene(array $individual): array
     {
         $study = $this->studies[array_rand($this->studies)];
-        $availableDoctors = array_filter($this->doctors, function ($doctor) use ($study) {
-            /** @var Competencies|null $doctorCompetency */
-            $doctorCompetency = $this->entityManager->getRepository(Competencies::class)->findByDoctor(
-                $doctor,
-                $study['Вид исследования'],
-                $study['Модальность']
-            );
 
-            return
-                $doctorCompetency &&
-                $this->hasAvailableTime($doctor, $doctorCompetency->getDuration()) &&
-                $this->isNorm(
-                    $doctor,
-                    $study['Вид исследования'],
-                    $study['Модальность']
-                );
+        $availableDoctors = array_filter($study->getCompetency()->getDoctors()->toArray(), function ($doctor) use ($study, $individual) {
+            return $this->can($doctor, $study, $individual);
         });
 
         if (!empty($availableDoctors)) {
@@ -177,17 +155,68 @@ class AlgorithmService
         }
     }
 
-    //Проверка по времени приема
-    private function hasAvailableTime(Doctor $doctor, int $duration): bool
+    //Проверка возможности врача провести исследование с соблюдением норм
+    private function can(Doctor $doctor, Studies $study, array $individual): bool
     {
-        //Доработать алгоритм анализа осталось ли время для приема!
-        return array_sum($doctor->getAvailableHours()) >= $duration;
-    }
+        $doctorWorkSchedule = $doctor->getWorkSchedule();
 
-    //Проверка на превышение нормы исследований (по облучению)
-    private function isNorm(Doctor $doctor, array $study, array $individual): bool
-    {
-        dd($doctor, $individual, $study);
+        // Проверяем, подходит ли день для смены врача согласно его графику
+        $dayOfWeek = (clone $study->getDate())->format('N'); // День недели (1-7, где 1 - понедельник)
+        $dayInCycle = ($dayOfWeek - 1) % ($doctorWorkSchedule->getShiftPerCycle() + $doctorWorkSchedule->getDaysOff());
+
+        if ($dayInCycle >= $doctorWorkSchedule->getShiftPerCycle()) {
+            return false; // Врач на выходном
+        }
+
+        // Если неподходящее по расписанию для врача время
+        if (
+            ($doctorWorkSchedule->getType() === DoctorWorkSchedule::TYPE_DAY && $study->isNight()) ||
+            ($doctorWorkSchedule->getType() === DoctorWorkSchedule::TYPE_NIGHT && $study->isDay())
+        ) {
+            return false;
+        }
+
+        $durationSum = null;
+        $coefficient = null;
+
+        //Смотрим, чтобы время работы от самого раннего приема до самого позднего не выходило за рамки рабочего дня
+        foreach ($individual as $studyIndividual) {
+            if ($studyIndividual['doctor'] === $doctor) {
+                /** @var Studies $doctorStudy */
+                $doctorStudy = $studyIndividual['study'];
+                //Если интервал времени больше рабочего дня
+                $hoursPerShift = $doctor->getWorkSchedule()->getHoursPerShift();
+                $currentStudyEndTime = $study->getEndTime();
+                if ($doctorStudy->getEndTime()->diff($study->getDate()) >= $hoursPerShift ||
+                    $currentStudyEndTime->diff($doctorStudy->getDate()) >= $hoursPerShift) {
+                    return false;
+                }
+
+                // Если есть пересечение с уже назначенными приемами
+                $doctorStudyEndTime = $doctorStudy->getEndTime();
+                if ($doctorStudy->getDate() <= $currentStudyEndTime && $study->getDate() <= $doctorStudyEndTime) {
+                    return false;
+                }
+
+                $durationSum += $doctorStudy->getCompetency()->getDuration();
+                $coefficient += $doctorStudy->getCompetency()->getCoefficient();
+            }
+        }
+
+        // Проверяем итоговую сумму времени приемов + если прибавим текущее исследование
+        $doctorWorkTimePerDayInMinutes = $doctor->getWorkSchedule()->getHoursPerShift() * 60;
+
+        if (($durationSum + $study->getCompetency()->getDuration()) > $doctorWorkTimePerDayInMinutes) {
+            return false;
+        }
+
+        // Проверяем, не нарушен ли коэффициент облучения за смену
+        if ($this->maxCoefficientPerShift <= $coefficient) {
+            return false;
+        }
+
+        // Проверяем, что не выходим за пределы
+        return true;
     }
 
     private function evaluateFitness(array $individual): int
