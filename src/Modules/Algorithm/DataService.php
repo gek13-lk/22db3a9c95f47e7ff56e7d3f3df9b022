@@ -6,6 +6,7 @@ namespace App\Modules\Algorithm;
 
 use App\Entity\Competencies;
 use App\Entity\Doctor;
+use App\Entity\Studies;
 use Doctrine\ORM\EntityManagerInterface;
 
 class DataService
@@ -69,15 +70,21 @@ class DataService
                 $num_studies = rand(0, 10);
                 if ($num_studies > 0) {
                     for ($i = 1; $i <= $num_studies; $i++) {
-                        $studiesDate = (new \DateTime())->setTimestamp($date->getTimestamp());
+                        $studiesDate = (new \DateTime())
+                            ->setTimestamp($date->getTimestamp())
+                            ->modify('+ ' . rand(0, 23) . ' hours')
+                            ->modify('+ ' . rand(0, 59) . ' minutes');
                         $studies[] = [
-                            'Дата' => $studiesDate
-                                ->modify('+ ' . rand(0, 23) . ' hours')
-                                ->modify('+ ' . rand(0, 59) . ' minutes')
-                                ->format('Y-m-d H:i'),
+                            'Дата' => $studiesDate->format('Y-m-d H:i'),
                             'Модальность' => $competency->getModality(),
                             'Вид исследования' => $competency->getType(),
                         ];
+
+                        $studyEntity = new Studies();
+                        $studyEntity->setCompetency($competency);
+                        $studyEntity->setDate($studiesDate);
+
+                        $this->entityManager->persist($studyEntity);
                     }
                 }
             }
@@ -114,7 +121,8 @@ class DataService
             // Добавьте остальных врачей
         ];*/
 
-        // Сохранение данных
+        $this->entityManager->flush();
+
         file_put_contents(
             __DIR__ . '/mocks/generatedData.json',
             json_encode($studies, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
