@@ -17,19 +17,27 @@ class Competencies
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Норма в смену"])]
-    private ?int $norms = null;
-
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Модальность"])]
     private ?string $modality = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Модальность (ENG)"])]
+    private ?string $modalityEng = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Вид исследования"])]
     private ?string $type = null;
 
-    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Длительность"])]
+    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Вид исследования (ENG)"])]
+    private ?string $typeEng = null;
+
+    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Средняя длительность (по верхней границе) по регламентам в РФ в минутах"])]
     private ?int $duration = null;
 
+    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Нормы количества описанных исследований на одного врача в смену"])]
+    private ?int $norms = null;
+
     /**
+     * Расписание режима работы, не путать с результатом по кейсу!
+     *
      * @var Collection<Doctor>
      */
     #[ORM\ManyToMany(targetEntity: Doctor::class, mappedBy: "competencies")]
@@ -103,4 +111,6 @@ class Competencies
 
         return $this;
     }
+
+
 }
