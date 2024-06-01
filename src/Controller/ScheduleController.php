@@ -19,8 +19,8 @@ class ScheduleController extends AbstractController implements NavElementInterfa
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         $user = $this->getUser();
-        //$this->service2->generateInputData();
-        $this->service->run();
+        $this->service2->generateInputData();
+        //$this->service->run();
         dd(1);
         return $this->render('schedule/index.html.twig', [
             'controller_name' => 'ScheduleController',
