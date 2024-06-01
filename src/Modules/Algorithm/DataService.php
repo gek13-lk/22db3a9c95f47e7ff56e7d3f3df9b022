@@ -10,11 +10,13 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class DataService
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager) {}
+    public function __construct(private readonly EntityManagerInterface $entityManager)
+    {
+    }
 
     public function initializeDb(): void
     {
-        $data = file_get_contents(__DIR__.'/mocks/generatedData.json', true);
+        $data = file_get_contents(__DIR__ . '/mocks/generatedData.json', true);
         $data = json_decode($data, true);
         /*foreach ($data['norms'] as $competenciesData) {
             $competencies = new Competencies();
@@ -58,8 +60,34 @@ class DataService
         $period = new \DatePeriod($start_date, $interval, $end_date);
 
         // Модальности и виды исследований
-        $modalities = ['X-ray', 'CT', 'MRI', 'US', 'PET'];
-        $study_types = ['Ортопедические', 'Неврологические', 'Абдоминальные', 'Кардиологические', 'Грудные', 'Другие'];
+        $modalities = ['X-ray', 'CT', 'Fluoro', 'MG', 'Angio', 'Dental X-ray', 'DEXA'];
+
+        $study_types = [
+            'Грудная клетка',
+            'Абдоминальная рентгенография',
+            'Костная рентгенография',
+            'Синусовая рентгенография',
+            'КТ головного мозга',
+            'КТ грудной клетки',
+            'КТ брюшной полости',
+            'КТ ангиография',
+            'Гастроскопия',
+            'Колоноскопия',
+            'Ангиография',
+            'Бронхоскопия',
+            'Скрининговая маммография',
+            'Диагностическая маммография',
+            'Коронарная ангиография',
+            'Церебральная ангиография',
+            'Периферическая ангиография',
+            'Легочная ангиография',
+            'Интраоральная рентгенография',
+            'Панорамная рентгенография',
+            'Цефалометрическая рентгенография',
+            'Исследование поясничного отдела позвоночника',
+            'Исследование бедренной кости',
+            'Полное обследование тела'
+        ];
 
         $studiesByWeek = [];
         foreach ($period as $date) {
@@ -79,7 +107,7 @@ class DataService
         $studiesByDay = [];
 
         foreach ($studiesByWeek as $studies) {
-            for ($i=1; $i <= $studies['Количество исследований']; $i++) {
+            for ($i = 1; $i <= $studies['Количество исследований']; $i++) {
                 $studiesByDay[] = [
                     'Дата' => $this->getRandomDateInPeriod($studies['Дата'], $studies['Дата']->modify('+7 days')),
                     'Модальность' => $studies['Модальность'],
@@ -109,7 +137,7 @@ class DataService
 
         // Сохранение данных
         file_put_contents(
-            __DIR__.'/mocks/generatedData.json',
+            __DIR__ . '/mocks/generatedData.json',
             [
                 'Количество исследований' => json_encode($studiesByDay, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
                 //'Нормы' => json_encode($norms, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),

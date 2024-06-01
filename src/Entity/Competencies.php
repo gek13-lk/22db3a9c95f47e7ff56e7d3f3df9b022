@@ -32,8 +32,11 @@ class Competencies
     #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Средняя длительность (по верхней границе) по регламентам в РФ в минутах"])]
     private ?int $duration = null;
 
-    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Нормы количества описанных исследований на одного врача в смену"])]
+    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Верхняя граница нормы количества исследования на одного врача в смену"])]
     private ?int $norms = null;
+
+    #[ORM\Column(type: 'float', nullable: true, options: ["comment" => "Коэффициент нагрузки на врача для одного исследования"])]
+    private ?float $coefficient = null;
 
     /**
      * Расписание режима работы, не путать с результатом по кейсу!
@@ -112,5 +115,43 @@ class Competencies
         return $this;
     }
 
+    public function getModalityEng(): ?string
+    {
+        return $this->modalityEng;
+    }
 
+    public function setModalityEng(?string $modalityEng): void
+    {
+        $this->modalityEng = $modalityEng;
+    }
+
+    public function getTypeEng(): ?string
+    {
+        return $this->typeEng;
+    }
+
+    public function setTypeEng(?string $typeEng): void
+    {
+        $this->typeEng = $typeEng;
+    }
+
+    public function getCoefficient(): ?float
+    {
+        return $this->coefficient;
+    }
+
+    public function setCoefficient(?float $coefficient): void
+    {
+        $this->coefficient = $coefficient;
+    }
+
+    public function getDoctors(): Collection
+    {
+        return $this->doctors;
+    }
+
+    public function setDoctors(Collection $doctors): void
+    {
+        $this->doctors = $doctors;
+    }
 }
