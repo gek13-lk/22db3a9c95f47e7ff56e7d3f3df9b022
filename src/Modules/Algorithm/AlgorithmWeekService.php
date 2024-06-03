@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Algorithm;
 
 use App\Entity\Doctor;
+use App\Entity\WeekStudies;
 use Doctrine\ORM\EntityManagerInterface;
 
 class AlgorithmWeekService
@@ -19,7 +20,9 @@ class AlgorithmWeekService
     /** @var Doctor[] */
     private array $doctors;
 
-    /** @var array */
+    /**
+     * @var WeekStudies[]
+     */
     private array $weeklyStudies;
 
     public function __construct(private readonly EntityManagerInterface $entityManager) {}
@@ -27,6 +30,7 @@ class AlgorithmWeekService
     private function initializeEnv(): void
     {
         $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
+        $this->weeklyStudies = $this->entityManager->getRepository(WeekStudies::class)->findAll();
     }
 
     public function run(array $weeklyStudies): void
@@ -36,7 +40,7 @@ class AlgorithmWeekService
         $this->initializeEnv();
         $this->weeklyStudies = $this->generateWeeklyStudies($weeklyStudies);
         $this->initializePopulation();
-
+dd($this->weeklyStudies);
         for ($generation = 0; $generation < $this->generations; $generation++) {
             $this->population = $this->evolve($this->population);
         }
@@ -53,7 +57,7 @@ class AlgorithmWeekService
     {
         $generatedStudies = [];
         foreach ($weeklyStudies as $study) {
-            $count = $study['count'];
+            $count = $study->getCount();
             for ($i = 0; $i < $count; $i++) {
                 $generatedStudies[] = $study;
             }
