@@ -28,7 +28,7 @@ class Studies
 
     public function getEndTime(): ?\DateTime
     {
-        return $this->date->modify('+ '.$this->getCompetency()->getDuration().' minutes');
+        return (clone $this->date)->modify('+ '.$this->getCompetency()->getDuration().' minutes');
     }
 
     public function getDate(): ?\DateTime
