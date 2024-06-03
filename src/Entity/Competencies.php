@@ -26,6 +26,9 @@ class Competencies
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Вид исследования"])]
     private ?string $type = null;
 
+    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Длительность"])]
+    private ?int $duration = null;
+
     /**
      * @var Collection<Doctor>
      */
@@ -87,5 +90,17 @@ class Competencies
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getDuration(): ?int
+    {
+        return $this->duration;
+    }
+
+    public function setDuration(?int $duration): self
+    {
+        $this->duration = $duration;
+
+        return $this;
     }
 }
