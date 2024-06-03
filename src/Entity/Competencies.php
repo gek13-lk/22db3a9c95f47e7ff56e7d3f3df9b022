@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\CompetenciesRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: CompetenciesRepository::class)]
@@ -38,28 +36,6 @@ class Competencies
     #[ORM\Column(type: 'float', nullable: true, options: ["comment" => "Количество УЕ в одном описании"])]
     private ?float $coefficient = null;
 
-    /**
-     * @var Collection<Doctor>
-     */
-    #[ORM\ManyToMany(targetEntity: Doctor::class, mappedBy: "competencies")]
-    private Collection $doctors;
-
-    public function __construct() {
-        $this->doctors = new ArrayCollection();
-    }
-
-    public function addDoctor(Doctor $doctor): self
-    {
-        if ($this->doctors->contains($doctor)) {
-            return $this;
-        }
-
-        $this->doctors->add($doctor);
-        $doctor->addSpeciality($this);
-
-        return $this;
-    }
-
     public function getModality(): ?string
     {
         return $this->modality;
@@ -85,16 +61,6 @@ class Competencies
     public function setCoefficient(?float $coefficient): void
     {
         $this->coefficient = $coefficient;
-    }
-
-    public function getDoctors(): Collection
-    {
-        return $this->doctors;
-    }
-
-    public function setDoctors(Collection $doctors): void
-    {
-        $this->doctors = $doctors;
     }
 
     public function getContrast(): ?string
