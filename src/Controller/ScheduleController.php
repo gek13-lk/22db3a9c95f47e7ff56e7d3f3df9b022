@@ -13,13 +13,14 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class ScheduleController extends AbstractController implements NavElementInterface {
 
-    public function __construct(private AlgorithmService $service) {}
+    public function __construct(private AlgorithmService $service, private DataService $service2) {}
     #[Route('/schedule', name: 'app_schedule')]
     public function index(): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         $user = $this->getUser();
-        $this->service->run();
+        $this->service2->generateInputData();
+        //$this->service->run();
         dd(1);
         return $this->render('schedule/index.html.twig', [
             'controller_name' => 'ScheduleController',
