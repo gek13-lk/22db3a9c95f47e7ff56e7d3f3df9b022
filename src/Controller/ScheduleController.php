@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Modules\Algorithm\AlgorithmService;
+use App\Modules\Algorithm\DataService;
 use App\Modules\Navbar\DefaultNavItem;
 use App\Modules\Navbar\NavElementInterface;
 use App\Modules\Navbar\NavItemInterface;
@@ -10,6 +12,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 class ScheduleController extends AbstractController implements NavElementInterface {
+
+    public function __construct(private DataService $service) {}
     #[Route('/schedule', name: 'app_schedule')]
     public function index(): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
