@@ -10,10 +10,10 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class AlgorithmService
 {
-    private int $populationSize = 20;
+    private int $populationSize = 100;
     private float $mutationRate = 0.01;
     private float $crossoverRate = 0.7;
-    private int $generations = 20;
+    private int $generations = 100;
     private array $population = [];
 
     /** @var Doctor[] */
@@ -45,7 +45,7 @@ class AlgorithmService
 
         file_put_contents(
             __DIR__.'/mocks/result.json',
-            $solution
+            json_encode($solution, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
         );
     }
 
@@ -65,6 +65,7 @@ class AlgorithmService
             $parent2 = $this->selectParent($population);
 
             $offspring = $this->crossover($parent1, $parent2);
+
             $offspring = $this->mutate($offspring);
 
             $newPopulation[] = $offspring;
@@ -114,13 +115,16 @@ class AlgorithmService
     private function createRandomIndividual(): array
     {
         $individual = [];
+
         foreach ($this->studies as $study) {
+            //Находим врачей, которые могут взяться за это исследование учитывая компетенцию и время работы
             $availableDoctors = array_filter($this->doctors, function ($doctor) use ($study) {
                 /** @var Competencies|null $doctorCompetency */
                 $doctorCompetency = $this->entityManager->getRepository(Competencies::class)->findByDoctor($doctor, $study['Модальность']);
 
                 return $doctorCompetency && $this->hasAvailableTime($doctor, $doctorCompetency->getDuration());
             });
+
             if (!empty($availableDoctors)) {
                 $selectedDoctor = $availableDoctors[array_rand($availableDoctors)];
                 $individual[] = ['study' => $study, 'doctor' => $selectedDoctor];
@@ -128,6 +132,7 @@ class AlgorithmService
                 $individual[] = ['study' => $study, 'doctor' => null];
             }
         }
+
         return $individual;
     }
 
