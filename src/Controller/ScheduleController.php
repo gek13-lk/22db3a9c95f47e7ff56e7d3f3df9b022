@@ -21,9 +21,7 @@ class ScheduleController extends AbstractController implements NavElementInterfa
 
         $user = $this->getUser();
         //$this->service2->generateInputData();
-        $this->service3->run([
-
-        ]);
+        $this->service3->run();
         dd(1);
         return $this->render('schedule/index.html.twig', [
             'controller_name' => 'ScheduleController',

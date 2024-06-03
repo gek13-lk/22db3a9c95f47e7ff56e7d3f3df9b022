@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -25,11 +23,11 @@ class Doctor
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Отчество"])]
     private ?string $middlename = null;
 
-    /**
-     * @var Collection<Competencies>
-     */
-    #[ORM\ManyToMany(targetEntity: Competencies::class, inversedBy: "doctors")]
-    private Collection $competencies;
+    #[ORM\Column]
+    private array $addonCompetencies = [];
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Основная компетенция"])]
+    private string $competency;
 
     /**
      * Норма выхода врача в смену.
@@ -37,9 +35,8 @@ class Doctor
     #[ORM\OneToOne(targetEntity: DoctorWorkSchedule::class, mappedBy: 'doctor')]
     private DoctorWorkSchedule $workSchedule;
 
-    public function __construct() {
-        $this->competencies = new ArrayCollection();
-    }
+    #[ORM\Column(type: 'float')]
+    private ?float $stavka = null;
 
     public function __toString()
     {
@@ -101,27 +98,6 @@ class Doctor
         return empty($names) ? null : implode(' ', $names);
     }
 
-    public function getCompetencies(): Collection
-    {
-        return $this->competencies;
-    }
-
-    public function addSpeciality(?Competencies $competencies = null): self
-    {
-        if (!$competencies) {
-            return $this;
-        }
-
-        if ($this->competencies->contains($competencies)) {
-            return $this;
-        }
-
-        $this->competencies->add($competencies);
-        $competencies->addDoctor($this);
-
-        return $this;
-    }
-
     public function getId(): ?int
     {
         return $this->id;
@@ -135,5 +111,38 @@ class Doctor
     public function setWorkSchedule(DoctorWorkSchedule $workSchedule): void
     {
         $this->workSchedule = $workSchedule;
+    }
+
+    public function getStavka(): ?int
+    {
+        return $this->stavka;
+    }
+
+    public function setStavka(?int $stavka): Doctor
+    {
+        $this->stavka = $stavka;
+        return $this;
+    }
+
+    public function getAddonCompetencies(): array
+    {
+        return $this->addonCompetencies;
+    }
+
+    public function setAddonCompetencies(array $addonCompetencies): Doctor
+    {
+        $this->addonCompetencies = $addonCompetencies;
+        return $this;
+    }
+
+    public function getCompetency(): string
+    {
+        return $this->competency;
+    }
+
+    public function setCompetency(string $competency): Doctor
+    {
+        $this->competency = $competency;
+        return $this;
     }
 }
