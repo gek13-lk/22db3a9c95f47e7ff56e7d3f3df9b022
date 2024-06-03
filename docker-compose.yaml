@@ -1,12 +1,13 @@
-version: '3'
+version: '3.8'
 
 services:
   app:
     build:
       context: ./docker/php
-    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     environment:
       PHP_IDE_CONFIG: ${PHP_IDE_CONFIG:-serverName=docker}
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+      XDEBUG_TRIGGER: 'yes'
     volumes:
       - ./:/app:cached
   nginx:
