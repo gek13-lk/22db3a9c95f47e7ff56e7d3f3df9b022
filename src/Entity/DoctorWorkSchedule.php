@@ -11,6 +11,12 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'doctor_work_schedules')]
 class DoctorWorkSchedule
 {
+    public const TYPE_DAY = 'Дневные смены';
+    public const TYPE_NIGHT = 'Ночные смены';
+    public const TYPE_ONE_TO_THREE = 'Сутки через трое';
+    public const TYPE_DAY_NIGHT = 'День-ночь';
+    public const TYPE_TWO_OFF = 'Два выходных';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
