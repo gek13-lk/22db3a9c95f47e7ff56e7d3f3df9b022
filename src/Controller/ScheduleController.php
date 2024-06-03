@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Modules\Algorithm\AlgorithmService;
+use App\Modules\Algorithm\AlgorithmWeekService;
 use App\Modules\Algorithm\DataService;
 use App\Modules\Navbar\DefaultNavItem;
 use App\Modules\Navbar\NavElementInterface;
@@ -13,14 +14,16 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class ScheduleController extends AbstractController implements NavElementInterface {
 
-    public function __construct(private AlgorithmService $service, private DataService $service2) {}
+    public function __construct(private AlgorithmService $service, private AlgorithmWeekService $service3, private DataService $service2) {}
     #[Route('/schedule', name: 'app_schedule')]
     public function index(): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         $user = $this->getUser();
         //$this->service2->generateInputData();
-        $this->service->run();
+        $this->service3->run([
+
+        ]);
         dd(1);
         return $this->render('schedule/index.html.twig', [
             'controller_name' => 'ScheduleController',
