@@ -13,10 +13,10 @@ class AlgorithmService
 {
     //TODO: Перенести в БД
     private float $maxCoefficientPerShift = 100; //Максимальная норма коэффициента за смену
-    private int $populationSize = 100;
+    private int $populationSize = 35;
     private float $mutationRate = 0.01;
     private float $crossoverRate = 0.7;
-    private int $generations = 100;
+    private int $generations = 50;
     private array $population = [];
 
     /** @var Doctor[] */
@@ -30,14 +30,14 @@ class AlgorithmService
     private function initializeEnv(): void
     {
         $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
-        $this->studies = $this->entityManager->getRepository(Studies::class)->findBy(orderBy: ['date' => 'ASC']);
+        $this->studies = $this->entityManager->getRepository(Studies::class)->findBy([], ['date' => 'ASC']);
 
     }
 
     public function run(): void
     {
         set_time_limit(600);
-        ini_set('memory_limit', '512M');
+        ini_set('memory_limit', '1024M');
 
         $this->initializeEnv();
         $this->initializePopulation();
@@ -47,7 +47,7 @@ class AlgorithmService
         }
 
         $solution = $this->getBestSolution();
-
+        //TODO: Анализ результата, предложения по возможным улучшениям
         file_put_contents(
             __DIR__.'/mocks/result.json',
             json_encode($solution, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
@@ -155,6 +155,52 @@ class AlgorithmService
         }
     }
 
+    private function isAvailableDuringShift(DoctorWorkSchedule $workSchedule, Studies $study): bool
+    {
+        $shiftType = $workSchedule->getType();
+        $studyStartTime = $study->getDate();
+        $studyEndTime = $study->getEndTime();
+
+        switch ($shiftType) {
+            case DoctorWorkSchedule::TYPE_DAY:
+                // Дневная смена: с 6:00 до 22:00
+                $shiftStartTime = (clone $studyStartTime)->setTime(6, 0);
+                $shiftEndTime = (clone $studyStartTime)->setTime(22, 0);
+                break;
+            case DoctorWorkSchedule::TYPE_NIGHT:
+                // Ночная смена: с 22:00 до 6:00 следующего дня
+                $shiftStartTime = (clone $studyStartTime)->setTime(22, 0);
+                $shiftEndTime = (clone $studyStartTime)->modify('+1 day')->setTime(6, 0);
+                break;
+            case DoctorWorkSchedule::TYPE_ONE_TO_THREE:
+                // Сутки через трое: 24 часа работы, затем 72 часа выходных
+                $shiftStartTime = clone $studyStartTime;
+                $shiftEndTime = (clone $studyStartTime)->modify('+24 hours');
+                break;
+            case DoctorWorkSchedule::TYPE_DAY_NIGHT:
+                // День-ночь: предполагаем чередование дневных и ночных смен (здесь можно реализовать свою логику)
+                // Для упрощения допускаем все времена
+                return true;
+            case DoctorWorkSchedule::TYPE_TWO_OFF:
+                // Два выходных: после полного цикла смен два выходных дня (здесь можно реализовать свою логику)
+                // Для упрощения допускаем все времена
+                return true;
+            default:
+                return false;
+        }
+
+        // Проверяем, попадает ли время исследования в рабочее время врача
+        return ($studyStartTime >= $shiftStartTime && $studyEndTime <= $shiftEndTime);
+    }
+
+    /**
+     * Проверяет, пересекаются ли два исследования по времени.
+     */
+    private function studiesOverlap(\DateTime $start1, \DateTime $end1, \DateTime $start2, \DateTime $end2): bool
+    {
+        return ($start1 < $end2 && $start2 < $end1);
+    }
+
     //Проверка возможности врача провести исследование с соблюдением норм
     private function can(Doctor $doctor, Studies $study, array $individual): bool
     {
@@ -168,15 +214,11 @@ class AlgorithmService
             return false; // Врач на выходном
         }
 
-        // Если неподходящее по расписанию для врача время
-        if (
-            ($doctorWorkSchedule->getType() === DoctorWorkSchedule::TYPE_DAY && $study->isNight()) ||
-            ($doctorWorkSchedule->getType() === DoctorWorkSchedule::TYPE_NIGHT && $study->isDay())
-        ) {
+        if (!$this->isAvailableDuringShift($doctorWorkSchedule, $study)) {
             return false;
         }
 
-        $durationSum = null;
+        //$durationSum = null;
         $coefficient = null;
 
         //Смотрим, чтобы время работы от самого раннего приема до самого позднего не выходило за рамки рабочего дня
@@ -184,38 +226,43 @@ class AlgorithmService
             if ($studyIndividual['doctor'] === $doctor) {
                 /** @var Studies $doctorStudy */
                 $doctorStudy = $studyIndividual['study'];
+                $competency = $doctorStudy->getCompetency();
+
+                if ($this->studiesOverlap($study->getDate(), $study->getEndTime(), $doctorStudy->getDate(), $doctorStudy->getEndTime())) {
+                    return false;
+                }
+
                 //Если интервал времени больше рабочего дня
-                $hoursPerShift = $doctor->getWorkSchedule()->getHoursPerShift();
-                $currentStudyEndTime = $study->getEndTime();
-                if ($doctorStudy->getEndTime()->diff($study->getDate()) >= $hoursPerShift ||
-                    $currentStudyEndTime->diff($doctorStudy->getDate()) >= $hoursPerShift) {
+                $hoursPerShift = $doctorWorkSchedule->getHoursPerShift();
+                $currentHoursShift = $doctorStudy->getEndTime()->diff($study->getDate())->h;
+                if ($currentHoursShift >= $hoursPerShift ||
+                    $study->getEndTime()->diff($doctorStudy->getDate())->d >= $hoursPerShift) {
                     return false;
                 }
 
                 // Если есть пересечение с уже назначенными приемами
                 $doctorStudyEndTime = $doctorStudy->getEndTime();
-                if ($doctorStudy->getDate() <= $currentStudyEndTime && $study->getDate() <= $doctorStudyEndTime) {
+                if ($doctorStudy->getDate() <= $study->getEndTime() && $study->getDate() <= $doctorStudyEndTime) {
                     return false;
                 }
 
-                $durationSum += $doctorStudy->getCompetency()->getDuration();
-                $coefficient += $doctorStudy->getCompetency()->getCoefficient();
+                //$durationSum += $competency->getDuration();
+                $coefficient += $competency->getCoefficient();
             }
         }
 
         // Проверяем итоговую сумму времени приемов + если прибавим текущее исследование
-        $doctorWorkTimePerDayInMinutes = $doctor->getWorkSchedule()->getHoursPerShift() * 60;
+        /*$doctorWorkTimePerDayInMinutes = $doctorWorkSchedule->getHoursPerShift() * 60;
 
         if (($durationSum + $study->getCompetency()->getDuration()) > $doctorWorkTimePerDayInMinutes) {
             return false;
-        }
+        }*/
 
         // Проверяем, не нарушен ли коэффициент облучения за смену
         if ($this->maxCoefficientPerShift <= $coefficient) {
             return false;
         }
 
-        // Проверяем, что не выходим за пределы
         return true;
     }
 
@@ -228,19 +275,19 @@ class AlgorithmService
                 //В этой функции в целом надо будет добавить эвристические методы. Потому что сейчас по сути в дефолте сравнивается,
                 // что назначение для исследования есть и, соответственно, вернется вариант с наименьшим количеством пропусков врачей.
                 // Надо дорабатывать эту функцию различными проверками. Чтобы врач не был перенагружен
-                // + проверка, чтобы врач по нормам получал количество излучения
                 // Думаю дальше, в основном, работа будет вестись в калибровке входных данных (их дополнении) и в этой функции
                 // Возможно так же усложнение условий при создании гена / особи.
                 // Но в основном тут все остальные функции (создание гена и особи в том числе) тут абстрактные, поэтому нас удовлетворяют
             }
         }
+
         return $fitness;
     }
 
     private function getBestSolution(): array
     {
         $bestIndividual = null;
-        $bestFitness = -INF;
+        $bestFitness = 0;
 
         foreach ($this->population as $individual) {
             $fitness = $this->evaluateFitness($individual);
@@ -250,6 +297,18 @@ class AlgorithmService
             }
         }
 
+        $timeRes = [];
+
+        foreach ($bestIndividual as $gene) {
+            if ($gene['doctor'] !== null) {
+                /** @var Studies $study */
+                $study = $gene['study'];
+                /** @var Doctor $doctor */
+                $doctor = $gene['doctor'];
+                $timeRes[$doctor->getId()][] = $study->getDate()->format('Y-m-d H:i') . ' - ' . $study->getEndTime()->format('Y-m-d H:i');
+            }
+        }
+dd($bestFitness, $timeRes);
         return $bestIndividual;
     }
 }

@@ -20,27 +20,25 @@ class Competencies
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Модальность"])]
     private ?string $modality = null;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Модальность (ENG)"])]
-    private ?string $modalityEng = null;
+    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Контрастное усиление"])]
+    private ?string $contrast = null;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Вид исследования"])]
-    private ?string $type = null;
+    #[ORM\Column(type: 'float', nullable: true, options: ["comment" => "Минимальное количество исследований за смену шт. "])]
+    private ?float $minimalCountPerShift = null;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Вид исследования (ENG)"])]
-    private ?string $typeEng = null;
+    #[ORM\Column(type: 'float', nullable: true, options: ["comment" => "Минимальное количество УЕ за смену шт."])]
+    private ?float $minimalCoefficientPerShift = null;
 
-    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Средняя длительность (по верхней границе) по регламентам в РФ в минутах"])]
-    private ?int $duration = null;
+    #[ORM\Column(type: 'float', nullable: true, options: ["comment" => "Максимальное количество исследований за смену шт."])]
+    private ?float $maxCountPerShift = null;
 
-    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Верхняя граница нормы количества исследования на одного врача в смену"])]
-    private ?int $norms = null;
+    #[ORM\Column(type: 'float', nullable: true, options: ["comment" => "Максимальное количество УЕ за смену, с округлением вниз до целого числа"])]
+    private ?float $maxCoefficientPerShift = null;
 
-    #[ORM\Column(type: 'float', nullable: true, options: ["comment" => "Коэффициент нагрузки на врача для одного исследования"])]
+    #[ORM\Column(type: 'float', nullable: true, options: ["comment" => "Количество УЕ в одном описании"])]
     private ?float $coefficient = null;
 
     /**
-     * Расписание режима работы, не путать с результатом по кейсу!
-     *
      * @var Collection<Doctor>
      */
     #[ORM\ManyToMany(targetEntity: Doctor::class, mappedBy: "competencies")]
@@ -62,18 +60,6 @@ class Competencies
         return $this;
     }
 
-    public function getNorms(): ?int
-    {
-        return $this->norms;
-    }
-
-    public function setNorms(?int $norms): self
-    {
-        $this->norms = $norms;
-
-        return $this;
-    }
-
     public function getModality(): ?string
     {
         return $this->modality;
@@ -86,53 +72,9 @@ class Competencies
         return $this;
     }
 
-    public function getType(): ?string
-    {
-        return $this->type;
-    }
-
-    public function setType(?string $type): self
-    {
-        $this->type = $type;
-
-        return $this;
-    }
-
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function getDuration(): ?int
-    {
-        return $this->duration;
-    }
-
-    public function setDuration(?int $duration): self
-    {
-        $this->duration = $duration;
-
-        return $this;
-    }
-
-    public function getModalityEng(): ?string
-    {
-        return $this->modalityEng;
-    }
-
-    public function setModalityEng(?string $modalityEng): void
-    {
-        $this->modalityEng = $modalityEng;
-    }
-
-    public function getTypeEng(): ?string
-    {
-        return $this->typeEng;
-    }
-
-    public function setTypeEng(?string $typeEng): void
-    {
-        $this->typeEng = $typeEng;
     }
 
     public function getCoefficient(): ?float
@@ -153,5 +95,60 @@ class Competencies
     public function setDoctors(Collection $doctors): void
     {
         $this->doctors = $doctors;
+    }
+
+    public function getContrast(): ?string
+    {
+        return $this->contrast;
+    }
+
+    public function setContrast(?string $contrast): Competencies
+    {
+        $this->contrast = $contrast;
+        return $this;
+    }
+
+    public function getMinimalCountPerShift(): ?float
+    {
+        return $this->minimalCountPerShift;
+    }
+
+    public function setMinimalCountPerShift(?float $minimalCountPerShift): Competencies
+    {
+        $this->minimalCountPerShift = $minimalCountPerShift;
+        return $this;
+    }
+
+    public function getMinimalCoefficientPerShift(): ?float
+    {
+        return $this->minimalCoefficientPerShift;
+    }
+
+    public function setMinimalCoefficientPerShift(?float $minimalCoefficientPerShift): Competencies
+    {
+        $this->minimalCoefficientPerShift = $minimalCoefficientPerShift;
+        return $this;
+    }
+
+    public function getMaxCountPerShift(): ?float
+    {
+        return $this->maxCountPerShift;
+    }
+
+    public function setMaxCountPerShift(?float $maxCountPerShift): Competencies
+    {
+        $this->maxCountPerShift = $maxCountPerShift;
+        return $this;
+    }
+
+    public function getMaxCoefficientPerShift(): ?float
+    {
+        return $this->maxCoefficientPerShift;
+    }
+
+    public function setMaxCoefficientPerShift(?float $maxCoefficientPerShift): Competencies
+    {
+        $this->maxCoefficientPerShift = $maxCoefficientPerShift;
+        return $this;
     }
 }
