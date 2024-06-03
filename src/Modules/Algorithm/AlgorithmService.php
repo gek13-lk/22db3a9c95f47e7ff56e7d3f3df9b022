@@ -33,6 +33,7 @@ class AlgorithmService
     {
         set_time_limit(600);
         ini_set('memory_limit', '512M');
+
         $this->initializeEnv();
         $this->initializePopulation();
 
@@ -116,12 +117,23 @@ class AlgorithmService
         $individual = [];
 
         foreach ($this->studies as $study) {
-            //Находим врачей, которые могут взяться за это исследование учитывая компетенцию и время работы
-            $availableDoctors = array_filter($this->doctors, function ($doctor) use ($study) {
+            //Находим врачей, которые могут взяться за это исследование
+            $availableDoctors = array_filter($this->doctors, function ($doctor) use ($study, $individual) {
                 /** @var Competencies|null $doctorCompetency */
-                $doctorCompetency = $this->entityManager->getRepository(Competencies::class)->findByDoctor($doctor, $study['Модальность']);
+                $doctorCompetency = $this->entityManager->getRepository(Competencies::class)->findByDoctor(
+                    $doctor,
+                    $study['Вид исследования'],
+                    $study['Модальность']
+                );
 
-                return $doctorCompetency && $this->hasAvailableTime($doctor, $doctorCompetency->getDuration());
+                return
+                    $doctorCompetency &&
+                    $this->hasAvailableTime($doctor, $doctorCompetency->getDuration()) &&
+                    $this->isNorm(
+                        $doctor,
+                        $study,
+                        $individual
+                    );
             });
 
             if (!empty($availableDoctors)) {
@@ -141,9 +153,20 @@ class AlgorithmService
         $study = $this->studies[array_rand($this->studies)];
         $availableDoctors = array_filter($this->doctors, function ($doctor) use ($study) {
             /** @var Competencies|null $doctorCompetency */
-            $doctorCompetency = $this->entityManager->getRepository(Competencies::class)->findByDoctor($doctor, $study['Модальность']);
+            $doctorCompetency = $this->entityManager->getRepository(Competencies::class)->findByDoctor(
+                $doctor,
+                $study['Вид исследования'],
+                $study['Модальность']
+            );
 
-            return $doctorCompetency && $this->hasAvailableTime($doctor, $doctorCompetency->getDuration());
+            return
+                $doctorCompetency &&
+                $this->hasAvailableTime($doctor, $doctorCompetency->getDuration()) &&
+                $this->isNorm(
+                    $doctor,
+                    $study['Вид исследования'],
+                    $study['Модальность']
+                );
         });
 
         if (!empty($availableDoctors)) {
@@ -154,10 +177,17 @@ class AlgorithmService
         }
     }
 
+    //Проверка по времени приема
     private function hasAvailableTime(Doctor $doctor, int $duration): bool
     {
         //Доработать алгоритм анализа осталось ли время для приема!
         return array_sum($doctor->getAvailableHours()) >= $duration;
+    }
+
+    //Проверка на превышение нормы исследований (по облучению)
+    private function isNorm(Doctor $doctor, array $study, array $individual): bool
+    {
+        dd($doctor, $individual, $study);
     }
 
     private function evaluateFitness(array $individual): int

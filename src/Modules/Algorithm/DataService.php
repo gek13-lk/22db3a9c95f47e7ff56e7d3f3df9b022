@@ -56,55 +56,34 @@ class DataService
         //TODO: Перенести в БД входные данные
         $start_date = new \DateTime("2024-05-17");
         $end_date = new \DateTime("2024-05-24");
-        $interval = new \DateInterval('P1W');
+        $interval = new \DateInterval('P1D');
         $period = new \DatePeriod($start_date, $interval, $end_date);
 
         // Модальности и виды исследований
-        $modalities = ['X-ray', 'CT', 'Fluoro', 'MG', 'Angio', 'Dental X-ray', 'DEXA'];
+        $competencies = $this->entityManager->getRepository(Competencies::class)->findAll();
 
-        $study_types = [
-            'Грудная клетка',
-            'Абдоминальная рентгенография',
-            'Костная рентгенография',
-            'Синусовая рентгенография',
-            'КТ головного мозга',
-            'КТ грудной клетки',
-            'КТ брюшной полости',
-            'КТ ангиография',
-            'Гастроскопия',
-            'Колоноскопия',
-            'Ангиография',
-            'Бронхоскопия',
-            'Скрининговая маммография',
-            'Диагностическая маммография',
-            'Коронарная ангиография',
-            'Церебральная ангиография',
-            'Периферическая ангиография',
-            'Легочная ангиография',
-            'Интраоральная рентгенография',
-            'Панорамная рентгенография',
-            'Цефалометрическая рентгенография',
-            'Исследование поясничного отдела позвоночника',
-            'Исследование бедренной кости',
-            'Полное обследование тела'
-        ];
+        $studies = [];
 
-        $studiesByWeek = [];
         foreach ($period as $date) {
-            foreach ($modalities as $modality) {
-                foreach ($study_types as $study_type) {
-                    $num_studies = rand(0, 100);
-                    $studiesByWeek[] = [
-                        'Дата' => $date,
-                        'Модальность' => $modality,
-                        'Вид исследования' => $study_type,
-                        'Количество исследований' => $num_studies
-                    ];
+            foreach ($competencies as $competency) {
+                $num_studies = rand(0, 10);
+                if ($num_studies > 0) {
+                    for ($i = 1; $i <= $num_studies; $i++) {
+                        $studiesDate = (new \DateTime())->setTimestamp($date->getTimestamp());
+                        $studies[] = [
+                            'Дата' => $studiesDate
+                                ->modify('+ ' . rand(0, 23) . ' hours')
+                                ->modify('+ ' . rand(0, 59) . ' minutes')
+                                ->format('Y-m-d H:i'),
+                            'Модальность' => $competency->getModality(),
+                            'Вид исследования' => $competency->getType(),
+                        ];
+                    }
                 }
             }
         }
 
-        $studiesByDay = [];
+        /*$studiesByDay = [];
 
         foreach ($studiesByWeek as $studies) {
             for ($i = 1; $i <= $studies['Количество исследований']; $i++) {
@@ -114,7 +93,7 @@ class DataService
                     'Вид исследования' => $studies['Вид исследования'],
                 ];
             }
-        }
+        }*/
 
         // Нормы количества описанных исследований на одного врача в смену
         /*$norms = [
@@ -138,11 +117,10 @@ class DataService
         // Сохранение данных
         file_put_contents(
             __DIR__ . '/mocks/generatedData.json',
-            [
-                'Количество исследований' => json_encode($studiesByDay, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
-                //'Нормы' => json_encode($norms, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
-                //'Врачи' => json_encode($doctors, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-            ]);
+            json_encode($studies, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+        //'Нормы' => json_encode($norms, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+        //'Врачи' => json_encode($doctors, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
     }
 
     private function getRandomDateInPeriod(\DateTime $firstDate, \DateTime $secondDate): string

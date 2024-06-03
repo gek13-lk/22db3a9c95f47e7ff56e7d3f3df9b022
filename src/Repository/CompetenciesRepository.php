@@ -40,12 +40,13 @@ class CompetenciesRepository extends ServiceEntityRepository
         return null;
     }
 
-    public function findByDoctor(Doctor $doctor, string $typeOrModality): ?Competencies
+    public function findByDoctor(Doctor $doctor, string $type, string $modality): ?Competencies
     {
         return $this->createQueryBuilder('c')
             ->join(Doctor::class, 'd', Join::WITH, 'd.id = :doctor')
-            ->where('c.modality = :typeOrModality OR c.type = :typeOrModality')
-            ->setParameter('typeOrModality', $typeOrModality)
+            ->where('c.modality = :modality AND c.type = :type')
+            ->setParameter('modality', $modality)
+            ->setParameter('type', $type)
             ->setParameter('doctor', $doctor)
             ->getQuery()
             ->setMaxResults(1)
