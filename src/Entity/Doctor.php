@@ -25,17 +25,18 @@ class Doctor
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Отчество"])]
     private ?string $middlename = null;
 
-    #[ORM\Column(nullable: true, options: ["comment" => "Количество рабочих часов (в неделе)"])]
-    private array $availableHours = [];
-
     /**
      * @var Collection<Competencies>
      */
     #[ORM\ManyToMany(targetEntity: Competencies::class, inversedBy: "doctors")]
     private Collection $competencies;
 
+    #[ORM\OneToMany(targetEntity: DoctorWorkSchedule::class, mappedBy: 'doctor')]
+    private Collection $workSchedules;
+
     public function __construct() {
         $this->competencies = new ArrayCollection();
+        $this->workSchedules = new ArrayCollection();
     }
 
     public function __toString()
@@ -124,13 +125,27 @@ class Doctor
         return $this->id;
     }
 
-    public function getAvailableHours(): array
+    public function getSchedules(): Collection
     {
-        return $this->availableHours;
+        return $this->workSchedules;
     }
 
-    public function setAvailableHours(array $availableHours): void
+    public function addSchedule(DoctorWorkSchedule $schedule): self
     {
-        $this->availableHours = $availableHours;
+        if (!$this->workSchedules->contains($schedule)) {
+            $this->workSchedules[] = $schedule;
+            $schedule->addDoctor($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSchedule(DoctorWorkSchedule $schedule): self
+    {
+        if ($this->workSchedules->removeElement($schedule)) {
+            $schedule->removeDoctor($this);
+        }
+
+        return $this;
     }
 }
