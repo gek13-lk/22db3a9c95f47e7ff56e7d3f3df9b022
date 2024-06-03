@@ -25,6 +25,9 @@ class Doctor
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Отчество"])]
     private ?string $middlename = null;
 
+    #[ORM\Column(nullable: true, options: ["comment" => "Количество рабочих часов (в неделе)"])]
+    private array $availableHours = [];
+
     /**
      * @var Collection<Competencies>
      */
@@ -119,5 +122,15 @@ class Doctor
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getAvailableHours(): array
+    {
+        return $this->availableHours;
+    }
+
+    public function setAvailableHours(array $availableHours): void
+    {
+        $this->availableHours = $availableHours;
     }
 }
