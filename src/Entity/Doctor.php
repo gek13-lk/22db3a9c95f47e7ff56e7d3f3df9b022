@@ -31,12 +31,14 @@ class Doctor
     #[ORM\ManyToMany(targetEntity: Competencies::class, inversedBy: "doctors")]
     private Collection $competencies;
 
-    #[ORM\OneToMany(targetEntity: DoctorWorkSchedule::class, mappedBy: 'doctor')]
-    private Collection $workSchedules;
+    /**
+     * Норма выхода врача в смену.
+     */
+    #[ORM\OneToOne(targetEntity: DoctorWorkSchedule::class, mappedBy: 'doctor')]
+    private DoctorWorkSchedule $workSchedule;
 
     public function __construct() {
         $this->competencies = new ArrayCollection();
-        $this->workSchedules = new ArrayCollection();
     }
 
     public function __toString()
@@ -125,27 +127,13 @@ class Doctor
         return $this->id;
     }
 
-    public function getSchedules(): Collection
+    public function getWorkSchedule(): DoctorWorkSchedule
     {
-        return $this->workSchedules;
+        return $this->workSchedule;
     }
 
-    public function addSchedule(DoctorWorkSchedule $schedule): self
+    public function setWorkSchedule(DoctorWorkSchedule $workSchedule): void
     {
-        if (!$this->workSchedules->contains($schedule)) {
-            $this->workSchedules[] = $schedule;
-            $schedule->addDoctor($this);
-        }
-
-        return $this;
-    }
-
-    public function removeSchedule(DoctorWorkSchedule $schedule): self
-    {
-        if ($this->workSchedules->removeElement($schedule)) {
-            $schedule->removeDoctor($this);
-        }
-
-        return $this;
+        $this->workSchedule = $workSchedule;
     }
 }

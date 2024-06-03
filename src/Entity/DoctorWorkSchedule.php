@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Validator\Constraints as Assert;
 
-//Расписание режима работы, не путать с результатом по кейсу!
+//Норма выхода врача в смену
 #[ORM\Entity]
 #[ORM\Table(name: 'doctor_work_schedules')]
 class DoctorWorkSchedule
@@ -17,68 +16,78 @@ class DoctorWorkSchedule
     #[ORM\Column(type: 'integer')]
     private int $id;
 
-    #[ORM\ManyToOne(targetEntity: Doctor::class, inversedBy: 'schedules')]
+    #[ORM\OneToOne(targetEntity: Doctor::class, inversedBy: 'schedule')]
     private Doctor $doctor;
 
-    #[ORM\Column(type: 'datetime')]
-    #[Assert\NotBlank]
-    private \DateTime $startTime;
+    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Тип смены"])]
+    private ?string $type = null;
 
-    #[ORM\Column(type: 'datetime')]
-    #[Assert\NotBlank]
-    private \DateTime $endTime;
+    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Количество часов за смену"])]
+    private ?int $hoursPerShift = null;
 
-    #[ORM\Column(type: 'string', length: 20)]
-    #[Assert\Choice(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])]
-    private string $dayOfWeek;
+    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Смен за цикл"])]
+    private ?int $shiftPerCycle = null;
+
+    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Количество выходных дней за цикл"])]
+    private ?int $daysOff = null;
 
     public function getId(): int
     {
         return $this->id;
     }
 
-    public function getDoctors(): Doctor
+    public function getDoctor(): Doctor
     {
         return $this->doctor;
     }
 
-    public function setDoctor(Doctor $doctor): self
+    public function setDoctor(Doctor $doctor): DoctorWorkSchedule
     {
         $this->doctor = $doctor;
-
         return $this;
     }
 
-    public function getStartTime(): \DateTime
+    public function getType(): ?string
     {
-        return $this->startTime;
+        return $this->type;
     }
 
-    public function setStartTime(\DateTime $startTime): self
+    public function setType(?string $type): DoctorWorkSchedule
     {
-        $this->startTime = $startTime;
+        $this->type = $type;
         return $this;
     }
 
-    public function getEndTime(): \DateTime
+    public function getHoursPerShift(): ?int
     {
-        return $this->endTime;
+        return $this->hoursPerShift;
     }
 
-    public function setEndTime(\DateTime $endTime): self
+    public function setHoursPerShift(?int $hoursPerShift): DoctorWorkSchedule
     {
-        $this->endTime = $endTime;
+        $this->hoursPerShift = $hoursPerShift;
         return $this;
     }
 
-    public function getDayOfWeek(): string
+    public function getShiftPerCycle(): ?int
     {
-        return $this->dayOfWeek;
+        return $this->shiftPerCycle;
     }
 
-    public function setDayOfWeek(string $dayOfWeek): self
+    public function setShiftPerCycle(?int $shiftPerCycle): DoctorWorkSchedule
     {
-        $this->dayOfWeek = $dayOfWeek;
+        $this->shiftPerCycle = $shiftPerCycle;
+        return $this;
+    }
+
+    public function getDaysOff(): ?int
+    {
+        return $this->daysOff;
+    }
+
+    public function setDaysOff(?int $daysOff): DoctorWorkSchedule
+    {
+        $this->daysOff = $daysOff;
         return $this;
     }
 }
