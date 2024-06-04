@@ -6,18 +6,33 @@ namespace App\Modules\Algorithm;
 
 use App\Entity\Competencies;
 use App\Entity\Doctor;
+use App\Entity\Studies;
+use App\Entity\WeekStudies;
 use Doctrine\ORM\EntityManagerInterface;
 
 class AlgorithmWeekService
 {
+    /** @var Doctor[] */
     private array $doctors;
+
+
+    /** @var WeekStudies[]  */
+    private array $weekStudies;
+
+    /** @var Competencies[]  */
     private array $modalities;
+
+    private array $modalitiesWithCoefficient;
 
     public function __construct(private EntityManagerInterface $entityManager)
     {
-        $this->entityManager = $entityManager;
         $this->doctors = $entityManager->getRepository(Doctor::class)->findAll();
-        $this->modalities = $entityManager->getRepository(Competencies::class)->findAll();
+        $this->weekStudies = $entityManager->getRepository(WeekStudies::class)->findAll();
+        $this->modalities = $this->entityManager->getRepository(Competencies::class)->findAll();
+
+        foreach ($this->modalities as $modality) {
+            $this->modalitiesWithCoefficient[$modality->getModality()] = $modality->getCoefficient();
+        }
     }
 
     // Основной метод для генерации расписания
@@ -41,6 +56,7 @@ class AlgorithmWeekService
         for ($i = 0; $i < 50; $i++) {
             $population[] = $this->createRandomSchedule();
         }
+
         return $population;
     }
 
@@ -48,30 +64,64 @@ class AlgorithmWeekService
     private function createRandomSchedule(): array
     {
         $schedule = [];
-        foreach ($this->modalities as $modality) {
-            $schedule[$modality->getName()] = [];
-            for ($j = 0; $j < 7; $j++) {
-                $doctor = $this->getRandomDoctorWithCompetency($modality->getName());
-                if ($doctor) {
-                    $schedule[$modality->getName()][] = $doctor->getId();
-                } else {
-                    // Если не найден врач с нужной компетенцией, назначаем null или можем обработать по-другому
-                    $schedule[$modality->getName()][] = null; // или $this->doctors[array_rand($this->doctors)]->getId();
+        foreach ($this->weekStudies as $modalityWeekCount) {
+            $modalityCompetency = $modalityWeekCount->getCompetency();
+            $modalityDayCount = $modalityWeekCount->getCount() / 7;
+            for ($day = 1; $day <= 7; $day++) {
+                $doctorsCountStudies = [];
+                //TODO: Подумать как облегчить
+                for ($studyNumber = 1; $studyNumber <= $modalityDayCount; $studyNumber++) {
+                    $schedule[$modalityCompetency->getModality()][$day] = [];
+                    $doctor = $this->getRandomDoctorWhoCan($modalityCompetency, $doctorsCountStudies, $day);
+
+                    if ($doctor) {
+                        $schedule[$modalityCompetency->getModality()][$day][$doctor->getId()]++;
+                        $doctorsCountStudies[$doctor->getId()][$day][$modalityCompetency->getModality()]++;
+                    } else {
+                        // Если не найден врач с нужной компетенцией, назначаем null или можем обработать по-другому
+                        $schedule[$modalityCompetency->getModality()][$day]['empty']++; // или $this->doctors[array_rand($this->doctors)]->getId();
+                    }
                 }
             }
         }
+
         return $schedule;
     }
 
-    // Метод для получения случайного врача с нужной компетенцией
-    private function getRandomDoctorWithCompetency(string $modalityName): ?Doctor
+    private function getCoefficientForDay(array $doctorsCountStudiesPerDay): float
     {
-        $competentDoctors = array_filter($this->doctors, function ($doctor) use ($modalityName) {
-            return in_array($modalityName, $doctor->getCompetencies());
+        $result = 0;
+
+        foreach ($doctorsCountStudiesPerDay as $key => $doctorModalityStudiesCount) {
+            $result += $this->modalitiesWithCoefficient[$key] * $doctorModalityStudiesCount;
+        }
+
+        return $result;
+    }
+
+    // Метод для получения случайного врача с нужной компетенцией
+    private function getRandomDoctorWhoCan(Competencies $competency, array $doctorsCountStudies, int $day): ?Doctor
+    {
+        $doctorsWithCompetency = array_filter($this->doctors, function ($doctor) use ($competency) {
+            return in_array($competency->getModality(), $doctor->getCompetency());
         });
 
-        if (count($competentDoctors) > 0) {
-            return $competentDoctors[array_rand($competentDoctors)];
+        $doctorsWithOkCoefficient = array_filter($doctorsWithCompetency, function ($doctor) use ($day, $doctorsCountStudies, $competency) {
+            return $competency->getMaxCoefficientPerShift() >= $this->getCoefficientForDay($doctorsCountStudies[$doctor->getId()][$day]);
+        });
+
+        if (empty($doctorsWithOkCoefficient)) {
+            $doctorsWithCompetency = array_filter($this->doctors, function ($doctor) use ($competency) {
+                return in_array($competency->getModality(), $doctor->getAddonCompetencies());
+            });
+
+            $doctorsWithOkCoefficient = array_filter($doctorsWithCompetency, function ($doctor) use ($day, $doctorsCountStudies, $competency) {
+                return $competency->getMaxCoefficientPerShift() >= $this->getCoefficientForDay($doctorsCountStudies[$doctor->getId()][$day]);
+            });
+        }
+
+        if (count($doctorsWithOkCoefficient) > 0) {
+            return $doctorsWithOkCoefficient[array_rand($doctorsWithOkCoefficient)];
         } else {
             return null;
         }
@@ -157,7 +207,7 @@ class AlgorithmWeekService
     {
         foreach ($this->modalities as $modality) {
             if (rand(0, 100) < 20) {
-                $doctor = $this->getRandomDoctorWithCompetency($modality->getName());
+                $doctor = $this->getRandomDoctorWhoCan($modality->getName());
                 if ($doctor) {
                     $individual[$modality->getName()][rand(0, 6)] = $doctor->getId();
                 }
