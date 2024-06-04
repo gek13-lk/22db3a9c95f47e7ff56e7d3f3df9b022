@@ -4,252 +4,165 @@ declare(strict_types=1);
 
 namespace App\Modules\Algorithm;
 
+use App\Entity\Competencies;
 use App\Entity\Doctor;
-use App\Entity\WeekStudies;
 use Doctrine\ORM\EntityManagerInterface;
 
 class AlgorithmWeekService
 {
-    private float $maxCoefficientPerShift = 100.0; // Максимальная норма коэффициента за смену
-    private int $populationSize = 100;
-    private float $mutationRate = 0.01;
-    private float $crossoverRate = 0.7;
-    private int $generations = 100;
-    private array $population = [];
-
-    /** @var Doctor[] */
     private array $doctors;
+    private array $modalities;
 
-    /**
-     * @var WeekStudies[]
-     */
-    private array $weeklyStudies;
-
-    public function __construct(private readonly EntityManagerInterface $entityManager) {}
-
-    private function initializeEnv(): void
+    public function __construct(private EntityManagerInterface $entityManager)
     {
-        $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
-        $this->weeklyStudies = $this->entityManager->getRepository(WeekStudies::class)->findAll();
+        $this->entityManager = $entityManager;
+        $this->doctors = $entityManager->getRepository(Doctor::class)->findAll();
+        $this->modalities = $entityManager->getRepository(Competencies::class)->findAll();
     }
 
-    public function run(array $weeklyStudies): void
+    // Основной метод для генерации расписания
+    public function run(): void
     {
-        set_time_limit(600);
-        ini_set('memory_limit', '1024M');
-        $this->initializeEnv();
-        $this->weeklyStudies = $this->generateWeeklyStudies($weeklyStudies);
-        $this->initializePopulation();
-dd($this->weeklyStudies);
-        for ($generation = 0; $generation < $this->generations; $generation++) {
-            $this->population = $this->evolve($this->population);
+        // Инициализация начальной популяции
+        $population = $this->initializePopulation();
+
+        // Цикл эволюции
+        for ($i = 0; $i < 100; $i++) {
+            $population = $this->evolvePopulation($population);
         }
 
-        $solution = $this->getBestSolution();
-
-        file_put_contents(
-            __DIR__.'/mocks/result.json',
-            json_encode($solution, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
-        );
+        dd($population[0]);
     }
 
-    private function generateWeeklyStudies(array $weeklyStudies): array
+    // Метод для инициализации начальной популяции
+    private function initializePopulation(): array
     {
-        $generatedStudies = [];
-        foreach ($weeklyStudies as $study) {
-            $count = $study->getCount();
-            for ($i = 0; $i < $count; $i++) {
-                $generatedStudies[] = $study;
+        $population = [];
+        for ($i = 0; $i < 50; $i++) {
+            $population[] = $this->createRandomSchedule();
+        }
+        return $population;
+    }
+
+    // Метод для создания случайного расписания
+    private function createRandomSchedule(): array
+    {
+        $schedule = [];
+        foreach ($this->modalities as $modality) {
+            $schedule[$modality->getName()] = [];
+            for ($j = 0; $j < 7; $j++) {
+                $doctor = $this->getRandomDoctorWithCompetency($modality->getName());
+                if ($doctor) {
+                    $schedule[$modality->getName()][] = $doctor->getId();
+                } else {
+                    // Если не найден врач с нужной компетенцией, назначаем null или можем обработать по-другому
+                    $schedule[$modality->getName()][] = null; // или $this->doctors[array_rand($this->doctors)]->getId();
+                }
             }
         }
-        shuffle($generatedStudies); // Перемешиваем исследования для случайного распределения
-        return $generatedStudies;
+        return $schedule;
     }
 
-    private function initializePopulation(): void
+    // Метод для получения случайного врача с нужной компетенцией
+    private function getRandomDoctorWithCompetency(string $modalityName): ?Doctor
     {
-        for ($i = 0; $i < $this->populationSize; $i++) {
-            $this->population[] = $this->createRandomIndividual();
+        $competentDoctors = array_filter($this->doctors, function ($doctor) use ($modalityName) {
+            return in_array($modalityName, $doctor->getCompetencies());
+        });
+
+        if (count($competentDoctors) > 0) {
+            return $competentDoctors[array_rand($competentDoctors)];
+        } else {
+            return null;
         }
     }
 
-    private function evolve(array $population): array
+    // Метод для эволюции популяции
+    private function evolvePopulation(array $population): array
     {
+        // Селекция (отбор)
+        usort($population, function ($a, $b) {
+            return $this->calculateFitness($a) <=> $this->calculateFitness($b);
+        });
+
         $newPopulation = [];
+        for ($i = 0; $i < count($population) / 2; $i++) {
+            $parent1 = $population[$i];
+            $parent2 = $population[$i + 1];
+            $newPopulation[] = $this->crossover($parent1, $parent2);
+        }
 
-        for ($i = 0; $i < $this->populationSize; $i++) {
-            $parent1 = $this->selectParent($population);
-            $parent2 = $this->selectParent($population);
-
-            $offspring = $this->crossover($parent1, $parent2);
-
-            $offspring = $this->mutate($offspring);
-
-            $newPopulation[] = $offspring;
+        // Мутация
+        foreach ($newPopulation as &$individual) {
+            if (rand(0, 100) < 10) {
+                $individual = $this->mutate($individual);
+            }
         }
 
         return $newPopulation;
     }
 
-    private function selectParent(array $population): array
+    // Метод для вычисления приспособленности (fitness function)
+    private function calculateFitness(array $schedule): int
     {
-        // Турнирный отбор
-        $tournamentSize = 3;
-        $best = null;
+        $fitness = 0;
 
-        for ($i = 0; $i < $tournamentSize; $i++) {
-            $individual = $population[array_rand($population)];
-            if ($best === null || $this->evaluateFitness($individual) > $this->evaluateFitness($best)) {
-                $best = $individual;
-            }
-        }
+        foreach ($this->modalities as $modality) {
+            $doctorCounts = array_count_values($schedule[$modality->getName()]);
 
-        return $best;
-    }
+            foreach ($doctorCounts as $doctorId => $count) {
+                $doctor = $this->entityManager->getRepository(Doctor::class)->find($doctorId);
 
-    private function crossover(array $parent1, array $parent2): array
-    {
-        if (rand(0, 100) / 100.0 < $this->crossoverRate) {
-            $crossoverPoint = rand(0, count($parent1) - 1);
-            $child = array_merge(array_slice($parent1, 0, $crossoverPoint), array_slice($parent2, $crossoverPoint));
-            return $child;
-        }
-
-        return rand(0, 1) ? $parent1 : $parent2;
-    }
-
-    private function mutate(array $individual): array
-    {
-        for ($i = 0; $i < count($individual); $i++) {
-            if (rand(0, 100) / 100.0 < $this->mutationRate) {
-                $individual[$i] = $this->createRandomGene();
-            }
-        }
-
-        return $individual;
-    }
-
-    private function createRandomIndividual(): array
-    {
-        $individual = [];
-
-        foreach ($this->weeklyStudies as $study) {
-            // Находим врачей, которые могут взяться за это исследование
-            $availableDoctors = array_filter($this->doctors, function ($doctor) use ($study, $individual) {
-                return $this->can($doctor, $study, $individual);
-            });
-
-            if (!empty($availableDoctors)) {
-                $selectedDoctor = $availableDoctors[array_rand($availableDoctors)];
-                $individual[] = ['study' => $study, 'doctor' => $selectedDoctor];
-            } else {
-                $individual[] = ['study' => $study, 'doctor' => null];
-            }
-        }
-
-        return $individual;
-    }
-
-    private function createRandomGene(): array
-    {
-        $study = $this->weeklyStudies[array_rand($this->weeklyStudies)];
-
-        $availableDoctors = array_filter($this->doctors, function ($doctor) use ($study) {
-            return $this->can($doctor, $study, []);
-        });
-
-        if (!empty($availableDoctors)) {
-            $selectedDoctor = $availableDoctors[array_rand($availableDoctors)];
-            return ['study' => $study, 'doctor' => $selectedDoctor];
-        } else {
-            return ['study' => $study, 'doctor' => null];
-        }
-    }
-
-    private function can(Doctor $doctor, array $study, array $individual): bool
-    {
-        // Проверка на компетенции врача
-        if (!$doctor->getCompetencies()->contains($study['competency'])) {
-            return false;
-        }
-
-        // Получаем уже назначенные исследования для данного врача на смену
-        $studiesDuringShift = $this->getStudiesDuringShift($doctor, $study, $individual);
-
-        // Проверка на пересечение исследований
-        foreach ($studiesDuringShift as $assignedStudy) {
-            if ($this->isOverlapping($assignedStudy, $study)) {
-                return false;
-            }
-        }
-
-        // Подсчет коэффициента нагрузки на врача
-        $totalCoefficient = array_reduce($studiesDuringShift, function ($carry, $assignedStudy) {
-            return $carry + $assignedStudy['competency']->getCoefficient();
-        }, 0);
-
-        // Проверка на превышение нормы нагрузки
-        if ($totalCoefficient + $study['competency']->getCoefficient() > $this->maxCoefficientPerShift) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private function getStudiesDuringShift(Doctor $doctor, array $study, array $individual): array
-    {
-        $shiftStudies = [];
-
-        foreach ($individual as $assignment) {
-            if ($assignment['doctor'] === $doctor) {
-                $assignedStudy = $assignment['study'];
-                $assignedStudyDate = $assignedStudy['date'];
-
-                // Предполагаем, что исследование назначено на смену, если его время начала совпадает с текущей сменой
-                if ($assignedStudyDate->format('Y-m-d') === $study['date']->format('Y-m-d')) {
-                    $shiftStudies[] = $assignedStudy;
+                if ($doctor && in_array($modality->getName(), $doctor->getCompetencies())) {
+                    // Проверка минимального и максимального количества исследований за смену
+                    if ($count >= $doctor->getMinStudiesPerShift() && $count <= $doctor->getMaxStudiesPerShift()) {
+                        $fitness += $count;
+                    } else {
+                        // Уменьшение приспособленности, если количество исследований выходит за пределы допустимого
+                        $fitness -= abs($count - $doctor->getMaxStudiesPerShift());
+                    }
                 }
             }
         }
 
-        return $shiftStudies;
-    }
-
-    private function isOverlapping(array $assignedStudy, array $newStudy): bool
-    {
-        $assignedStart = $assignedStudy['date'];
-        $assignedEnd = $assignedStudy['end_time'];
-        $newStart = $newStudy['date'];
-        $newEnd = $newStudy['end_time'];
-
-        return $assignedStart < $newEnd && $newStart < $assignedEnd;
-    }
-
-    private function evaluateFitness(array $individual): int
-    {
-        $fitness = 0;
-        foreach ($individual as $gene) {
-            if ($gene['doctor'] !== null) {
-                $fitness += 1;
+        // Проверка на месячные лимиты
+        foreach ($this->doctors as $doctor) {
+            $totalStudiesPerMonth = 0;
+            foreach ($this->modalities as $modality) {
+                $totalStudiesPerMonth += array_count_values($schedule[$modality->getName()])[$doctor->getId()] ?? 0;
+            }
+            if ($totalStudiesPerMonth < $doctor->getMinStudiesPerMonth() || $totalStudiesPerMonth > $doctor->getMaxStudiesPerMonth()) {
+                $fitness -= abs($totalStudiesPerMonth - $doctor->getMaxStudiesPerMonth());
             }
         }
 
         return $fitness;
     }
 
-    private function getBestSolution(): array
+    // Метод для скрещивания (crossover)
+    private function crossover(array $parent1, array $parent2): array
     {
-        $bestIndividual = null;
-        $bestFitness = 0;
+        $child = [];
+        foreach ($this->modalities as $modality) {
+            $child[$modality->getName()] = array_merge(
+                array_slice($parent1[$modality->getName()], 0, 3),
+                array_slice($parent2[$modality->getName()], 3)
+            );
+        }
+        return $child;
+    }
 
-        foreach ($this->population as $individual) {
-            $fitness = $this->evaluateFitness($individual);
-            if ($fitness > $bestFitness) {
-                $bestFitness = $fitness;
-                $bestIndividual = $individual;
+    // Метод для мутации (mutation)
+    private function mutate(array $individual): array
+    {
+        foreach ($this->modalities as $modality) {
+            if (rand(0, 100) < 20) {
+                $doctor = $this->getRandomDoctorWithCompetency($modality->getName());
+                if ($doctor) {
+                    $individual[$modality->getName()][rand(0, 6)] = $doctor->getId();
+                }
             }
         }
-
-        return $bestIndividual;
+        return $individual;
     }
 }
