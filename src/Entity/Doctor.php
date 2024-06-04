@@ -26,8 +26,8 @@ class Doctor
     #[ORM\Column]
     private array $addonCompetencies = [];
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Основная компетенция"])]
-    private string $competency;
+    #[ORM\Column]
+    private array $mainCompetencies = [];
 
     /**
      * Норма выхода врача в смену.
@@ -135,14 +135,14 @@ class Doctor
         return $this;
     }
 
-    public function getCompetency(): string
+    public function getCompetency(): array
     {
-        return $this->competency;
+        return $this->mainCompetencies;
     }
 
-    public function setCompetency(string $competency): Doctor
+    public function setCompetency(array $competency): Doctor
     {
-        $this->competency = $competency;
+        $this->mainCompetencies = $competency;
         return $this;
     }
 }
