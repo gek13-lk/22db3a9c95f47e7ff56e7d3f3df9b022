@@ -18,53 +18,30 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class SecurityController extends AbstractController {
     #[Route(path: '/login', name: 'app_login')]
-    public function login(Request $request, AuthenticationUtils $authenticationUtils, CsrfTokenManagerInterface $csrfTokenManager): Response {
-        $form = $this->createForm(LoginFormType::class, [
-            'username' => $authenticationUtils->getLastUsername(),
-            'csrf_token' => $csrfTokenManager->getToken('authenticate')->getValue(),
-        ]);
-        if ($error = $authenticationUtils->getLastAuthenticationError()) {
-            $form->addError(new FormError($error->getMessage()));
-        }
+    public function login(AuthenticationUtils $authenticationUtils): Response {
+        $error = $authenticationUtils->getLastAuthenticationError();
+        $lastUsername = $authenticationUtils->getLastUsername();
 
-        $form->handleRequest($request);
-
-        return $this->render('security/login.html.twig', [
-            'loginForm' => $form,
+        return $this->render('@EasyAdmin/page/login.html.twig', [
+            // parameters usually defined in Symfony login forms
+            'error' => $error,
+            'last_username' => $lastUsername,
+            'target_path' => $this->generateUrl('dashboard'),
+            'username_label' => 'Имя пользователя',
+            'password_label' => 'Пароль',
+            'sign_in_label' => 'Войти',
+            'username_parameter' => 'username',
+            'password_parameter' => 'password',
+            'remember_me_enabled' => true,
+            'remember_me_parameter' => 'remember_me',
+            'remember_me_checked' => false,
+            'remember_me_label' => 'Запомнить меня',
+            'csrf_token_intention' => 'authenticate',
         ]);
     }
 
     #[Route(path: '/logout', name: 'app_logout')]
     public function logout(): void {
         throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
-    }
-
-    #[Route('/register', name: 'app_register')]
-    public function register(Request $request, UserPasswordHasherInterface $userPasswordHasher, Security $security, EntityManagerInterface $entityManager): Response
-    {
-        $user = new User();
-        $form = $this->createForm(RegistrationFormType::class, $user);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            // encode the plain password
-            $user->setPassword(
-                $userPasswordHasher->hashPassword(
-                    $user,
-                    $form->get('plainPassword')->getData()
-                )
-            );
-
-            $entityManager->persist($user);
-            $entityManager->flush();
-
-            // do anything else you need here, like send an email
-
-            return $security->login($user, 'form_login', 'main');
-        }
-
-        return $this->render('security/register.html.twig', [
-            'registrationForm' => $form,
-        ]);
     }
 }
