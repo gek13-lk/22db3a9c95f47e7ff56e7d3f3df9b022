@@ -107,7 +107,7 @@ class AlgorithmWeekService
         });
 
         $doctorsWithOkCoefficient = array_filter($doctorsWithCompetency, function ($doctor) use ($day, $doctorsCountStudies, $competency) {
-            return $competency->getMaxCoefficientPerShift() >= $this->getCoefficientForDay($doctorsCountStudies[$doctor->getId()][$day]);
+            return $competency->getMaxCoefficientPerShift() >= ($this->getCoefficientForDay($doctorsCountStudies[$doctor->getId()][$day])+$competency->getCoefficient());
         });
 
         if (empty($doctorsWithOkCoefficient)) {
@@ -116,7 +116,7 @@ class AlgorithmWeekService
             });
 
             $doctorsWithOkCoefficient = array_filter($doctorsWithCompetency, function ($doctor) use ($day, $doctorsCountStudies, $competency) {
-                return $competency->getMaxCoefficientPerShift() >= $this->getCoefficientForDay($doctorsCountStudies[$doctor->getId()][$day]);
+                return $competency->getMaxCoefficientPerShift() >= ($this->getCoefficientForDay($doctorsCountStudies[$doctor->getId()][$day])+$competency->getCoefficient());
             });
         }
 
@@ -155,6 +155,7 @@ class AlgorithmWeekService
     // Метод для вычисления приспособленности (fitness function)
     private function calculateFitness(array $schedule): int
     {
+        //TODO как улучшить результат эвристикой
         $fitness = 0;
 
         foreach ($this->modalities as $modality) {
