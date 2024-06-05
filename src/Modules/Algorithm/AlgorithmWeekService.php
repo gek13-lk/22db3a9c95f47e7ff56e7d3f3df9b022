@@ -79,7 +79,7 @@ class AlgorithmWeekService
                         $doctorsCountStudies[$doctor->getId()][$day][$modalityCompetency->getModality()]++;
                     } else {
                         // Если не найден врач с нужной компетенцией, назначаем null или можем обработать по-другому
-                        $schedule[$modalityCompetency->getModality()][$day]['empty']++; // или $this->doctors[array_rand($this->doctors)]->getId();
+                        //$schedule[$modalityCompetency->getModality()][$day]['empty']++; // или $this->doctors[array_rand($this->doctors)]->getId();
                     }
                 }
             }

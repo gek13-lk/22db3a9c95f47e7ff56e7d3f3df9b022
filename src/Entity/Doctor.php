@@ -40,7 +40,7 @@ class Doctor
 
     public function __toString()
     {
-        return $this->getFio();
+        return $this->getFio() ?? 'Doctor#'.$this->id;
     }
 
     public function getSurname(): ?string
@@ -113,12 +113,12 @@ class Doctor
         $this->workSchedule = $workSchedule;
     }
 
-    public function getStavka(): ?int
+    public function getStavka(): ?float
     {
         return $this->stavka;
     }
 
-    public function setStavka(?int $stavka): Doctor
+    public function setStavka(?float $stavka): Doctor
     {
         $this->stavka = $stavka;
         return $this;

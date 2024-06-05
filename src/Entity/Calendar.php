@@ -32,7 +32,7 @@ class Calendar
     #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Порядковый номер месяца в текущем году"])]
     private ?int $monthOfYear = null;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Название месяца"])]
+    #[ORM\Column(type: 'string', length: 10, nullable: true, options: ["comment" => "Название месяца"])]
     private ?string $monthName = null;
 
     #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Год"])]
