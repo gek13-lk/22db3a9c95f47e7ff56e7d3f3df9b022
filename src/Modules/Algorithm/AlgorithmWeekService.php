@@ -46,7 +46,7 @@ class AlgorithmWeekService
         $population = $this->initializePopulation();
 
         // Цикл эволюции
-        for ($i = 0; $i < self::EVOLUTION_COUNT; $i++) {
+        for ($i = 0; $i < self::EVOLUTION_COUNT && count($population) > 1; $i++) {
             $population = $this->evolvePopulation($population);
         }
 
@@ -81,7 +81,7 @@ class AlgorithmWeekService
                 // то мы должны попытаться раскидать это на врачей, которым уже назначены другие исследования в этот день, чтобы не брать нового врача
                 for ($i = 0; $i <= $cyclePerDayCount; $i++) {
                     //TODO: в первую очередь выбираем тех врачей, у кого цикл работы будет продолжен. Иначе берем нового
-                    $doctor = $this->getRandomDoctorWhoCan($modalityCompetency, $schedule, $day);
+                    $doctor = $this->getRandomDoctorWhoCan($modalityCompetency->getModality(), $schedule, $day);
 
                     if (!$doctor) {
                         $schedule[$modalityCompetency->getModality()][$day]['empty'] = $ostCount;
@@ -122,17 +122,17 @@ class AlgorithmWeekService
     }
 
     // Метод для получения случайного врача с нужной компетенцией
-    private function getRandomDoctorWhoCan(Competencies $competency, array $doctorsCountStudies, int $day): ?Doctor
+    private function getRandomDoctorWhoCan(string $modality, array $doctorsCountStudies, int $day): ?Doctor
     {
-        $doctorsAlreadyIn = array_keys($doctorsCountStudies[$competency->getModality()][$day]);
+        $doctorsAlreadyIn = array_keys($doctorsCountStudies[$modality][$day]);
 
-        $doctorsWithCompetency = array_filter($this->doctors, function ($doctor) use ($competency, $doctorsAlreadyIn) {
-            return in_array($competency->getModality(), $doctor->getCompetency()) && !in_array($doctor->getId(), $doctorsAlreadyIn);
+        $doctorsWithCompetency = array_filter($this->doctors, function ($doctor) use ($modality, $doctorsAlreadyIn) {
+            return in_array($modality, $doctor->getCompetency()) && !in_array($doctor->getId(), $doctorsAlreadyIn);
         });
 
         if (empty($doctorsWithOkCoefficient)) {
-            $doctorsWithCompetency = array_filter($this->doctors, function ($doctor) use ($competency, $doctorsAlreadyIn) {
-                return in_array($competency->getModality(), $doctor->getAddonCompetencies()) && !in_array($doctor->getId(), $doctorsAlreadyIn);
+            $doctorsWithCompetency = array_filter($this->doctors, function ($doctor) use ($modality, $doctorsAlreadyIn) {
+                return in_array($modality, $doctor->getAddonCompetencies()) && !in_array($doctor->getId(), $doctorsAlreadyIn);
             });
         }
 
@@ -154,18 +154,15 @@ class AlgorithmWeekService
         });
 
         $newPopulation = [];
-        for ($i = 0; $i < count($population) / 2; $i++) {
+        for ($i = 0; $i < count($population) / 2 && count($population) > 1; $i++) {
             $parent1 = $population[$i];
             $parent2 = $population[$i + 1];
             $newPopulation[] = $this->crossover($parent1, $parent2);
         }
-        dd($newPopulation);
 
         // Мутация
         foreach ($newPopulation as &$individual) {
-            if (rand(0, 100) < 10) {
-                $individual = $this->mutate($individual);
-            }
+            $individual = $this->mutate($individual);
         }
 
         return $newPopulation;
@@ -242,14 +239,49 @@ class AlgorithmWeekService
     // Метод для мутации (mutation)
     private function mutate(array $individual): array
     {
+// TODO: 1 варинат (как было)
+
+//        foreach ($this->modalities as $modality) {
+//            if (rand(0, 100) < 20) {
+//                $doctor = $this->getRandomDoctorWhoCan($modality->getName());
+//                if ($doctor) {
+//                    $individual[$modality->getName()][rand(0, 6)] = $doctor->getId();
+//                }
+//            }
+//        }
+//        return $individual;
+
+// TODO: поправил первый вариант (чтобы работало)
+
+//        foreach ($this->modalities as $modality) {
+//            if (rand(0, 100) < 20) {
+//                $day = rand(0, 6);
+//                $doctor = $this->getRandomDoctorWhoCan($modality->getModality(), $individual, $day);
+//                if ($doctor) {
+//                    $doctorsId = array_slice($individual[$modality->getModality()][$day], 2);
+//                    if ($doctorsId) {
+//                        $randDoctorId = array_rand($doctorsId);
+//                        $individual[$modality->getModality()][$day][$randDoctorId] = $doctor->getId();
+//                    }
+//                }
+//            }
+//        }
+//        return $individual;
+
+// TODO: 2 варинат (сделал мутацию сто процентой по каждой модальности + мутация применяется только если фитнес уменьшилось)
+
+        $oldIndividual = $individual;
         foreach ($this->modalities as $modality) {
-            if (rand(0, 100) < 20) {
-                $doctor = $this->getRandomDoctorWhoCan($modality->getName());
+                $day = rand(0, 6);
+                $doctor = $this->getRandomDoctorWhoCan($modality->getModality(), $individual, $day);
                 if ($doctor) {
-                    $individual[$modality->getName()][rand(0, 6)] = $doctor->getId();
+                    $doctorsId = array_slice($individual[$modality->getModality()][$day], 2);
+                    if ($doctorsId) {
+                        $randDoctorId = array_rand($doctorsId);
+                        $individual[$modality->getModality()][$day][$randDoctorId] = $doctor->getId();
+                    }
                 }
-            }
         }
-        return $individual;
+        return $this->calculateFitness($individual) < $this->calculateFitness($oldIndividual) ? $individual : $oldIndividual;
     }
 }
