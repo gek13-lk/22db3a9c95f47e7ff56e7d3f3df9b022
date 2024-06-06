@@ -6,12 +6,14 @@ namespace App\Modules\Algorithm;
 
 use App\Entity\Competencies;
 use App\Entity\Doctor;
-use App\Entity\Studies;
 use App\Entity\WeekStudies;
 use Doctrine\ORM\EntityManagerInterface;
 
 class AlgorithmWeekService
 {
+    private const EVOLUTION_COUNT = 20;
+    private const POPULATION_COUNT = 10;
+
     /** @var Doctor[] */
     private array $doctors;
 
@@ -38,11 +40,13 @@ class AlgorithmWeekService
     // Основной метод для генерации расписания
     public function run(): void
     {
+        set_time_limit(600);
+        ini_set('memory_limit', '1024M');
         // Инициализация начальной популяции
         $population = $this->initializePopulation();
 
         // Цикл эволюции
-        for ($i = 0; $i < 100; $i++) {
+        for ($i = 0; $i < self::EVOLUTION_COUNT; $i++) {
             $population = $this->evolvePopulation($population);
         }
 
@@ -53,7 +57,7 @@ class AlgorithmWeekService
     private function initializePopulation(): array
     {
         $population = [];
-        for ($i = 0; $i < 50; $i++) {
+        for ($i = 0; $i < self::POPULATION_COUNT; $i++) {
             $population[] = $this->createRandomSchedule();
         }
 
@@ -66,25 +70,43 @@ class AlgorithmWeekService
         $schedule = [];
         foreach ($this->weekStudies as $modalityWeekCount) {
             $modalityCompetency = $modalityWeekCount->getCompetency();
-            $modalityDayCount = $modalityWeekCount->getCount() / 7;
+            $modalityDayCount = (int) ($modalityWeekCount->getCount() / 7);
+            $cyclePerDayCount = round($modalityDayCount / $modalityCompetency->getMinimalCountPerShift());
             for ($day = 1; $day <= 7; $day++) {
-                $doctorsCountStudies = [];
-                //TODO: Подумать как облегчить
-                for ($studyNumber = 1; $studyNumber <= $modalityDayCount; $studyNumber++) {
-                    $schedule[$modalityCompetency->getModality()][$day] = [];
-                    $doctor = $this->getRandomDoctorWhoCan($modalityCompetency, $doctorsCountStudies, $day);
+                $schedule[$modalityCompetency->getModality()][$day]['empty'] = 0;
+                $schedule[$modalityCompetency->getModality()][$day]['ost'] = 0;
+                $ostCount = $modalityDayCount;
 
-                    if ($doctor) {
-                        $schedule[$modalityCompetency->getModality()][$day][$doctor->getId()]++;
-                        $doctorsCountStudies[$doctor->getId()][$day][$modalityCompetency->getModality()]++;
+                //TODO: Если у нас количество изначально меньше минимальной нормы,
+                // то мы должны попытаться раскидать это на врачей, которым уже назначены другие исследования в этот день, чтобы не брать нового врача
+                for ($i = 0; $i <= $cyclePerDayCount; $i++) {
+                    //TODO: в первую очередь выбираем тех врачей, у кого цикл работы будет продолжен. Иначе берем нового
+                    $doctor = $this->getRandomDoctorWhoCan($modalityCompetency, $schedule, $day);
+
+                    if (!$doctor) {
+                        $schedule[$modalityCompetency->getModality()][$day]['empty'] = $ostCount;
+                        continue 2;
+                    } elseif ($ostCount >= $modalityCompetency->getMinimalCountPerShift() && $ostCount <= $modalityCompetency->getMaxCountPerShift()) {
+                        $schedule[$modalityCompetency->getModality()][$day][$doctor->getId()] = $ostCount;
+                        continue 2;
+                    } elseif ($ostCount >= $modalityCompetency->getMinimalCountPerShift()) {
+                        $countPerShift = rand(
+                            (int) round($modalityCompetency->getMinimalCountPerShift()),
+                            (int) floor($modalityCompetency->getMaxCountPerShift())
+                        );
+                        $schedule[$modalityCompetency->getModality()][$day][$doctor->getId()] = $countPerShift;
+                        $ostCount = $ostCount - $countPerShift;
                     } else {
-                        // Если не найден врач с нужной компетенцией, назначаем null или можем обработать по-другому
-                        //$schedule[$modalityCompetency->getModality()][$day]['empty']++; // или $this->doctors[array_rand($this->doctors)]->getId();
+                        //TODO: пытаемся распихать оставшиеся по уже назначенным врачам, чтобы не брать нового врача
+                        $schedule[$modalityCompetency->getModality()][$day]['ost'] = $ostCount;
+                        continue 2;
                     }
                 }
+
+                //TODO: После составления расписания на день, пытаемся уравновесить нагрузку по врачам
             }
         }
-
+dd($schedule);
         return $schedule;
     }
 
@@ -102,26 +124,22 @@ class AlgorithmWeekService
     // Метод для получения случайного врача с нужной компетенцией
     private function getRandomDoctorWhoCan(Competencies $competency, array $doctorsCountStudies, int $day): ?Doctor
     {
-        $doctorsWithCompetency = array_filter($this->doctors, function ($doctor) use ($competency) {
-            return in_array($competency->getModality(), $doctor->getCompetency());
-        });
+        $doctorsAlreadyIn = array_keys($doctorsCountStudies[$competency->getModality()][$day]);
 
-        $doctorsWithOkCoefficient = array_filter($doctorsWithCompetency, function ($doctor) use ($day, $doctorsCountStudies, $competency) {
-            return $competency->getMaxCoefficientPerShift() >= $this->getCoefficientForDay($doctorsCountStudies[$doctor->getId()][$day]);
+        $doctorsWithCompetency = array_filter($this->doctors, function ($doctor) use ($competency, $doctorsAlreadyIn) {
+            return in_array($competency->getModality(), $doctor->getCompetency()) && !in_array($doctor->getId(), $doctorsAlreadyIn);
         });
 
         if (empty($doctorsWithOkCoefficient)) {
-            $doctorsWithCompetency = array_filter($this->doctors, function ($doctor) use ($competency) {
-                return in_array($competency->getModality(), $doctor->getAddonCompetencies());
-            });
-
-            $doctorsWithOkCoefficient = array_filter($doctorsWithCompetency, function ($doctor) use ($day, $doctorsCountStudies, $competency) {
-                return $competency->getMaxCoefficientPerShift() >= $this->getCoefficientForDay($doctorsCountStudies[$doctor->getId()][$day]);
+            $doctorsWithCompetency = array_filter($this->doctors, function ($doctor) use ($competency, $doctorsAlreadyIn) {
+                return in_array($competency->getModality(), $doctor->getAddonCompetencies()) && !in_array($doctor->getId(), $doctorsAlreadyIn);
             });
         }
 
-        if (count($doctorsWithOkCoefficient) > 0) {
-            return $doctorsWithOkCoefficient[array_rand($doctorsWithOkCoefficient)];
+        //TODO: Проверка на выходной
+        //TODO: Проверка на месячную норму
+        if (count($doctorsWithCompetency) > 0) {
+            return $doctorsWithCompetency[array_rand($doctorsWithCompetency)];
         } else {
             return null;
         }
@@ -152,39 +170,13 @@ class AlgorithmWeekService
         return $newPopulation;
     }
 
-    // Метод для вычисления приспособленности (fitness function)
+    // Метод оценки расписания
     private function calculateFitness(array $schedule): int
     {
+        //TODO: Количество неназначенных исследований
+        //TODO: Количество врачей, у которых переработка? Или выход в доп смену
+        //TODO: Сравнение "баланса" нагрузки на врачей
         $fitness = 0;
-
-        foreach ($this->modalities as $modality) {
-            $doctorCounts = array_count_values($schedule[$modality->getName()]);
-
-            foreach ($doctorCounts as $doctorId => $count) {
-                $doctor = $this->entityManager->getRepository(Doctor::class)->find($doctorId);
-
-                if ($doctor && in_array($modality->getName(), $doctor->getCompetencies())) {
-                    // Проверка минимального и максимального количества исследований за смену
-                    if ($count >= $doctor->getMinStudiesPerShift() && $count <= $doctor->getMaxStudiesPerShift()) {
-                        $fitness += $count;
-                    } else {
-                        // Уменьшение приспособленности, если количество исследований выходит за пределы допустимого
-                        $fitness -= abs($count - $doctor->getMaxStudiesPerShift());
-                    }
-                }
-            }
-        }
-
-        // Проверка на месячные лимиты
-        foreach ($this->doctors as $doctor) {
-            $totalStudiesPerMonth = 0;
-            foreach ($this->modalities as $modality) {
-                $totalStudiesPerMonth += array_count_values($schedule[$modality->getName()])[$doctor->getId()] ?? 0;
-            }
-            if ($totalStudiesPerMonth < $doctor->getMinStudiesPerMonth() || $totalStudiesPerMonth > $doctor->getMaxStudiesPerMonth()) {
-                $fitness -= abs($totalStudiesPerMonth - $doctor->getMaxStudiesPerMonth());
-            }
-        }
 
         return $fitness;
     }

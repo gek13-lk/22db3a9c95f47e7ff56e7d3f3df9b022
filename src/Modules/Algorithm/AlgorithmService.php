@@ -143,6 +143,8 @@ class AlgorithmService
     {
         $study = $this->studies[array_rand($this->studies)];
 
+        //TODO выбрать иследование без врача
+
         $availableDoctors = array_filter($study->getCompetency()->getDoctors()->toArray(), function ($doctor) use ($study, $individual) {
             return $this->can($doctor, $study, $individual);
         });
@@ -269,6 +271,7 @@ class AlgorithmService
     private function evaluateFitness(array $individual): int
     {
         $fitness = 0;
+        // Выбирается наилучшее расписание где меньше всего пропусков исследований/где больше назначеных врачей
         foreach ($individual as $gene) {
             if ($gene['doctor'] !== null) {
                 $fitness += 1; // Увеличиваем приспособленность за каждое корректное назначение
