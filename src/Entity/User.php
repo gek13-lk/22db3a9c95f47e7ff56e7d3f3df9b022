@@ -109,14 +109,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @return list<string>
      */
-    public function getAllPrivileges(): array
-    {
-        return array_unique(array_merge($this->privileges, ...$this->roles->map(fn(Role $role) => $role->getPrivileges())->toArray()));
-    }
-
-    /**
-     * @return list<string>
-     */
     public function getPrivileges(): array
     {
         return array_unique($this->privileges);

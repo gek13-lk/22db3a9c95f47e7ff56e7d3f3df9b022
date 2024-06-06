@@ -2,18 +2,18 @@
 
 namespace App\Controller\Crud;
 
+use App\Entity\Privilege;
 use App\Entity\Role;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
-use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\TextEditorField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Validator\Constraints\Choice;
 
 final class UserCrudController extends AbstractCrudController {
 
@@ -22,6 +22,28 @@ final class UserCrudController extends AbstractCrudController {
     }
 
     public function __construct(private UserPasswordHasherInterface $hasher) {
+    }
+
+    public function configureCrud(Crud $crud): Crud
+    {
+        return $crud
+            ->setEntityLabelInPlural('Пользователи')
+            ->setEntityLabelInSingular('Пользователь')
+            ->setPageTitle(Crud::PAGE_INDEX, 'Список пользователей')
+            ->setPageTitle(Crud::PAGE_NEW, 'Добавление пользователя')
+            ->setPageTitle(Crud::PAGE_EDIT, 'Редактирование пользователя')
+            ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр пользователя')
+            ;
+    }
+
+    public function configureActions(Actions $actions): Actions {
+        return $actions
+            ->setPermission(Action::NEW, 'ROLE_ADMIN')
+            ->update(Crud::PAGE_INDEX, Action::NEW, fn(Action $action) => $action->setLabel('Добавить пользователя'))
+            ->setPermission(Action::EDIT, 'ROLE_ADMIN')
+            ->setPermission(Action::DELETE, 'ROLE_ADMIN')
+            ->setPermission(Action::BATCH_DELETE, 'ROLE_ADMIN')
+            ->setPermission(Action::DETAIL, 'ROLE_ADMIN');
     }
 
     public function configureFields(string $pageName): iterable {
@@ -48,9 +70,25 @@ final class UserCrudController extends AbstractCrudController {
 
         yield ChoiceField::new('roles')
             ->setLabel('Роли')
+            ->setRequired(false)
             ->setChoices($roles ?? [])
             ->allowMultipleChoices()
-            ->autocomplete();
+            ->autocomplete()
+            ->renderAsBadges()
+            ->setSortable(false);
+
+        foreach ($this->getEntityManager()->getRepository(Privilege::class)->findAll() as $privilege) {
+            $privileges[$privilege->getName()] = $privilege->getCode();
+        }
+
+        yield ChoiceField::new('privileges')
+            ->setLabel('Привилегии')
+            ->setRequired(false)
+            ->setChoices($privileges ?? [])
+            ->allowMultipleChoices()
+            ->autocomplete()
+            ->renderAsBadges()
+            ->setSortable(false);
     }
 
     /**
