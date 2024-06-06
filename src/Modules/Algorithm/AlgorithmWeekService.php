@@ -106,7 +106,7 @@ class AlgorithmWeekService
                 //TODO: После составления расписания на день, пытаемся уравновесить нагрузку по врачам
             }
         }
-dd($schedule);
+
         return $schedule;
     }
 
@@ -159,6 +159,7 @@ dd($schedule);
             $parent2 = $population[$i + 1];
             $newPopulation[] = $this->crossover($parent1, $parent2);
         }
+        dd($newPopulation);
 
         // Мутация
         foreach ($newPopulation as &$individual) {
@@ -184,14 +185,58 @@ dd($schedule);
     // Метод для скрещивания (crossover)
     private function crossover(array $parent1, array $parent2): array
     {
-        $child = [];
+// TODO 1 вариант скрещивания (просто соединение двух массивов по заданому срезу)
+
+//        $child = [];
+//        foreach ($this->modalities as $modality) {
+//            $child[$modality->getModality()] = array_merge(
+//                array_slice($parent1[$modality->getModality()], 0, 3),
+//                array_slice($parent2[$modality->getModality()], 3)
+//            );
+//        }
+//        return $child;
+
+
+// TODO 2 вариант скрещивания (рандомный срез + инверсионное скрещивание + выбор лучшего результата с помощью фитнес функции)
+
+        $child1 = [];
+        $child2 = [];
         foreach ($this->modalities as $modality) {
-            $child[$modality->getName()] = array_merge(
-                array_slice($parent1[$modality->getName()], 0, 3),
-                array_slice($parent2[$modality->getName()], 3)
+            $cutPoint = rand(0, count($parent1[$modality->getModality()]) - 1);
+            $child1[$modality->getModality()] = array_merge(
+                array_slice($parent1[$modality->getModality()], 0, $cutPoint),
+                array_slice($parent2[$modality->getModality()], $cutPoint)
+            );
+            $child2[$modality->getModality()] = array_merge(
+                array_slice($parent2[$modality->getModality()], 0, $cutPoint),
+                array_slice($parent1[$modality->getModality()], $cutPoint)
             );
         }
-        return $child;
+        return $this->calculateFitness($child1) < $this->calculateFitness($child2) ? $child1 : $child2;
+
+// TODO 3 вариант скрещивания самый эффективный (предыдущий алгоритмы только в цикле с сравнением с худшим родителем)
+
+//        do {
+//            $child1 = [];
+//            $child2 = [];
+//            foreach ($this->modalities as $modality) {
+//                $cutPoint = rand(0, count($parent1[$modality->getModality()]) - 1);
+//                $child1[$modality->getModality()] = array_merge(
+//                    array_slice($parent1[$modality->getModality()], 0, $cutPoint),
+//                    array_slice($parent2[$modality->getModality()], $cutPoint)
+//                );
+//                $child2[$modality->getModality()] = array_merge(
+//                    array_slice($parent2[$modality->getModality()], 0, $cutPoint),
+//                    array_slice($parent1[$modality->getModality()], $cutPoint)
+//                );
+//            }
+//
+//            $parentFitness = min($this->calculateFitness($parent1), $this->calculateFitness($parent2));
+//            $child1Fitness = $this->calculateFitness($child1);
+//            $child2Fitness = $this->calculateFitness($child2);
+//        } while ($child1Fitness >= $parentFitness && $child2Fitness >= $parentFitness);
+//
+//        return $child1Fitness < $child2Fitness ? $child1 : $child2;
     }
 
     // Метод для мутации (mutation)
