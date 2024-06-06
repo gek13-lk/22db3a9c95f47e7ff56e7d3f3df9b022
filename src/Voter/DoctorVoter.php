@@ -17,7 +17,7 @@ class DoctorVoter extends AbstractVoter {
             self::LIST => 'Просмотр списка врачей',
             self::SHOW => 'Просмотр врача',
             self::ADD => 'Добавление врача',
-            self::EDIT => 'Изменение врача',
+            self::EDIT => 'Редактирование врача',
             self::REMOVE => 'Удаление врача',
             default => $code,
         };
