@@ -32,4 +32,5 @@ RUN apk add --no-cache linux-headers \
 
 WORKDIR /app
 
-RUN chown -R www-data:www-data /app
+RUN set -eux; \
+    mkdir -p /app/var/cache /app/var/log /app/var/session

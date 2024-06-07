@@ -40,7 +40,7 @@ class Doctor
 
     public function __toString()
     {
-        return $this->getFio();
+        return $this->getFio() ?? 'Doctor#'.$this->id;
     }
 
     public function getSurname(): ?string

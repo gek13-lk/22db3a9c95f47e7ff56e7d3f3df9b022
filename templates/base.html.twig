@@ -1,27 +1,9 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Welcome!{% endblock %}</title>
-    <link rel="stylesheet" href="{{ asset('dist/bootstrap-5.3.3-dist/css/bootstrap.min.css') }}" />
-    <link rel="stylesheet" href="{{ asset('dist/fontawesome-pro-6.5.2-web/css/all.min.css')}}"/>
-    {% block stylesheets %}
-        <link rel="stylesheet" href="{{ asset('css/sidebar.css') }}" />
-    {% endblock %}
-</head>
-<body>
-{% block body %}
-    <main class="d-flex flex-nowrap">
-        {% block bodycontent %}
-        {% endblock %}
-    </main>
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block page_title %}
+    {{ title }}
 {% endblock %}
 
-<script src="{{ asset('dist/bootstrap-5.3.3-dist/js/bootstrap.bundle.min.js') }}"></script>
-<script src="{{ asset('dist/fontawesome-pro-6.5.2-web/js/all.min.js')}}"></script>
+{% block main %}
 
-{% block javascripts %}
 {% endblock %}
-</body>
-</html>
