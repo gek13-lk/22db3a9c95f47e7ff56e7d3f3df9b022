@@ -103,7 +103,7 @@ class Doctor
         return $this->id;
     }
 
-    public function getWorkSchedule(): DoctorWorkSchedule
+    public function getWorkSchedule(): ?DoctorWorkSchedule
     {
         return $this->workSchedule;
     }

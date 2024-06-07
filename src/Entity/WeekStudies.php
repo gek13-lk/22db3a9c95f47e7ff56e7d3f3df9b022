@@ -26,6 +26,9 @@ class WeekStudies
     #[ORM\Column(type: 'integer')]
     private int $count;
 
+    #[ORM\Column(type: 'date', nullable: true)]
+    private \DateTime $startOfWeek;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -72,6 +75,17 @@ class WeekStudies
     public function setCount(int $count): WeekStudies
     {
         $this->count = $count;
+        return $this;
+    }
+
+    public function getStartOfWeek(): \DateTime
+    {
+        return $this->startOfWeek;
+    }
+
+    public function setStartOfWeek(\DateTime $startOfWeek): WeekStudies
+    {
+        $this->startOfWeek = $startOfWeek;
         return $this;
     }
 }
