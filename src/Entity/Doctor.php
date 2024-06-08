@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\DoctorRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: DoctorRepository::class)]
 class Doctor
 {
     #[ORM\Id]
@@ -103,7 +104,7 @@ class Doctor
         return $this->id;
     }
 
-    public function getWorkSchedule(): DoctorWorkSchedule
+    public function getWorkSchedule(): ?DoctorWorkSchedule
     {
         return $this->workSchedule;
     }
