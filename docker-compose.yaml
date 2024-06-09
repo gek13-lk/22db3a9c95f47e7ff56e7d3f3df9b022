@@ -10,6 +10,8 @@ services:
       XDEBUG_TRIGGER: 'yes'
     volumes:
       - ./:/app:cached
+    depends_on:
+      - rabbitmq
   nginx:
     image: nginx:1.26-alpine
     volumes:
@@ -19,6 +21,19 @@ services:
       - '80:80'
     depends_on:
       - app
+
+  django:
+    build:
+      context: ./docker/django
+    command: >
+      /bin/sh -c "
+      python manage.py run_worker
+      "
+    volumes:
+      - ./docker/django/:/usr/src/app/
+    depends_on:
+      - rabbitmq
+
   db:
     image: postgres:16-alpine
     ports:
@@ -30,6 +45,15 @@ services:
       - PGTZ=Europe/Moscow
     volumes:
       - db-data:/var/lib/postgresql/data
+  rabbitmq:
+    restart: always
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq/
 
 volumes:
   db-data:
+  rabbitmq-data:
