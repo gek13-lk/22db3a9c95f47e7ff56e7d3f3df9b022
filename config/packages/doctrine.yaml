@@ -17,6 +17,9 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Entity'
                 prefix: 'App\Entity'
                 alias: App
+        dql:
+            string_functions:
+                JSONB_EXISTS: App\Doctrine\JsonbExists
         controller_resolver:
             auto_mapping: true
         dql:
