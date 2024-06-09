@@ -24,10 +24,10 @@ class Doctor
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Отчество"])]
     private ?string $middlename = null;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'json', options: ['jsonb' => true])]
     private array $addonCompetencies = [];
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'json', options: ['jsonb' => true])]
     private array $mainCompetencies = [];
 
     /**
