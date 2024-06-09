@@ -1,0 +1,3 @@
+Используй `python manage.py inspectdb` для обновления файла  `./myapp/models.py`
+
+Обработка сообщений и перекладка в очередь происходит в файле run_worker.py
