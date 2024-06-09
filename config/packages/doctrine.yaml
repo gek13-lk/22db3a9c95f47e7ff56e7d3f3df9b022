@@ -22,6 +22,14 @@ doctrine:
                 JSONB_EXISTS: App\Doctrine\JsonbExists
         controller_resolver:
             auto_mapping: true
+        dql:
+            string_functions:
+                JSON_EXTRACT_PATH: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonExtractPath
+                JSONB_CONTAINS: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonbContains # @>
+                JSONB_IS_CONTAINED: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonbIsContained # <@
+                CAST: App\Doctrine\Oro\ORM\AST\Functions\Cast
+                CONCAT_WS: App\Doctrine\Oro\ORM\AST\Functions\ConcatWs
+                DATE_FORMAT: App\Doctrine\Oro\ORM\AST\Functions\DateFormat
 
 when@test:
     doctrine:
