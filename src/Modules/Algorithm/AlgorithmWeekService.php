@@ -28,6 +28,7 @@ class AlgorithmWeekService
     private array $modalitiesWithCoefficient;
     private array $doctorsInSchedule = [];
     private string $currentDay;
+
     public function __construct(private EntityManagerInterface $entityManager)
     {
         $this->doctors = $entityManager->getRepository(Doctor::class)->findAll();
@@ -46,13 +47,10 @@ class AlgorithmWeekService
         ini_set('memory_limit', '1024M');
         // Инициализация начальной популяции
         $population = $this->initializePopulation();
-        dd($population);
         // Цикл эволюции
         for ($i = 0; $i < self::EVOLUTION_COUNT && count($population) > 1; $i++) {
             $population = $this->evolvePopulation($population);
         }
-
-
     }
 
     // Метод для инициализации начальной популяции
@@ -113,6 +111,7 @@ class AlgorithmWeekService
                         $this->doctorsInSchedule[] = $doctor->getId();
                         continue 2;
                     } elseif ($ostPerDayCount >= $modalityDoctorMinimalCountPerShift) {
+                        //TODO: Возможно Можно заменить на максимум?
                         $countPerShift = rand(
                             (int) round($modalityDoctorMinimalCountPerShift),
                             (int) floor($modalityDoctorMaxCountPerShift)
@@ -127,6 +126,7 @@ class AlgorithmWeekService
                     } else {
                         $ostPerDayCount = $this->setOnActiveDoctors($schedule, $ostPerDayCount, $currentDateString, $modalityCompetency->getModality());
 
+                        //TODO: Возможно это делать только на последнем дне недели ?
                         if ($ostPerDayCount > 0) {
                             $schedule[$modalityCompetency->getModality()][$currentDateString][$doctor->getId()]['get'] = $ostPerDayCount;
                             $schedule[$modalityCompetency->getModality()][$currentDateString][$doctor->getId()]['doMax'] = (int) $modalityDoctorMaxCountPerShift - $ostPerDayCount;
@@ -145,7 +145,7 @@ class AlgorithmWeekService
                 //TODO: После составления расписания на день, пытаемся уравновесить нагрузку по врачам
             }
         }
-dd($schedule);
+
         return $schedule;
     }
 
