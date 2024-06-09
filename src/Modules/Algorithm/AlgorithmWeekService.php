@@ -38,6 +38,7 @@ class AlgorithmWeekService
         ini_set('memory_limit', '1024M');
         // Инициализация начальной популяции
         $population = $this->initializePopulation();
+
         // Цикл эволюции
         for ($i = 0; $i < self::EVOLUTION_COUNT && count($population) > 1; $i++) {
             $population = $this->evolvePopulation($population);
@@ -353,10 +354,98 @@ class AlgorithmWeekService
     // Метод оценки расписания
     private function calculateFitness(array $schedule): int
     {
+        dump($schedule);
         //TODO: Количество неназначенных исследований
         //TODO: Количество врачей, у которых переработка? Или выход в доп смену
         //TODO: Сравнение "баланса" нагрузки на врачей
         $fitness = 0;
+        $doctorWorkloads = [];
+        $doctorDaysWorked = [];
+
+        // Выбирается наилучшее расписание где меньше всего пропусков исследований/где больше назначеных врачей
+        foreach ($schedule as $modality) {
+            foreach ($modality as $week) {
+                // TODO (1 проверка)  количество неназначенных исследований
+                if ($week['empty'] !== null) {
+                    $fitness += $week['empty'] * 10; // штраф за неназначенное исследование (ввести очки)
+                }
+
+                // TODO Подсчет загрузки врачей и рабочих дней для выполнения следующих проверок
+                $doctors = array_filter(array_keys($week), fn ($doctor) => $doctor !== 'empty');
+
+                foreach ($doctors as $doctor) {
+                    if (!isset($doctorWorkloads[$doctor])) {
+                        $doctorWorkloads[$doctor] = 0;
+                    }
+                    $doctorWorkloads[$doctor]++;
+
+                    if (!isset($doctorDaysWorked[$doctor])) {
+                        $doctorDaysWorked[$doctor] = [];
+                    }
+                    $day = rand(0, 6); // случайный выбор дня для учета равномерного распределения
+                    $doctorDaysWorked[$doctor][$day] = true;
+                }
+                }
+        }
+
+        // TODO Подсчет загрузки врачей и рабочих дней: Мы считаем количество назначений для каждого врача в течение недели и отмечаем, в какие дни они работали.
+        // TODO (2 проверка) Расчет очков на основе равномерности распределения врачей по дням: Если врач не работал в течение недели, то добавляется штраф.
+        foreach ($doctorDaysWorked as $daysWorked) {
+            if (count($daysWorked) < 5) {
+                $fitness += (5 - count($daysWorked)) * 10;
+            }
+        }
+
+        // TODO Дополнительные эвристики
+        // TODO (3 проверка) Учет перегрузки врачей
+        foreach ($doctorWorkloads as $workload) {
+            if ($workload > 5) { // если количество назначений в неделю больше 5, добавляем штраф
+                $fitness += ($workload - 5) * 20; // Штраф за перегрузку врача
+            }
+        }
+
+        // TODO (4 проверка) Минимизация перерывов
+        foreach ($doctorDaysWorked as $daysWorked) {
+            $days = array_keys($daysWorked);
+            for ($i = 1; $i < count($days); $i++) {
+                if ($days[$i] - $days[$i - 1] > 1) {
+                    $fitness += 5; // Штраф за большой перерыв между рабочими днями
+                }
+            }
+        }
+
+        // TODO (5 проверка) Равномерное распределение задач
+        $avgWorkload = array_sum($doctorWorkloads) / count($doctorWorkloads);
+        foreach ($doctorWorkloads as $workload) {
+            if (abs($workload - $avgWorkload) > 2) {
+                $fitness += 10; // Штраф за отклонение от средней нагрузки
+            }
+        }
+
+        // TODO (56 проверка) Минимизация выходных дней подряд
+        foreach ($doctorDaysWorked as $daysWorked) {
+            $days = array_keys($daysWorked);
+            $maxConsecutiveDaysOff = 0;
+            $currentConsecutiveDaysOff = 0;
+
+            for ($day = 0; $day < 7; $day++) {
+                if (!isset($daysWorked[$day])) {
+                    $currentConsecutiveDaysOff++;
+                } else {
+                    if ($currentConsecutiveDaysOff > $maxConsecutiveDaysOff) {
+                        $maxConsecutiveDaysOff = $currentConsecutiveDaysOff;
+                    }
+                    $currentConsecutiveDaysOff = 0;
+                }
+            }
+            if ($currentConsecutiveDaysOff > $maxConsecutiveDaysOff) {
+                $maxConsecutiveDaysOff = $currentConsecutiveDaysOff;
+            }
+
+            if ($maxConsecutiveDaysOff > 2) {
+                $fitness += ($maxConsecutiveDaysOff - 2) * 5; // Штраф за большое количество выходных дней подряд
+            }
+        }
 
         return $fitness;
     }
@@ -457,7 +546,7 @@ class AlgorithmWeekService
                 $day = rand(0, 6);
                 $doctor = $this->getRandomDoctorWhoCan($modality->getModality(), $individual, $day);
                 if ($doctor) {
-                    $doctorsId = array_slice($individual[$modality->getModality()][$day], 2);
+                    $doctorsId = array_slice($individual[$modality->getModality()][$day], 1);
                     if ($doctorsId) {
                         $randDoctorId = array_rand($doctorsId);
                         $individual[$modality->getModality()][$day][$randDoctorId] = $doctor->getId();
