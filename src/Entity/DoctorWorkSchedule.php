@@ -22,7 +22,7 @@ class DoctorWorkSchedule
     #[ORM\Column(type: 'integer')]
     private int $id;
 
-    #[ORM\OneToOne(targetEntity: Doctor::class, inversedBy: 'schedule')]
+    #[ORM\OneToOne(targetEntity: Doctor::class, inversedBy: 'workSchedule')]
     private Doctor $doctor;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Тип смены"])]
