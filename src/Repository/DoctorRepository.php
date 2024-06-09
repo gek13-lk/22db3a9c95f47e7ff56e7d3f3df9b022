@@ -40,12 +40,14 @@ class DoctorRepository extends ServiceEntityRepository
 
         if ($modality) {
             $qb
-                ->andWhere(sprintf('JSONB_CONTAINS(d.mainCompetencies, \'"%s"\') = true', quotemeta($modality)));
+                ->andWhere('JSONB_EXISTS(d.mainCompetencies, :competency) = true')
+                ->setParameter('competency', $modality);
         }
 
         if ($addonModality) {
             $qb
-                ->andWhere(sprintf('JSONB_CONTAINS(d.addonCompetencies, \'"%s"\') = true', quotemeta($addonModality)));
+                ->andWhere('JSONB_EXISTS(d.addonCompetencies, :addonCompetency) = true')
+                ->setParameter('addonCompetency', $addonModality);
         }
 
         return $qb
