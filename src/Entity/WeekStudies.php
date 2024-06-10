@@ -30,6 +30,9 @@ class WeekStudies
     #[ORM\Column(type: 'date', nullable: true)]
     private \DateTime $startOfWeek;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private bool $isNew = true;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -76,6 +79,25 @@ class WeekStudies
     public function setCount(int $count): WeekStudies
     {
         $this->count = $count;
+        return $this;
+    }
+
+    public function isNew(): bool
+    {
+        return $this->isNew;
+    }
+
+    public function setIsNew(bool $new = true): self
+    {
+        $this->isNew = $new;
+
+        return $this;
+    }
+
+    public function setIsNotNew(): self
+    {
+        $this->setIsNew(false);
+
         return $this;
     }
 

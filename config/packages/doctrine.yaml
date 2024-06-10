@@ -1,40 +1,47 @@
 doctrine:
     dbal:
-        url: '%env(resolve:DATABASE_URL)%'
-        profiling_collect_backtrace: '%kernel.debug%'
-        use_savepoints: true
+        default_connection: default
+        connections:
+            default:
+                url: '%env(resolve:DATABASE_URL)%'
+                driver: 'pdo_pgsql'
+                server_version: '15.2'
+                charset: utf8
+                default_table_options:
+                    charset: utf8
+                    collate: 'utf8_unicode_ci'
+
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true
-        report_fields_where_declared: true
-        validate_xml_mapping: true
-        naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
-        auto_mapping: true
-        mappings:
-            App:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/Entity'
-                prefix: 'App\Entity'
-                alias: App
-        dql:
-            string_functions:
-                JSONB_EXISTS: App\Doctrine\JsonbExists
-        controller_resolver:
-            auto_mapping: true
-        dql:
-            string_functions:
-                JSON_EXTRACT_PATH: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonExtractPath
-                JSONB_CONTAINS: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonbContains # @>
-                JSONB_IS_CONTAINED: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonbIsContained # <@
-                CAST: App\Doctrine\Oro\ORM\AST\Functions\Cast
-                CONCAT_WS: App\Doctrine\Oro\ORM\AST\Functions\ConcatWs
-                DATE_FORMAT: App\Doctrine\Oro\ORM\AST\Functions\DateFormat
+        entity_managers:
+            default:
+                naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+                auto_mapping: true
+                report_fields_where_declared: true
+                validate_xml_mapping: true
+                mappings:
+                    App:
+                        type: attribute
+                        is_bundle: false
+                        dir: '%kernel.project_dir%/src/Entity'
+                        prefix: 'App\Entity'
+                        alias: App
+                dql:
+                    string_functions:
+                        JSONB_EXISTS: App\Doctrine\JsonbExists
+                        JSON_AGG: App\Doctrine\JsonAgg
+                        JSON_BUILD_OBJECT: App\Doctrine\JsonBuildObject
+                        JSON_EXTRACT_PATH: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonExtractPath
+                        JSONB_CONTAINS: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonbContains # @>
+                        JSONB_IS_CONTAINED: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonbIsContained # <@
+                        CAST: App\Doctrine\Oro\ORM\AST\Functions\Cast
+                        CONCAT_WS: App\Doctrine\Oro\ORM\AST\Functions\ConcatWs
+                        DATE_FORMAT: App\Doctrine\Oro\ORM\AST\Functions\DateFormat
 
 when@test:
     doctrine:
         dbal:
-            # "TEST_TOKEN" is typically set by ParaTest
             dbname_suffix: '_test%env(default::TEST_TOKEN)%'
 
 when@prod:
