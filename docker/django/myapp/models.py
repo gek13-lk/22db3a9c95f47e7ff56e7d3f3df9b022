@@ -59,8 +59,8 @@ class Doctor(models.Model):
     surname = models.CharField(max_length=255, blank=True, null=True, db_comment='Фамилия')
     firstname = models.CharField(max_length=255, blank=True, null=True, db_comment='Имя')
     middlename = models.CharField(max_length=255, blank=True, null=True, db_comment='Отчество')
-    addon_competencies = models.TextField()  # This field type is a guess.
-    main_competencies = models.TextField()  # This field type is a guess.
+    addon_competencies = models.JSONField()
+    main_competencies = models.JSONField()
     stavka = models.FloatField()
 
     class Meta:
@@ -73,7 +73,7 @@ class DoctorWorkSchedules(models.Model):
     hours_per_shift = models.IntegerField(blank=True, null=True, db_comment='Количество часов за смену')
     shift_per_cycle = models.IntegerField(blank=True, null=True, db_comment='Смен за цикл')
     days_off = models.IntegerField(blank=True, null=True, db_comment='Количество выходных дней за цикл')
-    doctor = models.OneToOneField(Doctor, models.DO_NOTHING, blank=True, null=True)
+    doctor = models.OneToOneField(Doctor, models.DO_NOTHING, blank=True, null=True, related_name='work_schedule')
 
     class Meta:
         managed = False
@@ -118,6 +118,36 @@ class Studies(models.Model):
         db_table = 'studies'
 
 
+class TempDoctorSchedule(models.Model):
+    date = models.DateField()
+    start_work_time = models.CharField(max_length=255, blank=True, null=True)
+    end_work_time = models.CharField(max_length=255, blank=True, null=True)
+    doctor = models.ForeignKey(Doctor, models.DO_NOTHING, blank=True, null=True)
+    temp_schedule = models.ForeignKey('TempScheduleWeekStudies', models.DO_NOTHING, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'temp_doctor_schedule'
+
+
+class TempSchedule(models.Model):
+    created_at = models.DateTimeField()
+
+    class Meta:
+        managed = False
+        db_table = 'temp_schedule'
+
+
+class TempScheduleWeekStudies(models.Model):
+    empty = models.IntegerField()
+    week_studies = models.ForeignKey('WeekStudies', models.DO_NOTHING, blank=True, null=True)
+    temp_schedule = models.ForeignKey(TempSchedule, models.DO_NOTHING, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'temp_schedule_week_studies'
+
+
 class User(models.Model):
     username = models.CharField(unique=True, max_length=180)
     roles = models.TextField()  # This field type is a guess.
@@ -134,6 +164,7 @@ class WeekStudies(models.Model):
     year = models.IntegerField()
     count = models.IntegerField()
     competency = models.ForeignKey(Competencies, models.DO_NOTHING, blank=True, null=True)
+    start_of_week = models.DateField(blank=True, null=True)
 
     class Meta:
         managed = False
