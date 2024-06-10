@@ -8,29 +8,40 @@ use App\Entity\WeekStudies;
 use App\Enum\StudyType;
 use App\Repository\WeekStudiesRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Filesystem\Filesystem;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 class MLService
 {
+    private Client $client;
+
     public function __construct(private EntityManagerInterface $em)
     {
+        $this->client = new Client([
+            'base_uri' => 'http://django:8000',
+        ]);
     }
 
     public function execute(): void
     {
         $data = $this->getData();
 
-        $command = $this->getCommand($data['data']);
-
         try {
-            exec($command, $outputLines, $returnVar);
-            if ($returnVar !== 0) {
-                throw new \RuntimeException('Command failed with return code: ' . $returnVar . ' and output: ' . implode("\n", $outputLines));
+            $response = $this->client->post('/python/train', [
+                'json' => ['data' => $data['data']]
+            ]);
+dd($response);
+            $statusCode = $response->getStatusCode();
+            $body = $response->getBody();
+            $output = json_decode($body->getContents(), true);
+
+            if ($statusCode !== 200) {
+                throw new \RuntimeException('Command failed with status code: ' . $statusCode . ' and output: ' . json_encode($output));
             }
-        } catch (\Exception $e) {
+        } catch (RequestException $e) {
             dd($e->getMessage());
         }
-
+dd($outputLines, $returnVar);
         if ($returnVar === 1) {
             $this->markData($data['ids']);
         } else {
@@ -105,20 +116,26 @@ class MLService
         $this->em->flush();
     }
 
-    private function getCommand(array $data): string
-    {
-        $dataJson = json_encode($data);
-        $escapedDataJson = escapeshellarg($dataJson);
+    public function getPredictedData(\DateTime $date) {
+        $year = $date->format('Y');
+        $month = $date->format('m');
 
-        $fileSystem = new Filesystem();
-        $filePath = __DIR__.'/../script/train_model2.py';
+        try {
+            $response = $this->client->post('/python/predicted_studies', [
+                'json' => ['year' => $year, 'month' => $month]
+            ]);
+            dd($response);
+            $statusCode = $response->getStatusCode();
+            $body = $response->getBody();
+            $output = json_decode($body->getContents(), true);
 
-        if ($fileSystem->exists($filePath)) {
-            return "python3 $filePath $escapedDataJson";
-        } else {
-            dd("Ошибка $filePath");
+            if ($statusCode !== 200) {
+                throw new \RuntimeException('Command failed with status code: ' . $statusCode . ' and output: ' . json_encode($output));
+            }
+
+            return $output;
+        } catch (RequestException $e) {
+            dd($e->getMessage());
         }
-
-        return "python3 ./script/train_model.py $escapedDataJson";
     }
 }

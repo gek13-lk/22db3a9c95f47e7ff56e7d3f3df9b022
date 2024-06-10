@@ -37,8 +37,8 @@ class Competencies
     #[ORM\Column(type: 'float', nullable: true, options: ["comment" => "Количество УЕ в одном описании"])]
     private ?float $coefficient = null;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: false, options: ["comment" => "Код"])]
-    private StudyType $code;
+    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Код"])]
+    private ?StudyType $code;
 
     public function getModality(): ?string
     {
@@ -122,12 +122,12 @@ class Competencies
         return $this;
     }
 
-    public function getCode(): StudyType
+    public function getCode(): ?StudyType
     {
         return $this->code;
     }
 
-    public function setCode(StudyType $code): self
+    public function setCode(?StudyType $code): self
     {
         $this->code = $code;
 
