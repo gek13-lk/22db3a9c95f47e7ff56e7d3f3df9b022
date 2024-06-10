@@ -1,3 +1,4 @@
+from flask import Flask, request, jsonify
 import os
 import sys
 import json
@@ -7,14 +8,12 @@ from sklearn.model_selection import GridSearchCV
 from joblib import dump
 import script_date
 
+app = Flask(__name__)
+
 model_dir = '../storage/'
 
-def main():
+def train_model(data):
     try:
-        data_json = sys.argv[1]
-
-        data = json.loads(data_json)
-
         df = pd.DataFrame(data)
 
         for col in df.columns:
@@ -44,7 +43,6 @@ def main():
             mask = df[column] != 0
             X_filtered = X[mask]
             y_filtered = df[column][mask]
-            print(X_filtered, y_filtered)
             model = GradientBoostingRegressor()
             grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, n_jobs=-1, scoring='neg_mean_squared_error')
             grid_search.fit(X_filtered, y_filtered)
@@ -56,11 +54,19 @@ def main():
             model_path = os.path.join(model_dir, f"{key}_model.pkl")
             dump(model, model_path)
 
-        sys.exit(0)
+        return "Model trained successfully"
 
     except Exception as e:
-        print(f"Ошибка обучения моделей: {e}")
-        sys.exit(1)
+        return str(e)
 
-if __name__ == "__main__":
-    main()
+@app.route('/python/train', methods=['POST'])
+def run_script():
+    data = request.json.get('data')
+    result = train_model(data)
+    if result == "Model trained successfully":
+        return jsonify({'status': 'success', 'result': result}), 200
+    else:
+        return jsonify({'status': 'error', 'error': result}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8000)
