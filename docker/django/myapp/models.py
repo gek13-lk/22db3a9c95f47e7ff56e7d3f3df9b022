@@ -131,6 +131,7 @@ class TempDoctorSchedule(models.Model):
 
 
 class TempSchedule(models.Model):
+    id = models.AutoField(primary_key=True)
     created_at = models.DateTimeField()
 
     class Meta:
