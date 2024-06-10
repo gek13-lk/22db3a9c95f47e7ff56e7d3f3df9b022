@@ -15,13 +15,17 @@ class AlgorithmWeekService:
     def __init__(self, start_date, end_date):
         self.doctors_stat = {}
         self.modalities = list(Competencies.objects.all())
+        self.doctors = list(Doctor.objects.all())
         self.doctors_in_schedule = []
         self.current_day = None
         self.weeks_number = list(WeekStudies.objects.filter(start_of_week__range=(start_date, end_date)).values_list('week_number', flat=True).distinct())
 
     def run(self):
         population = self.initialize_population()
-
+        current_datetime = datetime.now()
+        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        print(f'End save {formatted_datetime}')
+        sys.exit(1)
         #for _ in range(self.EVOLUTION_COUNT):
         #    if len(population) > 1:
         #        population = self.evolve_population(population)
@@ -36,6 +40,9 @@ class AlgorithmWeekService:
 
     @transaction.atomic
     def save_temp_schedule(self, random_schedule):
+        current_datetime = datetime.now()
+        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        print(f'Старт save {formatted_datetime}')
         try:
             temp_schedule_entity = TempSchedule.objects.create(created_at=timezone.now())
             temp_schedule_entity.save()
@@ -66,6 +73,8 @@ class AlgorithmWeekService:
                     temp_schedule_week_studies.empty = empty
                     temp_schedule_week_studies.save()
         except Exception as e:
+            print(e)
+            sys.exit(1)
             logger.error(f'Error saving temp schedule: {e}')
             raise
 
@@ -143,8 +152,7 @@ class AlgorithmWeekService:
                                 ost_per_day_count = 0
                             schedule[week_number][modality_competency.modality][current_date_str]['empty'] = ost_per_day_count
                             break
-        print(schedule)
-        sys.exit(1)
+
         return schedule
 
     def set_on_active_doctors(self, schedule, ost, current_date_str, modality, week_number):
@@ -165,7 +173,7 @@ class AlgorithmWeekService:
         return ost
 
     def is_day_off(self, doctor):
-        try
+        try:
             doctor_work_schedule = doctor.work_schedule
             if not doctor_work_schedule:
                 return True
@@ -175,12 +183,15 @@ class AlgorithmWeekService:
                     'shiftCount': 0,
                     'lastOffDay': None
                 }
-                self.doctors_stat[doctor.id].setdefault('offCount', 0)
+                self.doctors_stat[doctor.id]['offCount'] = 0
                 self.doctors_stat[doctor.id].setdefault('shiftCount', 0)
                 self.doctors_stat[doctor.id].setdefault('lastOffDay', None)
                 return False
-            #print(self.doctors_stat)
-            #sys.exit(1)
+
+            if 'offCount' not in self.doctors_stat[doctor.id]:
+                self.doctors_stat[doctor.id].setdefault('offCount', 0)
+            if 'lastOffDay' not in self.doctors_stat[doctor.id]:
+                self.doctors_stat[doctor.id].setdefault('lastOffDay', 0)
             if self.doctors_stat[doctor.id]['offCount'] >= doctor_work_schedule.days_off and self.doctors_stat[doctor.id]['lastOffDay'] != self.current_day:
                 self.doctors_stat[doctor.id]['offCount'] = 0
                 self.doctors_stat[doctor.id]['shiftCount'] = 0
@@ -192,45 +203,23 @@ class AlgorithmWeekService:
                     return True
             return False
         except Exception as e:
-            print(f'{e}')
+            print(self.doctors_stat)
+            print(f'{doctor.id} - {e}')
             sys.exit(1)
             logger.error(f'{e}')
-                                                                                                                raise
+            raise
 
     def get_random_doctor_who_can(self, modality, doctors_in_day):
-                doctors = []
-                if self.doctors_in_schedule:
-                    doctors_in = Doctor.objects.filter(
-                        id__in=self.doctors_in_schedule,
-                        main_competencies__contains=[modality.modality]
-                    ).exclude(
-                         id__in=doctors_in_day
-                    )
-
-                    doctors = [doctor for doctor in doctors_in if not self.is_day_off(doctor)]
+                doctors = [doctor for doctor in self.doctors if doctor.id in self.doctors_in_schedule and modality.modality in doctor.main_competencies and doctor.id not in doctors_in_day and not self.is_day_off(doctor)]
 
                 if not doctors:
-                    doctors = Doctor.objects.filter(
-                        main_competencies__contains=[modality.modality]
-                    ).exclude(id__in=doctors_in_day)
-
-                    doctors = [doctor for doctor in doctors if not self.is_day_off(doctor)]
+                    doctors = [doctor for doctor in self.doctors if modality.modality in doctor.main_competencies and doctor.id not in doctors_in_day and not self.is_day_off(doctor)]
 
                 if not doctors:
-                    doctors_in = Doctor.objects.filter(
-                        id__in=self.doctors_in_schedule,
-                        addon_competencies__contains=[modality.modality]
-                    ).exclude(id__in=doctors_in_day)
-
-                    doctors = [doctor for doctor in doctors_in if not self.is_day_off(doctor)]
+                    doctors = [doctor for doctor in self.doctors if doctor.id in self.doctors_in_schedule and modality.modality in doctor.addon_competencies and doctor.id not in doctors_in_day and not self.is_day_off(doctor)]
 
                 if not doctors:
-                    doctors = Doctor.objects.filter(
-                        ~Q(id__in=doctors_in_day),
-                        addon_competencies__contains=[modality.modality]
-                    ).exclude(id__in=doctors_in_day)
-
-                    doctors = [doctor for doctor in doctors if not self.is_day_off(doctor)]
+                    doctors = [doctor for doctor in self.doctors if modality.modality in doctor.addon_competencies and doctor.id not in doctors_in_day and not self.is_day_off(doctor)]
 
                 if doctors:
                     return random.choice(doctors)
