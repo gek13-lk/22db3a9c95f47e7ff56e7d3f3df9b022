@@ -16,5 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from schedule_project.views import run_script_train_model, run_script_get_prediction_data
 
-urlpatterns = []
+urlpatterns = [
+    path(':/python/train', run_script_train_model, name='train_script'),
+    path(':/python/prediction', run_script_get_prediction_data, name='prediction_script'),
+]
