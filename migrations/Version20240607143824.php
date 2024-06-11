@@ -19,7 +19,6 @@ final class Version20240607143824 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        // this up() migration is auto-generated, please modify it to your needs
         $this->addSql('ALTER TABLE week_studies ADD start_of_week DATE DEFAULT NULL');
 
         $this->setStartOfWeek();
@@ -49,27 +48,43 @@ VALUES (?, ?, ?, ?, ?)',
         }
     }
 
+    private function getStartOfWeeks(): array
+    {
+        $result = [];
+
+        for ($year = 2021; $year <= 2024; $year++) {
+            $firstMonday = new \DateTime();
+            $firstMonday->setISODate($year, 1);
+            if ($firstMonday->format('N') !== '1') {
+                $firstMonday->modify('next monday');
+            }
+
+            for ($week = 1; $week <= 52; $week++) {
+                $result[] = [
+                    'year' => $year,
+                    'week' => $week,
+                    'startOfWeek' => $firstMonday->format('Y-m-d'),
+                ];
+
+                $firstMonday->modify('+1 week');
+            }
+        }
+
+        return $result;
+    }
+
     private function setStartOfWeek(): void
     {
-        $data = [
-            ['date' => '2024-01-01', 'id' => 1],
-            ['date' => '2024-01-01', 'id' => 2],
-            ['date' => '2024-01-01', 'id' => 3],
-            ['date' => '2024-01-01', 'id' => 4],
-            ['date' => '2024-01-01', 'id' => 5],
-            ['date' => '2024-01-01', 'id' => 6],
-            ['date' => '2024-01-01', 'id' => 7],
-            ['date' => '2024-01-01', 'id' => 8],
-            ['date' => '2024-01-01', 'id' => 9],
-            ['date' => '2024-01-01', 'id' => 10],
-        ];
+        $startOfWeeks = $this->getStartOfWeeks();
+        $query = 'UPDATE public.week_studies SET start_of_week = CASE ';
 
-        foreach ($data as $startOfWeek) {
-            $this->addSql(
-                'UPDATE public.week_studies SET start_of_week = ? WHERE id = ?',
-                [$startOfWeek['date'], $startOfWeek['id']]
-            );
+        foreach ($startOfWeeks as $data) {
+            $query .= "WHEN year = {$data['year']} AND week_number = {$data['week']} THEN '{$data['startOfWeek']}' ";
         }
+
+        $query .= 'ELSE start_of_week END';
+
+        $this->addSql($query);
     }
 
     private function updateCurrentSchedules(): void

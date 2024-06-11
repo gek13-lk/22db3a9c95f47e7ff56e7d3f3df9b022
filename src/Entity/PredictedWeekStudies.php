@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\PredictedWeekStudiesRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Table(name: 'week_studies_predicted')]
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: PredictedWeekStudiesRepository::class)]
 class PredictedWeekStudies
 {
     #[ORM\Id]
