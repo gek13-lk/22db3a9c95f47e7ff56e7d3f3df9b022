@@ -22,7 +22,7 @@ class WeekStudiesController extends AbstractController
         try {
             $service->execute();
 
-            return new Response('ok');
+            return new Response('success');
         } catch (\Exception $exception) {
             return new Response($exception->getMessage(), 500);
         }
