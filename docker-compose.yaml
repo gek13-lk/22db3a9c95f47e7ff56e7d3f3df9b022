@@ -12,6 +12,9 @@ services:
       - ./:/app:cached
     depends_on:
       - rabbitmq
+    networks:
+      - app-network
+
   nginx:
     image: nginx:1.26-alpine
     volumes:
@@ -21,18 +24,24 @@ services:
       - '80:80'
     depends_on:
       - app
+    networks:
+      - app-network
 
   django:
     build:
       context: ./docker/django
     command: >
       /bin/sh -c "
-      python manage.py run_worker
+      python manage.py runserver 0.0.0.0:8000
       "
     volumes:
       - ./docker/django/:/usr/src/app/
     depends_on:
       - rabbitmq
+    networks:
+      - app-network
+    ports:
+      - "8000:8000"
 
   db:
     image: postgres:16-alpine
@@ -41,10 +50,14 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=app
       - TZ=Europe/Moscow
       - PGTZ=Europe/Moscow
     volumes:
       - db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
   rabbitmq:
     restart: always
     image: rabbitmq:3-management
@@ -53,7 +66,13 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq/
+    networks:
+      - app-network
 
 volumes:
   db-data:
   rabbitmq-data:
+
+networks:
+  app-network:
+    driver: bridge
