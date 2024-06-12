@@ -15,10 +15,11 @@ use Symfony\Component\Routing\Attribute\Route;
 class ScheduleController extends AbstractController implements NavElementInterface {
 
     public function __construct(private AlgorithmService $service, private AlgorithmWeekService $service3, private DataService $service2) {}
-    #[Route('/schedule/{countSchedule}', name: 'app_schedule')]
-    public function index(int $countSchedule): Response {
+    #[Route('/schedule', name: 'app_schedule')]
+    public function index(): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
+        $countSchedule = 5;
         $user = $this->getUser();
         $this->service3->run(new \DateTime('2024-01-01'), new \DateTime('2024-01-09'), $countSchedule);
 
