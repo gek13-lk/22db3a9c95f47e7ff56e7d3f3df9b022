@@ -13,10 +13,11 @@ class TempSchedule
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
-
     #[ORM\Column(type: 'datetime')]
     private \DateTime $createdAt;
 
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $fitness = null;
     public function __construct() {
         $this->createdAt = new \DateTime();
     }
@@ -33,6 +34,17 @@ class TempSchedule
     public function setCreatedAt(\DateTime $createdAt): TempSchedule
     {
         $this->createdAt = $createdAt;
+        return $this;
+    }
+
+    public function getFitness(): ?int
+    {
+        return $this->fitness;
+    }
+
+    public function setFitness(?int $fitness = null): TempSchedule
+    {
+        $this->fitness = $fitness;
         return $this;
     }
 }
