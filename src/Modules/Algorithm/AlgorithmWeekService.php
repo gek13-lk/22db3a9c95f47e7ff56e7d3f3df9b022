@@ -100,7 +100,7 @@ class AlgorithmWeekService
                         $tempDoctorSchedule = new TempDoctorSchedule();
                         $tempDoctorSchedule->setDoctor($doctor);
                         $tempDoctorSchedule->setDate(new \DateTime($day));
-                        $tempDoctorSchedule->setTempSchedule($tempScheduleWeekStudies);
+                        $tempDoctorSchedule->setTempScheduleWeekStudies($tempScheduleWeekStudies);
                         $this->entityManager->persist($tempDoctorSchedule);
                     }
                 }
