@@ -6,7 +6,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import GridSearchCV
 from joblib import dump
 from schedule_project.script_date import month_from_week, season_from_month
-from schedule_project.model_trainer import train_model
+from schedule_project.model_training import train_model
 from schedule_project.get_predictions import get_prediction_data
 
 @csrf_exempt
