@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\TempDoctorScheduleRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: TempDoctorScheduleRepository::class)]
 class TempDoctorSchedule
 {
     #[ORM\Id]
@@ -20,14 +21,20 @@ class TempDoctorSchedule
     #[ORM\ManyToOne(targetEntity: Doctor::class)]
     private Doctor $doctor;
 
-    #[ORM\Column(type: 'string', nullable: true)]
-    private string $startWorkTime;
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private \DateTime $workTimeStart;
 
-    #[ORM\Column(type: 'string', nullable: true)]
-    private string $endWorkTime;
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private \DateTime $workTimeEnd;
 
     #[ORM\ManyToOne(targetEntity: TempScheduleWeekStudies::class)]
-    private TempScheduleWeekStudies $tempSchedule;
+    private TempScheduleWeekStudies $tempScheduleWeekStudies;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $offMinutes = null;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $workHours = null;
 
     public function getId(): ?int
     {
@@ -56,37 +63,59 @@ class TempDoctorSchedule
         return $this;
     }
 
-    public function getStartWorkTime(): string
+    public function getWorkTimeStart(): \DateTime|null
     {
-        return $this->startWorkTime;
+        return $this->workTimeStart;
     }
 
-    public function setStartWorkTime(string $startWorkTime): TempDoctorSchedule
+    public function setWorkTimeStart(?\DateTime $workTimeStart = null): TempDoctorSchedule
     {
-        $this->startWorkTime = $startWorkTime;
+        $this->workTimeStart = $workTimeStart;
         return $this;
     }
 
-    public function getEndWorkTime(): string
+    public function getWorkTimeEnd(): \DateTime|null
     {
-        return $this->endWorkTime;
+        return $this->workTimeEnd;
     }
 
-    public function setEndWorkTime(string $endWorkTime): TempDoctorSchedule
+    public function setWorkTimeEnd(?\DateTime $workTimeEnd = null): TempDoctorSchedule
     {
-        $this->endWorkTime = $endWorkTime;
+        $this->workTimeEnd = $workTimeEnd;
         return $this;
     }
 
-    public function getTempSchedule(): TempScheduleWeekStudies
+    public function getTempScheduleWeekStudies(): TempScheduleWeekStudies
     {
-        return $this->tempSchedule;
+        return $this->tempScheduleWeekStudies;
     }
 
-    public function setTempSchedule(TempScheduleWeekStudies $tempSchedule): TempDoctorSchedule
+    public function setTempScheduleWeekStudies(TempScheduleWeekStudies $tempScheduleWeekStudies): TempDoctorSchedule
     {
-        $this->tempSchedule = $tempSchedule;
+        $this->tempScheduleWeekStudies = $tempScheduleWeekStudies;
 
+        return $this;
+    }
+
+    public function getOffMinutes(): ?int
+    {
+        return $this->offMinutes;
+    }
+
+    public function setOffMinutes(?int $offMinutes): TempDoctorSchedule
+    {
+        $this->offMinutes = $offMinutes;
+        return $this;
+    }
+
+    public function getWorkHours(): ?int
+    {
+        return $this->workHours;
+    }
+
+    public function setWorkHours(?int $workHours): TempDoctorSchedule
+    {
+        $this->workHours = $workHours;
         return $this;
     }
 }
