@@ -24,18 +24,20 @@ class AlgorithmWeekService
     private string $currentDay;
 
     private array $weeksNumber;
+    private array $doctors;
 
     public function __construct(private EntityManagerInterface $entityManager)
     {
         $this->modalities = $this->entityManager->getRepository(Competencies::class)->findAll();
         $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers('2024-01-01', '2024-01-08');
+        $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
     }
 
     // Основной метод для генерации расписания
     public function run(): void
     {
         set_time_limit(600);
-        ini_set('memory_limit', '1024M');
+        ini_set('memory_limit', '-1');
         // Инициализация начальной популяции
         $population = $this->initializePopulation();
 
@@ -51,9 +53,8 @@ class AlgorithmWeekService
         $population = [];
         for ($i = 0; $i < self::POPULATION_COUNT; $i++) {
             $randomSchedule  = $this->createRandomSchedule();
-            $population[] = $randomSchedule;
+            $population[] = current($randomSchedule);
             $this->saveTempSchedule($randomSchedule);
-            dd($randomSchedule);
         }
 
         return $population;
@@ -232,12 +233,28 @@ class AlgorithmWeekService
             return true;
         }
 
+        if(!in_array($doctor->getId(), $this->doctorsStat)) {
+            $this->doctorsStat[$doctor->getId()] = [
+                'offCount' => 0,
+                'shiftCount' => 0,
+                'lastOffDay' => null,
+            ];
+        }
+
         // Инициализация
         if (!isset($this->doctorsStat[$doctor->getId()]['offCount']) || !isset($this->doctorsStat[$doctor->getId()]['shiftCount'])) {
             $this->doctorsStat[$doctor->getId()]['offCount'] = 0;
             $this->doctorsStat[$doctor->getId()]['shiftCount'] = 0;
             $this->doctorsStat[$doctor->getId()]['lastOffDay'] = null;
             return false;
+        }
+
+        if(!in_array('offCount', $this->doctorsStat[$doctor->getId()])) {
+            $this->doctorsStat[$doctor->getId()]['offCount'] = 0;
+        }
+
+        if(!in_array('lastOffDay', $this->doctorsStat[$doctor->getId()])) {
+            $this->doctorsStat[$doctor->getId()]['lastOffDay'] = 0;
         }
 
         // Выходные закончились
@@ -272,10 +289,10 @@ class AlgorithmWeekService
         //Пытаемся получить врачей, которые подходят и которым получится продолжить цикл графика
         // (стараемся не вводить новых врачей в расписание)
         if (!empty($this->doctorsInSchedule)) {
-            $doctorsIn = $this->entityManager->getRepository(Doctor::class)->findByIds(
-                $this->doctorsInSchedule,
-                $doctorsAlreadyInDay,
-                $competency->getModality()
+            $doctorsIn = array_filter($this->doctors,
+                fn(Doctor $doctor) => in_array($doctor->getId(), $this->doctorsInSchedule)
+                    && !in_array($doctor->getId(), $doctorsAlreadyInDay)
+                    && in_array($competency->getModality(), $doctor->getCompetency())
             );
 
             $doctors = array_filter($doctorsIn, function (Doctor $doctor) {
@@ -285,9 +302,9 @@ class AlgorithmWeekService
 
         //Поиск врачей по основной компетенции
         if (empty($doctors)) {
-            $doctors = $this->entityManager->getRepository(Doctor::class)->findByIds(
-                exclude: $doctorsAlreadyInDay,
-                modality: $competency->getModality()
+            $doctors = array_filter($this->doctors,
+                fn(Doctor $doctor) => !in_array($doctor->getId(), $doctorsAlreadyInDay)
+                    && in_array($competency->getModality(), $doctor->getCompetency())
             );
 
             $doctors = array_filter($doctors, function (Doctor $doctor) {
@@ -297,10 +314,10 @@ class AlgorithmWeekService
 
         //Пытаемся получить врачей по доп компетенции, которые подходят и которым получится продолжить цикл графика
         if (empty($doctors)) {
-            $doctorsIn = $this->entityManager->getRepository(Doctor::class)->findByIds(
-                $this->doctorsInSchedule,
-                $doctorsAlreadyInDay,
-                addonModality: $competency->getModality()
+            $doctorsIn = array_filter($this->doctors,
+                fn(Doctor $doctor) => in_array($doctor->getId(), $this->doctorsInSchedule)
+                    && !in_array($doctor->getId(), $doctorsAlreadyInDay)
+                    && in_array($competency->getModality(), $doctor->getAddonCompetencies())
             );
 
             $doctors = array_filter($doctorsIn, function (Doctor $doctor) {
@@ -310,9 +327,9 @@ class AlgorithmWeekService
 
         //Поиск врачей по доп компетенции
         if (empty($doctors)) {
-            $doctors = $this->entityManager->getRepository(Doctor::class)->findByIds(
-                exclude: $doctorsAlreadyInDay,
-                addonModality: $competency->getModality()
+            $doctors = array_filter($this->doctors,
+                fn(Doctor $doctor) => !in_array($doctor->getId(), $doctorsAlreadyInDay)
+                    && in_array($competency->getModality(), $doctor->getAddonCompetencies())
             );
 
             $doctors = array_filter($doctors, function (Doctor $doctor) {
@@ -354,14 +371,12 @@ class AlgorithmWeekService
     // Метод оценки расписания
     private function calculateFitness(array $schedule): int
     {
-        dump($schedule);
         //TODO: Количество неназначенных исследований
         //TODO: Количество врачей, у которых переработка? Или выход в доп смену
         //TODO: Сравнение "баланса" нагрузки на врачей
         $fitness = 0;
         $doctorWorkloads = [];
         $doctorDaysWorked = [];
-
         // Выбирается наилучшее расписание где меньше всего пропусков исследований/где больше назначеных врачей
         foreach ($schedule as $modality) {
             foreach ($modality as $week) {
@@ -540,16 +555,15 @@ class AlgorithmWeekService
 //        return $individual;
 
 // TODO: 2 варинат (сделал мутацию сто процентой по каждой модальности + мутация применяется только если фитнес уменьшилось)
-
         $oldIndividual = $individual;
         foreach ($this->modalities as $modality) {
-                $day = rand(0, 6);
-                $doctor = $this->getRandomDoctorWhoCan($modality->getModality(), $individual, $day);
+                $doctor = $this->getRandomDoctorWhoCan($modality, $individual);
                 if ($doctor) {
-                    $doctorsId = array_slice($individual[$modality->getModality()][$day], 1);
+                    $rand = array_rand($individual[$modality->getModality()]);
+                        $doctorsId = array_slice($individual[$modality->getModality()][$rand], 1);
                     if ($doctorsId) {
                         $randDoctorId = array_rand($doctorsId);
-                        $individual[$modality->getModality()][$day][$randDoctorId] = $doctor->getId();
+                        $individual[$modality->getModality()][$rand][$randDoctorId] = $doctor->getId();
                     }
                 }
         }
