@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import make_scorer, mean_squared_error
-from joblib import dump
+from joblib import dump, Parallel, delayed
 from schedule_project.script_date import month_from_week, season_from_month
 
 def non_negative_error(y_true, y_pred):
@@ -37,7 +37,7 @@ def train_model(data):
             'subsample': [0.8, 0.9, 1.0]
         }
 
-        for column in y_columns:
+        def train_single_model(column):
             mask = df[column] != 0
             X_filtered = X[mask]
             y_filtered = df[column][mask]
@@ -47,6 +47,11 @@ def train_model(data):
             random_search.fit(X_filtered, y_filtered)
             best_model = random_search.best_estimator_
 
+            return column, best_model
+
+        results = Parallel(n_jobs=-1)(delayed(train_single_model)(column) for column in y_columns)
+
+        for column, best_model in results:
             models[column] = best_model
 
         for key, model in models.items():

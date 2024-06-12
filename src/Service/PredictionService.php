@@ -9,7 +9,7 @@ use App\Entity\PredictedWeekStudies;
 use Doctrine\ORM\EntityManagerInterface;
 use GuzzleHttp\Exception\GuzzleException;
 
-class PredictionService
+final class PredictionService
 {
     private const URL = ':/python/prediction';
 
