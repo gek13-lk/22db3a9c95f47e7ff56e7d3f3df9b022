@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\StudyType;
 use App\Repository\CompetenciesRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -35,6 +36,9 @@ class Competencies
 
     #[ORM\Column(type: 'float', nullable: true, options: ["comment" => "Количество УЕ в одном описании"])]
     private ?float $coefficient = null;
+
+    #[ORM\Column(length: 255, nullable: true, enumType: StudyType::class, options: ["comment" => "Код"])]
+    private ?StudyType $code = null;
 
     public function getModality(): ?string
     {
@@ -115,6 +119,18 @@ class Competencies
     public function setMaxCoefficientPerShift(?float $maxCoefficientPerShift): Competencies
     {
         $this->maxCoefficientPerShift = $maxCoefficientPerShift;
+        return $this;
+    }
+
+    public function getCode(): ?StudyType
+    {
+        return $this->code;
+    }
+
+    public function setCode(?StudyType $code): self
+    {
+        $this->code = $code;
+
         return $this;
     }
 }
