@@ -25,26 +25,31 @@ class AlgorithmWeekService
 
     private array $weeksNumber;
     private array $doctors;
+    private \DateTime $endDay;
 
     public function __construct(private EntityManagerInterface $entityManager)
     {
         $this->modalities = $this->entityManager->getRepository(Competencies::class)->findAll();
-        $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers('2024-01-01', '2024-01-08');
+
         $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
     }
 
     // Основной метод для генерации расписания
-    public function run(): void
+    public function run(\DateTime $startDay, \DateTime $endDay): void
     {
+        $this->endDay = $endDay;
+        $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers(
+            $startDay, $endDay
+        );
         set_time_limit(600);
         ini_set('memory_limit', '-1');
         // Инициализация начальной популяции
         $population = $this->initializePopulation();
 
         // Цикл эволюции
-        for ($i = 0; $i < self::EVOLUTION_COUNT && count($population) > 1; $i++) {
+        /*for ($i = 0; $i < self::EVOLUTION_COUNT && count($population) > 1; $i++) {
             $population = $this->evolvePopulation($population);
-        }
+        }*/
     }
 
     // Метод для инициализации начальной популяции
@@ -53,16 +58,22 @@ class AlgorithmWeekService
         $population = [];
         for ($i = 0; $i < self::POPULATION_COUNT; $i++) {
             $randomSchedule  = $this->createRandomSchedule();
-            $population[] = current($randomSchedule);
-            $this->saveTempSchedule($randomSchedule);
+            $fitness = $this->calculateFitness($randomSchedule);
+            $tempScheduleEntity = $this->saveTempSchedule($randomSchedule, $fitness);
+            $population[$tempScheduleEntity->getId()] = $randomSchedule;
         }
+
+        //TODO: Ваня, тут тогда после инициализации массива расписаний, по ним форичем проходим.
+        // Считаем для каждого фитнесс и уже только тогда сохраняем в БД лучшие N расписаний (обрати внимание, что фитнесс добавил в табличку)
+        // N расписаний предлагаю передавать в run (считай настройка, сколько вариантов расписаний пользователю составить)
 
         return $population;
     }
 
-    private function saveTempSchedule(array $randomSchedule): void
+    private function saveTempSchedule(array $randomSchedule, int $fitness): TempSchedule
     {
         $tempScheduleEntity = new TempSchedule();
+        $tempScheduleEntity->setFitness($fitness);
         $this->entityManager->persist($tempScheduleEntity);
 
         foreach ($randomSchedule as $weekNumber => $scheduleForModality) {
@@ -100,6 +111,8 @@ class AlgorithmWeekService
         }
 
         $this->entityManager->flush();
+
+        return $tempScheduleEntity;
     }
 
     // Метод для создания случайного расписания
@@ -112,15 +125,28 @@ class AlgorithmWeekService
             //Перемешиваем модальности в неделе
             /** @var WeekStudies[] $weekStudies */
             $weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
-                'weekNumber' => $weekNumber
+                'weekNumber' => $weekNumber['weekNumber'],
+                'year' => $weekNumber['year'],
             ]);
             shuffle($weekStudies);
+
+            $dayCount = 6;
+
+            if (!empty($weekStudies)) {
+                $diff = $weekStudies[0]->getStartOfWeek()->diff($this->endDay);
+
+                if ($diff->days < 7) {
+                    $dayCount = $diff->days;
+                }
+            }
+
             foreach ($weekStudies as $modalityWeek) {
                 $modalityCompetency = $modalityWeek->getCompetency();
                 $modalityDayCount = (int)($modalityWeek->getCount() / 7);
                 $cyclePerDayCount = floor($modalityDayCount / $modalityCompetency->getMinimalCountPerShift());
                 $ostPerDayCount = 0;
-                for ($day = 0; $day <= 6; $day++) {
+
+                for ($day = 0; $day <= $dayCount; $day++) {
                     $currentDate = (clone $modalityWeek->getStartOfWeek())->modify('+ ' . $day . ' days');
                     $currentDateString = $currentDate->format('Y-m-d');
                     $this->currentDay = $currentDateString;
@@ -371,6 +397,7 @@ class AlgorithmWeekService
     // Метод оценки расписания
     private function calculateFitness(array $schedule): int
     {
+        return 1;
         //TODO: Количество неназначенных исследований
         //TODO: Количество врачей, у которых переработка? Или выход в доп смену
         //TODO: Сравнение "баланса" нагрузки на врачей
