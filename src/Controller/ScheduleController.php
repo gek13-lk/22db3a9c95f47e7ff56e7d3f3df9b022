@@ -22,12 +22,14 @@ class ScheduleController extends AbstractController implements NavElementInterfa
     public function index(): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
+        $countSchedule = 5;
         $user = $this->getUser();
-        $schedule = $this->entityManager->getRepository(TempSchedule::class)->find(2);
+        //$this->service3->run(new \DateTime('2024-01-01'), new \DateTime('2024-01-09'), $countSchedule);
+        //$schedule = $this->entityManager->getRepository(TempSchedule::class)->find(2);
 
-        $this->timeAlgorithmService->setTime($schedule);
+        //$this->timeAlgorithmService->setTime($schedule);
         //$this->service3->run(new \DateTime('2024-01-01'), new \DateTime('2024-01-09'));
-dd(1);
+
         return $this->render('schedule/index.html.twig', [
             'controller_name' => 'ScheduleController',
             'username' => $user->getUserIdentifier(),

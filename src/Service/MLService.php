@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\MLLogs;
+use App\Entity\User;
 use App\Entity\WeekStudies;
 use App\Enum\StudyType;
 use App\Repository\WeekStudiesRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 
-class MLService
+final class MLService
 {
     private const URL = '/:/python/train';
 
     public function __construct(
         private EntityManagerInterface $em,
-        private RequestPython $python
+        private RequestPython $python,
+        private Security $security
     ) {
     }
 
@@ -56,5 +60,21 @@ class MLService
         $count = json_decode($json, true);
 
         return $count ? $count[0]['count'] : 0;
+    }
+
+    public function createLog(): void
+    {
+        /** @var User|null $user */
+        $user = $this->security->getUser();
+        if (!$user) {
+            throw new \Exception('Пользователь не найден');
+        }
+
+        $logs = new MLLogs();
+        $logs->setUser($user);
+        $logs->setDate(new \DateTime());
+
+        $this->em->persist($logs);
+        $this->em->flush();
     }
 }
