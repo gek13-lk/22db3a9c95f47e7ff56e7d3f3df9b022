@@ -18,6 +18,7 @@ class TempSchedule
 
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $fitness = null;
+
     public function __construct() {
         $this->createdAt = new \DateTime();
     }
