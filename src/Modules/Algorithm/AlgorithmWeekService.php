@@ -35,7 +35,7 @@ class AlgorithmWeekService
     }
 
     // Основной метод для генерации расписания
-    public function run(\DateTime $startDay, \DateTime $endDay): void
+    public function run(\DateTime $startDay, \DateTime $endDay, int $countSchedule): void
     {
         $this->endDay = $endDay;
         $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers(
@@ -44,7 +44,7 @@ class AlgorithmWeekService
         set_time_limit(600);
         ini_set('memory_limit', '-1');
         // Инициализация начальной популяции
-        $population = $this->initializePopulation();
+        $population = $this->initializePopulation($countSchedule);
 
         // Цикл эволюции
         /*for ($i = 0; $i < self::EVOLUTION_COUNT && count($population) > 1; $i++) {
@@ -53,21 +53,29 @@ class AlgorithmWeekService
     }
 
     // Метод для инициализации начальной популяции
-    private function initializePopulation(): array
+    private function initializePopulation(int $countSchedule): array
     {
         $population = [];
-        for ($i = 0; $i < self::POPULATION_COUNT; $i++) {
+        $bestPopulation = [];
+        for ($i = 0; $i < self::POPULATION_COUNT - 1; $i++) {
             $randomSchedule  = $this->createRandomSchedule();
-            $fitness = $this->calculateFitness($randomSchedule);
-            $tempScheduleEntity = $this->saveTempSchedule($randomSchedule, $fitness);
-            $population[$tempScheduleEntity->getId()] = $randomSchedule;
+            $population[$i]['schedule'] = $randomSchedule;
+            $population[$i]['fitnessScore'] = $this->calculateFitness($randomSchedule);
         }
 
         //TODO: Ваня, тут тогда после инициализации массива расписаний, по ним форичем проходим.
         // Считаем для каждого фитнесс и уже только тогда сохраняем в БД лучшие N расписаний (обрати внимание, что фитнесс добавил в табличку)
         // N расписаний предлагаю передавать в run (считай настройка, сколько вариантов расписаний пользователю составить)
+        usort($population, function($a, $b){
+            return ($a['fitnessScore'] - $b['fitnessScore']);
+        });
 
-        return $population;
+        for($i = 0; $i <= $countSchedule - 1; $i++) {
+            $tempScheduleEntity = $this->saveTempSchedule($population[$i]['schedule'], $population[$i]['fitnessScore']);
+            $bestPopulation[$tempScheduleEntity->getId()] = $population[$i]['schedule'];
+        }
+
+        return $bestPopulation;
     }
 
     private function saveTempSchedule(array $randomSchedule, int $fitness): TempSchedule
@@ -397,7 +405,6 @@ class AlgorithmWeekService
     // Метод оценки расписания
     private function calculateFitness(array $schedule): int
     {
-        return 1;
         //TODO: Количество неназначенных исследований
         //TODO: Количество врачей, у которых переработка? Или выход в доп смену
         //TODO: Сравнение "баланса" нагрузки на врачей
@@ -407,27 +414,29 @@ class AlgorithmWeekService
         // Выбирается наилучшее расписание где меньше всего пропусков исследований/где больше назначеных врачей
         foreach ($schedule as $modality) {
             foreach ($modality as $week) {
-                // TODO (1 проверка)  количество неназначенных исследований
-                if ($week['empty'] !== null) {
-                    $fitness += $week['empty'] * 10; // штраф за неназначенное исследование (ввести очки)
-                }
-
-                // TODO Подсчет загрузки врачей и рабочих дней для выполнения следующих проверок
-                $doctors = array_filter(array_keys($week), fn ($doctor) => $doctor !== 'empty');
-
-                foreach ($doctors as $doctor) {
-                    if (!isset($doctorWorkloads[$doctor])) {
-                        $doctorWorkloads[$doctor] = 0;
+                foreach ($week as $day) {
+                    // TODO (1 проверка)  количество неназначенных исследований
+                    if ($day['empty'] !== null) {
+                        $fitness += $day['empty'] * 10; // штраф за неназначенное исследование (ввести очки)
                     }
-                    $doctorWorkloads[$doctor]++;
 
-                    if (!isset($doctorDaysWorked[$doctor])) {
-                        $doctorDaysWorked[$doctor] = [];
+                    // TODO Подсчет загрузки врачей и рабочих дней для выполнения следующих проверок
+                    $doctors = array_filter(array_keys($day), fn($doctor) => $doctor !== 'empty');
+
+                    foreach ($doctors as $doctor) {
+                        if (!isset($doctorWorkloads[$doctor])) {
+                            $doctorWorkloads[$doctor] = 0;
+                        }
+                        $doctorWorkloads[$doctor]++;
+
+                        if (!isset($doctorDaysWorked[$doctor])) {
+                            $doctorDaysWorked[$doctor] = [];
+                        }
+                        $randomDay = rand(0, 6); // случайный выбор дня для учета равномерного распределения
+                        $doctorDaysWorked[$doctor][$randomDay] = true;
                     }
-                    $day = rand(0, 6); // случайный выбор дня для учета равномерного распределения
-                    $doctorDaysWorked[$doctor][$day] = true;
                 }
-                }
+            }
         }
 
         // TODO Подсчет загрузки врачей и рабочих дней: Мы считаем количество назначений для каждого врача в течение недели и отмечаем, в какие дни они работали.
