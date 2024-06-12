@@ -27,6 +27,12 @@ class AlgorithmWeekService
     private array $doctors;
     private \DateTime $endDay;
 
+    private const AVERAGE_SCORE = 100000;
+    private const LOW_LEVEL = 'LOW_LEVEL';
+    private const MIDDLE_LEVEL = 'MIDDLE_LEVEL';
+    private const HIGH_LEVEL = 'HIGH_LEVEL';
+    private const SUPER_HIGH_LEVEL = 'SUPER_HIGH_LEVEL';
+
     public function __construct(private EntityManagerInterface $entityManager)
     {
         $this->modalities = $this->entityManager->getRepository(Competencies::class)->findAll();
@@ -35,7 +41,7 @@ class AlgorithmWeekService
     }
 
     // Основной метод для генерации расписания
-    public function run(\DateTime $startDay, \DateTime $endDay): void
+    public function run(\DateTime $startDay, \DateTime $endDay, int $countSchedule): void
     {
         $this->endDay = $endDay;
         $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers(
@@ -46,26 +52,37 @@ class AlgorithmWeekService
         // Инициализация начальной популяции
         $population = $this->initializePopulation();
 
-        // Цикл эволюции
-        /*for ($i = 0; $i < self::EVOLUTION_COUNT && count($population) > 1; $i++) {
-            $population = $this->evolvePopulation($population);
-        }*/
+        // Эволюция популяции
+        $evolutionPopulation = $this->evolvePopulation(array_values($population), $countSchedule);
+
+        $evolutionPopulation = array_map(
+            fn($ep) => [
+                'schedule' => $ep,
+                'fitnessScore' => $this->calculateFitness($ep)
+            ],
+            $evolutionPopulation);
+
+        usort($evolutionPopulation, function ($a, $b) {
+            return ($a['fitnessScore'] - $b['fitnessScore']);
+        });
+
+        $bestPopulation = [];
+
+        for ($i = 0; $i < $countSchedule; $i++) {
+            $tempScheduleEntity = $this->saveTempSchedule($evolutionPopulation[$i]['schedule'], $evolutionPopulation[$i]['fitnessScore']);
+            $bestPopulation[$tempScheduleEntity->getId()] = $evolutionPopulation[$i]['schedule'];
+        }
+
+        dd($bestPopulation);
     }
 
     // Метод для инициализации начальной популяции
     private function initializePopulation(): array
     {
         $population = [];
-        for ($i = 0; $i < self::POPULATION_COUNT; $i++) {
-            $randomSchedule  = $this->createRandomSchedule();
-            $fitness = $this->calculateFitness($randomSchedule);
-            $tempScheduleEntity = $this->saveTempSchedule($randomSchedule, $fitness);
-            $population[$tempScheduleEntity->getId()] = $randomSchedule;
+        for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
+            $population[] = $this->createRandomSchedule();
         }
-
-        //TODO: Ваня, тут тогда после инициализации массива расписаний, по ним форичем проходим.
-        // Считаем для каждого фитнесс и уже только тогда сохраняем в БД лучшие N расписаний (обрати внимание, что фитнесс добавил в табличку)
-        // N расписаний предлагаю передавать в run (считай настройка, сколько вариантов расписаний пользователю составить)
 
         return $population;
     }
@@ -372,32 +389,46 @@ class AlgorithmWeekService
     }
 
     // Метод для эволюции популяции
-    private function evolvePopulation(array $population): array
+    private function evolvePopulation(array $population, int $countSchedule): array
     {
-        // Селекция (отбор)
-        usort($population, function ($a, $b) {
-            return $this->calculateFitness($a) <=> $this->calculateFitness($b);
-        });
+        for ($i = 0; $i < self::EVOLUTION_COUNT && count($population)/2 >= $countSchedule; $i++) {
+            $newPopulation = [];
+            if ($this->calculateFitness($population[0]) < self::AVERAGE_SCORE) {
+                return $population;
+            }
+            for ($i = 0; $i < count($population) / 2 && count($population) > 1; $i++) {
+                $level = $this->getLevel($this->calculateFitness($population[$i]));
+                $parent1 = $population[$i];
+                $parent2 = $population[$i + 1];
+                $newPopulation[] = $this->crossover($parent1, $parent2, $level);
+            }
 
-        $newPopulation = [];
-        for ($i = 0; $i < count($population) / 2 && count($population) > 1; $i++) {
-            $parent1 = $population[$i];
-            $parent2 = $population[$i + 1];
-            $newPopulation[] = $this->crossover($parent1, $parent2);
+            // Мутация
+            foreach ($newPopulation as &$individual) {
+                $individual = $this->mutate($individual);
+            }
+
+            $population = $newPopulation;
+        }
+        return $population;
+    }
+
+    private function getLevel(int $score): string
+    {
+        if($score < self::AVERAGE_SCORE) {
+            return self::SUPER_HIGH_LEVEL;
+        } elseif($score < self::AVERAGE_SCORE * 2) {
+            return self::HIGH_LEVEL;
+        } elseif($score < self::AVERAGE_SCORE * 4) {
+            return self::MIDDLE_LEVEL;
         }
 
-        // Мутация
-        foreach ($newPopulation as &$individual) {
-            $individual = $this->mutate($individual);
-        }
-
-        return $newPopulation;
+        return self::LOW_LEVEL;
     }
 
     // Метод оценки расписания
     private function calculateFitness(array $schedule): int
     {
-        return 1;
         //TODO: Количество неназначенных исследований
         //TODO: Количество врачей, у которых переработка? Или выход в доп смену
         //TODO: Сравнение "баланса" нагрузки на врачей
@@ -407,27 +438,29 @@ class AlgorithmWeekService
         // Выбирается наилучшее расписание где меньше всего пропусков исследований/где больше назначеных врачей
         foreach ($schedule as $modality) {
             foreach ($modality as $week) {
-                // TODO (1 проверка)  количество неназначенных исследований
-                if ($week['empty'] !== null) {
-                    $fitness += $week['empty'] * 10; // штраф за неназначенное исследование (ввести очки)
-                }
-
-                // TODO Подсчет загрузки врачей и рабочих дней для выполнения следующих проверок
-                $doctors = array_filter(array_keys($week), fn ($doctor) => $doctor !== 'empty');
-
-                foreach ($doctors as $doctor) {
-                    if (!isset($doctorWorkloads[$doctor])) {
-                        $doctorWorkloads[$doctor] = 0;
+                foreach ($week as $day) {
+                    // TODO (1 проверка)  количество неназначенных исследований
+                    if ($day['empty'] !== null) {
+                        $fitness += $day['empty'] * 10; // штраф за неназначенное исследование (ввести очки)
                     }
-                    $doctorWorkloads[$doctor]++;
 
-                    if (!isset($doctorDaysWorked[$doctor])) {
-                        $doctorDaysWorked[$doctor] = [];
+                    // TODO Подсчет загрузки врачей и рабочих дней для выполнения следующих проверок
+                    $doctors = array_filter(array_keys($day), fn($doctor) => $doctor !== 'empty');
+
+                    foreach ($doctors as $doctor) {
+                        if (!isset($doctorWorkloads[$doctor])) {
+                            $doctorWorkloads[$doctor] = 0;
+                        }
+                        $doctorWorkloads[$doctor]++;
+
+                        if (!isset($doctorDaysWorked[$doctor])) {
+                            $doctorDaysWorked[$doctor] = [];
+                        }
+                        $randomDay = rand(0, 6); // случайный выбор дня для учета равномерного распределения
+                        $doctorDaysWorked[$doctor][$randomDay] = true;
                     }
-                    $day = rand(0, 6); // случайный выбор дня для учета равномерного распределения
-                    $doctorDaysWorked[$doctor][$day] = true;
                 }
-                }
+            }
         }
 
         // TODO Подсчет загрузки врачей и рабочих дней: Мы считаем количество назначений для каждого врача в течение недели и отмечаем, в какие дни они работали.
@@ -464,7 +497,7 @@ class AlgorithmWeekService
             }
         }
 
-        // TODO (56 проверка) Минимизация выходных дней подряд
+        // TODO (6 проверка) Минимизация выходных дней подряд
         foreach ($doctorDaysWorked as $daysWorked) {
             $days = array_keys($daysWorked);
             $maxConsecutiveDaysOff = 0;
@@ -492,108 +525,114 @@ class AlgorithmWeekService
         return $fitness;
     }
 
-    // Метод для скрещивания (crossover)
-    private function crossover(array $parent1, array $parent2): array
+    // Метод для скрещивания
+    private function crossover(array $parent1, array $parent2, string $populationLevel): array
     {
-// TODO 1 вариант скрещивания (просто соединение двух массивов по заданому срезу)
-
-//        $child = [];
-//        foreach ($this->modalities as $modality) {
-//            $child[$modality->getModality()] = array_merge(
-//                array_slice($parent1[$modality->getModality()], 0, 3),
-//                array_slice($parent2[$modality->getModality()], 3)
-//            );
-//        }
-//        return $child;
-
-
-// TODO 2 вариант скрещивания (рандомный срез + инверсионное скрещивание + выбор лучшего результата с помощью фитнес функции)
-
-        $child1 = [];
-        $child2 = [];
-        foreach ($this->modalities as $modality) {
-            $cutPoint = rand(0, count($parent1[$modality->getModality()]) - 1);
-            $child1[$modality->getModality()] = array_merge(
-                array_slice($parent1[$modality->getModality()], 0, $cutPoint),
-                array_slice($parent2[$modality->getModality()], $cutPoint)
-            );
-            $child2[$modality->getModality()] = array_merge(
-                array_slice($parent2[$modality->getModality()], 0, $cutPoint),
-                array_slice($parent1[$modality->getModality()], $cutPoint)
-            );
-        }
-        return $this->calculateFitness($child1) < $this->calculateFitness($child2) ? $child1 : $child2;
-
-// TODO 3 вариант скрещивания самый эффективный (предыдущий алгоритмы только в цикле с сравнением с худшим родителем)
-
-//        do {
-//            $child1 = [];
-//            $child2 = [];
-//            foreach ($this->modalities as $modality) {
-//                $cutPoint = rand(0, count($parent1[$modality->getModality()]) - 1);
-//                $child1[$modality->getModality()] = array_merge(
-//                    array_slice($parent1[$modality->getModality()], 0, $cutPoint),
-//                    array_slice($parent2[$modality->getModality()], $cutPoint)
-//                );
-//                $child2[$modality->getModality()] = array_merge(
-//                    array_slice($parent2[$modality->getModality()], 0, $cutPoint),
-//                    array_slice($parent1[$modality->getModality()], $cutPoint)
-//                );
-//            }
-//
-//            $parentFitness = min($this->calculateFitness($parent1), $this->calculateFitness($parent2));
-//            $child1Fitness = $this->calculateFitness($child1);
-//            $child2Fitness = $this->calculateFitness($child2);
-//        } while ($child1Fitness >= $parentFitness && $child2Fitness >= $parentFitness);
-//
-//        return $child1Fitness < $child2Fitness ? $child1 : $child2;
+        return match ($populationLevel) {
+            self::LOW_LEVEL => $this->highCrossing($parent1, $parent2),
+            self::MIDDLE_LEVEL => $this->middleCrossing($parent1, $parent2),
+            self::HIGH_LEVEL => $this->lowCrossing($parent1, $parent2),
+            self::SUPER_HIGH_LEVEL => $this->calculateFitness($parent1) < $this->calculateFitness($parent2) ? $parent1 : $parent2,
+        };
     }
 
-    // Метод для мутации (mutation)
+    // Мутация
     private function mutate(array $individual): array
     {
-// TODO: 1 варинат (как было)
-
-//        foreach ($this->modalities as $modality) {
-//            if (rand(0, 100) < 20) {
-//                $doctor = $this->getRandomDoctorWhoCan($modality->getName());
-//                if ($doctor) {
-//                    $individual[$modality->getName()][rand(0, 6)] = $doctor->getId();
-//                }
-//            }
-//        }
-//        return $individual;
-
-// TODO: поправил первый вариант (чтобы работало)
-
-//        foreach ($this->modalities as $modality) {
-//            if (rand(0, 100) < 20) {
-//                $day = rand(0, 6);
-//                $doctor = $this->getRandomDoctorWhoCan($modality->getModality(), $individual, $day);
-//                if ($doctor) {
-//                    $doctorsId = array_slice($individual[$modality->getModality()][$day], 2);
-//                    if ($doctorsId) {
-//                        $randDoctorId = array_rand($doctorsId);
-//                        $individual[$modality->getModality()][$day][$randDoctorId] = $doctor->getId();
-//                    }
-//                }
-//            }
-//        }
-//        return $individual;
-
-// TODO: 2 варинат (сделал мутацию сто процентой по каждой модальности + мутация применяется только если фитнес уменьшилось)
         $oldIndividual = $individual;
-        foreach ($this->modalities as $modality) {
-                $doctor = $this->getRandomDoctorWhoCan($modality, $individual);
+        for ($i = 1; $i <= count($individual); $i++) {
+            foreach ($this->modalities as $modality) {
+                $rand = array_rand($individual[$i][$modality->getModality()]);
+                $doctor = $this->getRandomDoctorWhoCan($modality, $individual[$i][$modality->getModality()][$rand]);
                 if ($doctor) {
-                    $rand = array_rand($individual[$modality->getModality()]);
-                        $doctorsId = array_slice($individual[$modality->getModality()][$rand], 1);
+                    $doctorsId = array_filter(array_flip(array_keys($individual[$i][$modality->getModality()][$rand])), fn ($id) => $id !== 'empty');
                     if ($doctorsId) {
                         $randDoctorId = array_rand($doctorsId);
-                        $individual[$modality->getModality()][$rand][$randDoctorId] = $doctor->getId();
+                        $individual[$i][$modality->getModality()][$rand][$randDoctorId] = $doctor->getId();
                     }
                 }
+            }
         }
         return $this->calculateFitness($individual) < $this->calculateFitness($oldIndividual) ? $individual : $oldIndividual;
+    }
+
+    /**
+     * Вариант скрещивания для пополуляции высокого уровня
+     * @param array $parent1
+     * @param array $parent2
+     * @return array
+     */
+    private function lowCrossing(array $parent1, array $parent2): array
+    {
+        $child = [];
+        for ($i = 1; $i <= count($parent1); $i++) {
+            foreach ($this->modalities as $modality) {
+                $child[$i][$modality->getModality()] = array_merge(
+                    array_slice($parent1[$i][$modality->getModality()], 0, 3),
+                    array_slice($parent2[$i][$modality->getModality()], 3)
+                );
+            }
+        }
+
+        return $child;
+    }
+
+    /**
+     * Вариант скрещивания для пополуляции среднего уровня
+     * @param array $parent1
+     * @param array $parent2
+     * @return array
+     */
+    private function middleCrossing(array $parent1, array $parent2): array
+    {
+        $child1 = [];
+        $child2 = [];
+        for ($i = 1; $i <= count($parent1); $i++) {
+            foreach ($this->modalities as $modality) {
+                $cutPoint = rand(0, count($parent1[$i][$modality->getModality()]) - 1);
+                $child1[$i][$modality->getModality()] = array_merge(
+                    array_slice($parent1[$i][$modality->getModality()], 0, $cutPoint),
+                    array_slice($parent2[$i][$modality->getModality()], $cutPoint)
+                );
+                $child2[$i][$modality->getModality()] = array_merge(
+                    array_slice($parent2[$i][$modality->getModality()], 0, $cutPoint),
+                    array_slice($parent1[$i][$modality->getModality()], $cutPoint)
+                );
+            }
+        }
+        return $this->calculateFitness($child1) < $this->calculateFitness($child2) ? $child1 : $child2;
+    }
+
+    /**
+     * Вариант скрещивания для пополуляции низкого уровня
+     * @param array $parent1
+     * @param array $parent2
+     * @return array
+     */
+    private function highCrossing(array $parent1, array $parent2): array
+    {
+        do {
+            $child1 = [];
+            $child2 = [];
+            for ($i = 1; $i <= count($parent1); $i++) {
+                foreach ($this->modalities as $modality) {
+                    $cutPoint = rand(0, count($parent1[$i][$modality->getModality()]) - 1);
+                    $child1[$i][$modality->getModality()] = array_merge(
+                        array_slice($parent1[$i][$modality->getModality()], 0, $cutPoint),
+                        array_slice($parent2[$i][$modality->getModality()], $cutPoint)
+                    );
+                    $child2[$i][$modality->getModality()] = array_merge(
+                        array_slice($parent2[$i][$modality->getModality()], 0, $cutPoint),
+                        array_slice($parent1[$i][$modality->getModality()], $cutPoint)
+                    );
+                }
+
+                $parentFitness = min($this->calculateFitness($parent1), $this->calculateFitness($parent2));
+                $child1Fitness = $this->calculateFitness($child1);
+                $child2Fitness = $this->calculateFitness($child2);
+            }
+        } while ($child1Fitness >= $parentFitness && $child2Fitness >= $parentFitness);
+
+        return $child1Fitness < $child2Fitness ? $child1 : $child2;
     }
 }
