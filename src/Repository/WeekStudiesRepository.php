@@ -54,12 +54,12 @@ class WeekStudiesRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function getAllWeekNumbers(string $from, string $to): array
+    public function getAllWeekNumbers(\DateTime $from, \DateTime $to): array
     {
         return
             $this
                 ->createQueryBuilder('ws')
-                ->select('ws.weekNumber')
+                ->select('ws.weekNumber, ws.year')
                 ->andWhere('ws.startOfWeek >= :from')
                 ->andWhere('ws.startOfWeek <= :to')
                 ->setParameter('from', $from)
