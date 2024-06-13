@@ -32,3 +32,9 @@ services:
     App\Listener\MLLogsListener:
         tags:
             - { name: doctrine.orm.entity_listener, entity: 'App\Entity\MLLogs', event: postPersist }
+
+    App\Service\TwigExtension:
+        arguments:
+            - '@security.helper'
+        tags:
+            - { name: twig.extension }
