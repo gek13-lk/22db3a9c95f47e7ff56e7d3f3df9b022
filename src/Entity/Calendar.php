@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\CalendarRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: CalendarRepository::class)]
 class Calendar
 {
     #[ORM\Id]
@@ -17,8 +18,8 @@ class Calendar
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Наименование"])]
     private ?string $rvd = null;
 
-    #[ORM\Column(type: 'date', nullable: true, options: ["comment" => "Дата"])]
-    private \DateTime|null $sqlDate = null;
+    #[ORM\Column(name:'sql_date', type: 'date', nullable: true, options: ["comment" => "Дата"])]
+    private \DateTimeInterface|null $date = null;
 
     #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Порядковый номер дня в текущем месяце"])]
     private ?int $dayOfMonth = null;
@@ -78,14 +79,14 @@ class Calendar
         return $this;
     }
 
-    public function getContrast(): ?\DateTime
+    public function getDate(): ?\DateTime
     {
-        return $this->contrast;
+        return $this->date;
     }
 
-    public function setContrast(?\DateTime $contrast): Calendar
+    public function setDate(?\DateTime $date): Calendar
     {
-        $this->contrast = $contrast;
+        $this->date = $date;
         return $this;
     }
 
@@ -220,5 +221,4 @@ class Calendar
         $this->workDayOfYear = $workDayOfYear;
         return $this;
     }
-
 }
