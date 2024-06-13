@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller\Crud;
 
 use App\Entity\Doctor;
@@ -25,6 +27,9 @@ class DoctorCrudController extends AbstractCrudController
             ->setPageTitle(Crud::PAGE_NEW, 'Добавление врача')
             ->setPageTitle(Crud::PAGE_EDIT, 'Редактирование врача')
             ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр врача')
+            ->overrideTemplates([
+                'layout' => 'admin/doctor_layout.html.twig',
+            ])
             ;
     }
 
