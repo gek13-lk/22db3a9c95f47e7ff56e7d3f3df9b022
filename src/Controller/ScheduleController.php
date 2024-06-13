@@ -10,41 +10,37 @@ use App\Modules\Algorithm\SetTimeAlgorithmService;
 use App\Modules\Navbar\DefaultNavItem;
 use App\Modules\Navbar\NavElementInterface;
 use App\Modules\Navbar\NavItemInterface;
+use App\Repository\CalendarRepository;
+use App\Repository\DoctorRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Option\EA;
+use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-class ScheduleController extends AbstractController implements NavElementInterface {
-
-    public function __construct(private EntityManagerInterface $entityManager, private AlgorithmWeekService $service3, private SetTimeAlgorithmService $timeAlgorithmService) {}
+class ScheduleController extends DashboardController {
     #[Route('/schedule', name: 'app_schedule')]
-    public function index(): Response {
+    public function schedule(Request $request, CalendarRepository $calendarRepository, DoctorRepository $doctorRepository): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
-        $countSchedule = 5;
-        $user = $this->getUser();
-        //$this->service3->run(new \DateTime('2024-01-01'), new \DateTime('2024-01-09'), $countSchedule);
-        //$schedule = $this->entityManager->getRepository(TempSchedule::class)->find(2);
+        $start = $request->get('dateStart', '2024-01-01');
+        $end = $request->get('dateEnd', '2024-01-31');
 
-        //$this->timeAlgorithmService->setTime($schedule);
-        //$this->service3->run(new \DateTime('2024-01-01'), new \DateTime('2024-01-09'));
+        $dateStart = \DateTime::createFromFormat('Y-m-d', $start);
+        $dateEnd = \DateTime::createFromFormat('Y-m-d', $end);
+
+        if ($this->isGranted('ROLE_DOCTOR')) {
+            $doctors = $doctorRepository->findBy(['id' => 1]); // TODO: сделать связку пользователя с врачом
+        } else {
+            $doctors = $doctorRepository->findAll();
+        }
 
         return $this->render('schedule/index.html.twig', [
-            'controller_name' => 'ScheduleController',
-            'username' => $user->getUserIdentifier(),
+            'title' => 'Расписание',
+            'calendars' => $calendarRepository->getRange($dateStart, $dateEnd),
+            'doctors' => $doctors,
         ]);
-    }
-
-    public function getNavItem(): NavItemInterface {
-        return new DefaultNavItem(
-            'Расписание',
-            '<i class="fa-solid fa-calendar-days"></i>',
-            'app_schedule'
-        );
-    }
-
-    public static function getPriority(): int {
-        return 0;
     }
 }
