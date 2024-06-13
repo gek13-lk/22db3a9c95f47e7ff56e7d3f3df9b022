@@ -17,23 +17,22 @@ class DashboardController extends AbstractDashboardController {
     #[Route('/', name: 'app_home')]
     public function index(): Response
     {
-        return $this->redirectToRoute('dashboard');
+        return $this->redirectToRoute('app_schedule');
     }
 
     #[Route('/dashboard', name: 'dashboard')]
     public function dashboard(): Response {
-        return $this->render('dashboard/index.html.twig', [
-            'content_title' => 'Главная',
-        ]);
+        return $this->redirectToRoute('app_schedule');
     }
 
     public function configureDashboard(): Dashboard {
         return Dashboard::new()
-            ->setTitle('App');
+            ->setTitle('App')
+            ->renderContentMaximized();
     }
 
     public function configureMenuItems(): iterable {
-        yield MenuItem::linkToDashboard('Главная', 'fa fa-home');
+        yield MenuItem::linkToRoute('Расписание', 'fa fa-home', 'app_schedule');
         yield MenuItem::linkToCrud('Врачи', 'fas fa-user-doctor', Doctor::class)
             ->setPermission(DoctorVoter::LIST);
 
