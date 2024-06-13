@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\Doctor;
@@ -12,27 +14,33 @@ use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-class DashboardController extends AbstractDashboardController {
-
+class DashboardController extends AbstractDashboardController
+{
     #[Route('/', name: 'app_home')]
     public function index(): Response
     {
-        return $this->redirectToRoute('app_schedule');
+        return $this->redirectToRoute('dashboard');
     }
 
     #[Route('/dashboard', name: 'dashboard')]
     public function dashboard(): Response {
-        return $this->redirectToRoute('app_schedule');
+        return $this->render('dashboard/index.html.twig', [
+            'content_title' => 'Главная',
+        ]);
+    }
+
+    #[Route('/calendar', name: 'calendar')]
+    public function calendar(): Response {
+        return $this->render('dashboard/calendar.html.twig');
     }
 
     public function configureDashboard(): Dashboard {
         return Dashboard::new()
-            ->setTitle('App')
-            ->renderContentMaximized();
+            ->setTitle('Референс-центр');
     }
 
     public function configureMenuItems(): iterable {
-        yield MenuItem::linkToRoute('Расписание', 'fa fa-home', 'app_schedule');
+        yield MenuItem::linkToDashboard('Главная', 'fa fa-home');
         yield MenuItem::linkToCrud('Врачи', 'fas fa-user-doctor', Doctor::class)
             ->setPermission(DoctorVoter::LIST);
 
