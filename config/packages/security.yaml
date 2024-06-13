@@ -36,17 +36,16 @@ security:
             form_login:
                 login_path: app_login
                 check_path: app_login
-                username_parameter: login_form[username]
-                password_parameter: login_form[password]
+                username_parameter: username
+                password_parameter: password
                 enable_csrf: true
-                csrf_parameter: login_form[csrf_token]
                 always_use_default_target_path: true
-                default_target_path: app_profile
+                default_target_path: dashboard
 
             remember_me:
                 secret: '%kernel.secret%' # required
                 lifetime: 604800 # 1 week in seconds
-                remember_me_parameter: login_form[remember_me]
+                remember_me_parameter: remember_me
 
             login_throttling:
                 limiter: app.login_rate_limiter
@@ -56,8 +55,8 @@ security:
 
     access_control:
          - { path: ^/login, roles: PUBLIC_ACCESS }
-         - { path: ^/register, roles: PUBLIC_ACCESS }
-         - { path: ^/profile, roles: ROLE_USER }
+         - { path: ^/sign-up, roles: PUBLIC_ACCESS }
+         - { path: ^/*, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:

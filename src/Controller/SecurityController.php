@@ -1,36 +1,37 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Form\LoginFormType;
-use App\Form\RegistrationFormType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class SecurityController extends AbstractController {
     #[Route(path: '/login', name: 'app_login')]
-    public function login(Request $request, AuthenticationUtils $authenticationUtils, CsrfTokenManagerInterface $csrfTokenManager): Response {
-        $form = $this->createForm(LoginFormType::class, [
-            'username' => $authenticationUtils->getLastUsername(),
-            'csrf_token' => $csrfTokenManager->getToken('authenticate')->getValue(),
-        ]);
-        if ($error = $authenticationUtils->getLastAuthenticationError()) {
-            $form->addError(new FormError($error->getMessage()));
-        }
+    public function login(AuthenticationUtils $authenticationUtils): Response {
+        $error = $authenticationUtils->getLastAuthenticationError();
+        $lastUsername = $authenticationUtils->getLastUsername();
 
-        $form->handleRequest($request);
-
-        return $this->render('security/login.html.twig', [
-            'loginForm' => $form,
+        return $this->render('login/login.html.twig', [
+            'error' => $error,
+            'last_username' => $lastUsername,
+            'target_path' => $this->generateUrl('dashboard'),
+            'username_label' => 'Имя пользователя',
+            'password_label' => 'Пароль',
+            'sign_in_label' => 'Войти',
+            'username_parameter' => 'username',
+            'password_parameter' => 'password',
+            'remember_me_enabled' => true,
+            'remember_me_parameter' => 'remember_me',
+            'remember_me_checked' => false,
+            'remember_me_label' => 'Запомнить меня',
+            'csrf_token_intention' => 'authenticate',
         ]);
     }
 
@@ -39,32 +40,36 @@ class SecurityController extends AbstractController {
         throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
     }
 
-    #[Route('/register', name: 'app_register')]
-    public function register(Request $request, UserPasswordHasherInterface $userPasswordHasher, Security $security, EntityManagerInterface $entityManager): Response
+    #[Route(path: '/sign-up', name: 'sign_up')]
+    public function signUp(AuthenticationUtils $authenticationUtils): Response {
+        $error = $authenticationUtils->getLastAuthenticationError();
+
+        return $this->render('login/signup.html.twig', [
+            'error' => $error,
+            'target_path' => $this->generateUrl('dashboard'),
+            'username_parameter' => 'email',
+            'password_parameter' => 'password',
+            'csrf_token_intention' => 'authenticate',
+        ]);
+    }
+
+    #[Route(path: '/app-register', name: 'app_register', methods: ['GET', 'POST'])]
+    public function register(Request $request, EntityManagerInterface $em): Response
     {
-        $user = new User();
-        $form = $this->createForm(RegistrationFormType::class, $user);
-        $form->handleRequest($request);
+        if ($request->isMethod('POST')) {
+            $email = $request->request->get('email');
+            $password = $request->request->get('password');
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            // encode the plain password
-            $user->setPassword(
-                $userPasswordHasher->hashPassword(
-                    $user,
-                    $form->get('plainPassword')->getData()
-                )
-            );
+            $user = new User();
+            $user->setUsername($email);
+            $user->setPassword($password);
 
-            $entityManager->persist($user);
-            $entityManager->flush();
+            $em->persist($user);
+            $em->flush();
 
-            // do anything else you need here, like send an email
-
-            return $security->login($user, 'form_login', 'main');
+            return $this->redirectToRoute('dashboard');
         }
 
-        return $this->render('security/register.html.twig', [
-            'registrationForm' => $form,
-        ]);
+        return $this->render('login/signup.html.twig');
     }
 }

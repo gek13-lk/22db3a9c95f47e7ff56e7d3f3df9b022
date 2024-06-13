@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\DoctorRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: DoctorRepository::class)]
 class Doctor
 {
     #[ORM\Id]
@@ -23,11 +24,11 @@ class Doctor
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Отчество"])]
     private ?string $middlename = null;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'json', options: ['jsonb' => true])]
     private array $addonCompetencies = [];
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Основная компетенция"])]
-    private string $competency;
+    #[ORM\Column(type: 'json', options: ['jsonb' => true])]
+    private array $mainCompetencies = [];
 
     /**
      * Норма выхода врача в смену.
@@ -40,7 +41,7 @@ class Doctor
 
     public function __toString()
     {
-        return $this->getFio();
+        return $this->getFio() ?? 'Doctor#'.$this->id;
     }
 
     public function getSurname(): ?string
@@ -103,7 +104,7 @@ class Doctor
         return $this->id;
     }
 
-    public function getWorkSchedule(): DoctorWorkSchedule
+    public function getWorkSchedule(): ?DoctorWorkSchedule
     {
         return $this->workSchedule;
     }
@@ -113,12 +114,12 @@ class Doctor
         $this->workSchedule = $workSchedule;
     }
 
-    public function getStavka(): ?int
+    public function getStavka(): ?float
     {
         return $this->stavka;
     }
 
-    public function setStavka(?int $stavka): Doctor
+    public function setStavka(?float $stavka): Doctor
     {
         $this->stavka = $stavka;
         return $this;
@@ -135,14 +136,14 @@ class Doctor
         return $this;
     }
 
-    public function getCompetency(): string
+    public function getCompetency(): array
     {
-        return $this->competency;
+        return $this->mainCompetencies;
     }
 
-    public function setCompetency(string $competency): Doctor
+    public function setCompetency(array $competency): Doctor
     {
-        $this->competency = $competency;
+        $this->mainCompetencies = $competency;
         return $this;
     }
 }
