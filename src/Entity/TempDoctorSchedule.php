@@ -22,10 +22,10 @@ class TempDoctorSchedule
     private Doctor $doctor;
 
     #[ORM\Column(type: 'datetime', nullable: true)]
-    private \DateTime $workTimeStart;
+    private ?\DateTime $workTimeStart = null;
 
     #[ORM\Column(type: 'datetime', nullable: true)]
-    private \DateTime $workTimeEnd;
+    private ?\DateTime $workTimeEnd = null;
 
     #[ORM\ManyToOne(targetEntity: TempScheduleWeekStudies::class)]
     private TempScheduleWeekStudies $tempScheduleWeekStudies;
