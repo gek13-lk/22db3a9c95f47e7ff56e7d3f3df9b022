@@ -12,8 +12,8 @@ use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-class DashboardController extends AbstractDashboardController {
-
+class DashboardController extends AbstractDashboardController
+{
     #[Route('/', name: 'app_home')]
     public function index(): Response
     {
@@ -25,9 +25,14 @@ class DashboardController extends AbstractDashboardController {
         return $this->redirectToRoute('app_schedule');
     }
 
+    #[Route('/calendar', name: 'calendar')]
+    public function calendar(): Response {
+        return $this->render('dashboard/calendar.html.twig');
+    }
+
     public function configureDashboard(): Dashboard {
         return Dashboard::new()
-            ->setTitle('App')
+            ->setTitle('Референс-центр')
             ->renderContentMaximized();
     }
 
