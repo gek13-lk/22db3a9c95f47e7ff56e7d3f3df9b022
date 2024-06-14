@@ -15,14 +15,20 @@ class MLLogs
     #[ORM\Column]
     private int $id;
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'logs')]
+    #[ORM\JoinColumn(nullable: false)]
     private User $user;
 
     #[ORM\Column(type: 'datetime', nullable: false)]
     private \DateTime $date;
 
     #[ORM\Column(type: 'boolean', nullable: false, options: ['default' => false])]
-    private bool $isSuccess = false;
+    private bool $isSuccess;
+
+    public function __construct()
+    {
+        $this->isSuccess = false;
+    }
 
     public function getId(): ?int
     {
@@ -37,6 +43,7 @@ class MLLogs
     public function setUser(User $user): self
     {
         $this->user = $user;
+        $user->addLogs($this);
 
         return $this;
     }

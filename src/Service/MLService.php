@@ -62,19 +62,15 @@ final class MLService
         return $count ? $count[0]['count'] : 0;
     }
 
-    public function createLog(): void
+    public function createLog(User $user): MLLogs
     {
-        /** @var User|null $user */
-        $user = $this->security->getUser();
-        if (!$user) {
-            throw new \Exception('Пользователь не найден');
-        }
-
         $logs = new MLLogs();
         $logs->setUser($user);
         $logs->setDate(new \DateTime());
 
         $this->em->persist($logs);
         $this->em->flush();
+
+        return $logs;
     }
 }

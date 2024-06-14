@@ -34,7 +34,12 @@ final class UserCrudController extends AbstractCrudController {
             ->setPageTitle(Crud::PAGE_INDEX, 'Список пользователей')
             ->setPageTitle(Crud::PAGE_NEW, 'Добавление пользователя')
             ->setPageTitle(Crud::PAGE_EDIT, 'Редактирование пользователя')
-            ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр пользователя');
+            ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр пользователя')
+            ->overrideTemplates([
+                'layout' => 'admin/user_layout.html.twig',
+                'crud/detail' => 'admin/custom_detail.html.twig',
+            ])
+            ;
     }
 
     public function configureActions(Actions $actions): Actions {
