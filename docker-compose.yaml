@@ -43,6 +43,20 @@ services:
     ports:
       - "8000:8000"
 
+  worker:
+    build:
+      context: ./docker/django
+    command: >
+      /bin/sh -c "
+      python manage.py run_worker
+      "
+    volumes:
+      - ./docker/django/:/usr/src/app/
+    depends_on:
+      - rabbitmq
+    networks:
+      - app-network
+
   db:
     image: postgres:16-alpine
     ports:

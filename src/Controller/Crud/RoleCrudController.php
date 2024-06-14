@@ -27,11 +27,7 @@ class RoleCrudController extends AbstractCrudController {
             ->setPageTitle(Crud::PAGE_INDEX, 'Список ролей')
             ->setPageTitle(Crud::PAGE_NEW, 'Добавление роли')
             ->setPageTitle(Crud::PAGE_EDIT, 'Редактирование роли')
-            ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр роли')
-            ->overrideTemplates([
-                'layout' => 'admin/role_layout.html.twig',
-            ])
-            ;
+            ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр роли');
     }
 
     public function configureActions(Actions $actions): Actions {

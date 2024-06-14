@@ -1,115 +1,96 @@
-<!DOCTYPE html>
-<html lang="ru">
-{% include 'inc/head.html.twig' %}
-{% include 'inc/stylesheet.html.twig' %}
-<link rel="stylesheet" href="{{ asset('vendor/calendar/css/fullcalendar.min.css') }}" />
-<link rel="stylesheet" href="{{ asset('vendor/calendar/css/custom-calendar.css') }}" />
-<body>
-<div id="loading-wrapper">
-    <div class="spinner-border" role="status">
-        <span class="sr-only">Загрузка...</span>
+{% extends '@!EasyAdmin/page/content.html.twig' %}
+
+{% block page_title %}
+    Референс-центр - Вход
+{% endblock %}
+
+{% block head_stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('vendor/calendar/css/fullcalendar.min.css') }}" />
+    <link rel="stylesheet" href="{{ asset('vendor/calendar/css/custom-calendar.css') }}" />
+{% endblock %}
+
+{% block main %}
+    <div class="col-md-9 ">
+        <div id="calendar" class="fc-calendar"></div>
     </div>
-</div>
-{% set globalVars = getGlobalVariables() %}
-{% include 'inc/header.html.twig' with globalVars %}
-<div class="container-fluid">
-    {% include 'inc/navbar.html.twig' %}
-    <div class="main-container">
-        <div class="page-header">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item active">График / Календарь</li>
-            </ol>
-            <div class="site-award">
-                <img src="img/award.png">
-            </div>
-        </div>
-        <div class="content-wrapper">
-            <div class="row gutters">
-                <div class="col-md-9 ">
-                    <div id="calendar" class="fc-calendar"></div>
+    <div class="col-md-3 col-sm-4 col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    Events
                 </div>
-                <div class="col-md-3 col-sm-4 col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                Events
-                            </div>
+            </div>
+            <div class="card-body">
+                <div class="events-container">
+                    <div class="event-list">
+                        <div class="event-icon bg-info">
+                            <i class="icon-event_available"></i>
                         </div>
-                        <div class="card-body">
-                            <div class="events-container">
-                                <div class="event-list">
-                                    <div class="event-icon bg-info">
-                                        <i class="icon-event_available"></i>
-                                    </div>
-                                    <div class="event-info">
-                                        <div class="event-title">Doctors Meeting</div>
-                                        <div class="event-date">Park View Hotel, at 10:00 AM</div>
-                                    </div>
-                                </div>
-                                <div class="event-list">
-                                    <div class="event-icon bg-success">
-                                        <i class="icon-event_available"></i>
-                                    </div>
-                                    <div class="event-info">
-                                        <div class="event-title">Staff Meeting</div>
-                                        <div class="event-date">Cafe Mocha Inn, at 03:00 PM</div>
-                                    </div>
-                                </div>
-                                <div class="event-list">
-                                    <div class="event-icon bg-warning">
-                                        <i class="icon-event_available"></i>
-                                    </div>
-                                    <div class="event-info">
-                                        <div class="event-title">Annual Function</div>
-                                        <div class="event-date">Today evening, at 05:00 PM</div>
-                                    </div>
-                                </div>
-                                <div class="event-list">
-                                    <div class="event-icon bg-danger">
-                                        <i class="icon-event_available"></i>
-                                    </div>
-                                    <div class="event-info">
-                                        <div class="event-title">Awards</div>
-                                        <div class="event-date">25th at 03:00 PM</div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="event-info">
+                            <div class="event-title">Doctors Meeting</div>
+                            <div class="event-date">Park View Hotel, at 10:00 AM</div>
                         </div>
                     </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                Appointments
-                            </div>
+                    <div class="event-list">
+                        <div class="event-icon bg-success">
+                            <i class="icon-event_available"></i>
                         </div>
-                        <div class="card-body">
-                            <div class="overall-events">
-                                <a href="#" class="event-block bg-primary">
-                                    <i class="icon-event_available"></i>
-                                    <div class="total-events">65</div>
-                                    Operations
-                                </a>
-                                <a href="#" class="event-block bg-secondary">
-                                    <i class="icon-event_available"></i>
-                                    <div class="total-events">500</div>
-                                    Treatments
-                                </a>
-                            </div>
+                        <div class="event-info">
+                            <div class="event-title">Staff Meeting</div>
+                            <div class="event-date">Cafe Mocha Inn, at 03:00 PM</div>
+                        </div>
+                    </div>
+                    <div class="event-list">
+                        <div class="event-icon bg-warning">
+                            <i class="icon-event_available"></i>
+                        </div>
+                        <div class="event-info">
+                            <div class="event-title">Annual Function</div>
+                            <div class="event-date">Today evening, at 05:00 PM</div>
+                        </div>
+                    </div>
+                    <div class="event-list">
+                        <div class="event-icon bg-danger">
+                            <i class="icon-event_available"></i>
+                        </div>
+                        <div class="event-info">
+                            <div class="event-title">Awards</div>
+                            <div class="event-date">25th at 03:00 PM</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    Appointments
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="overall-events">
+                    <a href="#" class="event-block bg-primary">
+                        <i class="icon-event_available"></i>
+                        <div class="total-events">65</div>
+                        Operations
+                    </a>
+                    <a href="#" class="event-block bg-secondary">
+                        <i class="icon-event_available"></i>
+                        <div class="total-events">500</div>
+                        Treatments
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-    <footer class="main-footer">© Поставил цель - добегайся 2024</footer>
-</div>
-</body>
-</html>
-{% include 'inc/footer.html.twig' %}
-<script src="{{ asset('js/jquery.min.js') }}"></script>
-<script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
-<script src="{{ asset('js/moment.js') }}"></script>
-<script src="{{ asset('vendor/calendar/js/fullcalendar.min.js') }}"></script>
-<script src="{{ asset('vendor/calendar/js/custom-calendar.js') }}"></script>
-<script src="{{ asset('vendor/calendar/js/ru.js') }}"></script>
+{% endblock %}
+
+
+{% block body_javascript %}
+    {{ parent() }}
+    <script src="{{ asset('vendor/calendar/js/fullcalendar.min.js') }}"></script>
+    <script src="{{ asset('vendor/calendar/js/locale-all.js') }}"></script>
+    <script src="{{ asset('vendor/calendar/js/custom-calendar.js') }}"></script>
+{% endblock %}
 
