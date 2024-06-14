@@ -28,7 +28,7 @@ class ScheduleController extends AbstractController implements NavElementInterfa
         //$schedule = $this->entityManager->getRepository(TempSchedule::class)->find(2);
 
         //$this->timeAlgorithmService->setTime($schedule);
-        //$this->service3->run(new \DateTime('2024-01-01'), new \DateTime('2024-01-09'));
+        $this->service3->run(new \DateTime('2024-01-01'), new \DateTime('2024-01-09'), $countSchedule);
 
         return $this->render('schedule/index.html.twig', [
             'controller_name' => 'ScheduleController',
