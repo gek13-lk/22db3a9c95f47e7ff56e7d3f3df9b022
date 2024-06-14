@@ -71,7 +71,11 @@
                                 <div class="header-user-profile">
                                     <h5>{{ username }}</h5>
                                 </div>
-                                <a href=""><i class="icon-user1"></i> Мой профиль</a>
+                                <a href="{{ path('easyadmin', {
+                                    'crudAction': 'detail',
+                                    'crudControllerFqcn': 'App\\Controller\\Crud\\UserCrudController',
+                                    'entityId': userId
+                                }) }}"><i class="icon-user1"></i>Мой профиль</a>
                                 <a href=""><i class="icon-settings1"></i> Настройки</a>
                                 <a href="{{ path('app_logout') }}"><i class="icon-log-out1"></i> Выйти</a>
                             </div>

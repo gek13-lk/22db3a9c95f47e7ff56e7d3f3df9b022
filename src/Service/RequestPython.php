@@ -34,8 +34,8 @@ final class RequestPython
             $body = $response->getBody();
             $output = json_decode($body->getContents(), true);
 
-            if ($statusCode !== 200 || $output['status'] !== 'success' || empty($output['result'])) {
-                throw new \Exception('[ code '.$statusCode.' ] : '.json_encode($output));
+            if ($statusCode !== 200 || $output['status'] !== 'success') {
+                throw new \Exception('code '.$statusCode.': '.json_encode($output));
             }
 
             return $output;

@@ -12,8 +12,6 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
 #[AsCommand(
     name: 'app:models:training',
@@ -23,8 +21,7 @@ final class ModelTrainingCommand extends Command
 {
     public function __construct(
         private MLService $service,
-        private TokenStorageInterface $tokenStorage,
-        private EntityManagerInterface $entityManager
+        private EntityManagerInterface $em
     ) {
         parent::__construct();
     }
@@ -32,25 +29,36 @@ final class ModelTrainingCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+        $io->info('Старт обучения моделей прогнозирования');
 
         try {
+            $dateStart = new \DateTime();
             /** @var User|null $systemUser */
-            $systemUser = $this->entityManager->getRepository(User::class)->findOneBy(['username' => 'admin']);
+            $systemUser = $this->em->getRepository(User::class)->findOneBy(['username' => 'admin']);
             if (!$systemUser) {
                 throw new \Exception('Не найден системный пользователь');
             }
 
-            $token = new UsernamePasswordToken($systemUser, 'main');
-            $this->tokenStorage->setToken($token);
+            $io->info('Добавляем лог о событии');
+            $log = $this->service->createLog($systemUser);
+            $log->setIsSuccess();
+            $this->em->flush();
 
-            $this->service->createLog();
+            $io->info('Запускаем скрипт. Логи обучения: docker/django/model_training.log');
             $this->service->execute();
 
-            $io->success('Модели прогнозирования успешно обучены');
+            $difference = $dateStart->diff(new \DateTime());
+            $totalMinutes = $difference->days * 24 * 60 + $difference->h * 60 + $difference->i;
+            $io->success('Модели прогнозирования успешно обучены за '. $totalMinutes .' минут');
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $io->success('Ошибка обучения моделей прогнозирования: '.$e->getMessage());
+            $text = sprintf(
+                'Ошибка обучения моделей прогнозирования: %s [ Логи ] - docker/django/model_training.log',
+                $e->getMessage()
+            );
+
+            $io->error($text);
 
             return Command::FAILURE;
         }
