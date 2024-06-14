@@ -36,9 +36,10 @@ security:
             form_login:
                 login_path: app_login
                 check_path: app_login
-                username_parameter: username
-                password_parameter: password
+                username_parameter: login_form[username]
+                password_parameter: login_form[password]
                 enable_csrf: true
+                csrf_parameter: login_form[csrf_token]
                 always_use_default_target_path: true
                 default_target_path: dashboard
 
