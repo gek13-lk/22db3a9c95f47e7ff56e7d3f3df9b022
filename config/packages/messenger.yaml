@@ -1,0 +1,6 @@
+framework:
+    messenger:
+        transports:
+            async: 'doctrine://default'
+        routing:
+            'App\Messenger\Message\MLMessage': async
