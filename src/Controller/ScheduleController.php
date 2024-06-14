@@ -22,7 +22,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class ScheduleController extends DashboardController {
     #[Route('/schedule', name: 'app_schedule')]
-    public function schedule(Request $request, CalendarRepository $calendarRepository, DoctorRepository $doctorRepository): Response {
+    public function schedule(Request $request, CalendarRepository $calendarRepository, DoctorRepository $doctorRepository, AlgorithmWeekService $service3, SetTimeAlgorithmService $timeAlgorithmService): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         $start = $request->get('dateStart', '2024-01-01');
@@ -36,6 +36,14 @@ class ScheduleController extends DashboardController {
         } else {
             $doctors = $doctorRepository->findAll();
         }
+
+        //$countSchedule = 5;
+        //$user = $this->getUser();
+        ////$this->service3->run(new \DateTime('2024-01-01'), new \DateTime('2024-01-09'), $countSchedule);
+        ////$schedule = $this->entityManager->getRepository(TempSchedule::class)->find(2);
+        //
+        ////$this->timeAlgorithmService->setTime($schedule);
+        //$this->service3->run(new \DateTime('2024-01-01'), new \DateTime('2024-01-09'), $countSchedule);
 
         return $this->render('schedule/index.html.twig', [
             'title' => 'Расписание',
