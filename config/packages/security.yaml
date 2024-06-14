@@ -55,7 +55,7 @@ security:
 
     access_control:
          - { path: ^/login, roles: PUBLIC_ACCESS }
-         - { path: ^/sign-up, roles: PUBLIC_ACCESS }
+         - { path: ^/register, roles: PUBLIC_ACCESS }
          - { path: ^/*, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
