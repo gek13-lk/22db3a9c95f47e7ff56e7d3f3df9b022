@@ -1,0 +1,76 @@
+{# @var ea \EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext #}
+<nav class="navbar navbar-expand-lg custom-navbar">
+    {% block main_menu_before %}
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#royalHospitalsNavbar"
+                aria-controls="royalHospitalsNavbar" aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon">
+						<i></i>
+						<i></i>
+						<i></i>
+					</span>
+        </button>
+    {% endblock %}
+
+    <div class="collapse navbar-collapse" id="royalHospitalsNavbar" style="z-index: 1000000">
+        {% block main_menu %}
+            <ul class="navbar-nav">
+                {% for menuItem in ea.mainMenu.items %}
+                    {% block menu_item %}
+                        {% set is_submenu_item_with_no_items = menuItem.type == constant('EasyCorp\\Bundle\\EasyAdminBundle\\Dto\\MenuItemDto::TYPE_SUBMENU') and not menuItem.hasSubItems %}
+                        {% if is_submenu_item_with_no_items %}
+                            {# this can happen when submenu items define permissions and the current user can't see any
+                               of the subitems; instead of only displaying the label of the empty submenu, don't display anything #}
+                        {% else %}
+                            {% if menuItem.hasSubItems %}
+                                <li class="nav-item dropdown">
+                                    {{ _self.render_menu_item(menuItem) }}
+                                    <ul class="dropdown-menu" aria-labelledby="pagesDropdown">
+                                        {% for menuSubItem in menuItem.subItems %}
+                                            {% block menu_subitem %}
+                                                <li>
+                                                    {{ _self.render_submenu_item(menuSubItem) }}
+                                                </li>
+                                            {% endblock menu_subitem %}
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% else %}
+                                <li class="nav-item">
+                                    {{ _self.render_menu_item(menuItem) }}
+                                </li>
+                            {% endif %}
+                        {% endif %}
+                    {% endblock menu_item %}
+                {% endfor %}
+            </ul>
+        {% endblock main_menu %}
+    </div>
+
+    {% block main_menu_after %}{% endblock %}
+</nav>
+
+{% macro render_html_attributes(item) %}
+    {% for attribute_name, attribute_value in item.htmlAttributes %}
+        {{ attribute_name }}="{{ attribute_value|e('html_attr') }}"
+    {% endfor %}
+{% endmacro %}
+
+{% macro render_menu_item(item) %}
+    {% if item.hasSubItems %}
+        <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-toggle="dropdown"
+           aria-haspopup="true" aria-expanded="false">
+            {% if item.icon is not empty %}<i class="nav-icon {{ item.icon }}"></i>{% endif %}
+            {{ item.label|trans|raw }}
+        </a>
+    {% else %}
+        <a class="nav-link {{ item.isSelected ? 'active-page' }}" href="{{ item.linkUrl }}" target="{{ item.linkTarget }}" rel="{{ item.linkRel }}" referrerpolicy="origin-when-cross-origin" {{ _self.render_html_attributes(item) }}>
+            {% if item.icon is not empty %}<i class="nav-icon {{ item.icon }}"></i>{% endif %}
+            {{ item.label|trans|raw }}
+        </a>
+    {% endif %}
+{% endmacro %}
+{% macro render_submenu_item(item) %}
+    <a class="dropdown-item {{ item.isSelected ? 'active-page' }}" href="{{ item.linkUrl }}" target="{{ item.linkTarget }}" rel="{{ item.linkRel }}" referrerpolicy="origin-when-cross-origin" {{ _self.render_html_attributes(item) }}>
+        {{ item.label|trans|raw }}
+    </a>
+{% endmacro %}
