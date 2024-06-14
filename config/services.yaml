@@ -29,10 +29,6 @@ services:
         decorates: 'doctrine.migrations.migrations_factory'
         arguments: ['@.inner', '@security.password_hasher_factory']
 
-    App\Listener\MLLogsListener:
-        tags:
-            - { name: doctrine.orm.entity_listener, entity: 'App\Entity\MLLogs', event: postPersist }
-
     App\Service\TwigExtension:
         arguments:
             - '@security.helper'
