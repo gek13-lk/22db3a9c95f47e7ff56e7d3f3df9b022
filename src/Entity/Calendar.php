@@ -57,6 +57,9 @@ class Calendar
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $workDayOfYear = null;
 
+    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Название праздника/выходного"])]
+    private ?string $holidayName = null;
+
     public function getCalendarId(): ?int
     {
         return $this->calendarId;
@@ -219,6 +222,17 @@ class Calendar
     public function setWorkDayOfYear(?int $workDayOfYear): Calendar
     {
         $this->workDayOfYear = $workDayOfYear;
+        return $this;
+    }
+
+    public function getHolidayName(): ?string
+    {
+        return $this->holidayName;
+    }
+
+    public function setHolidayName(?string $holidayName): Calendar
+    {
+        $this->holidayName = $holidayName;
         return $this;
     }
 }
