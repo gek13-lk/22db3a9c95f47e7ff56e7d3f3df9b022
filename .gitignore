@@ -11,3 +11,4 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
+/docker/django/model_training.log
