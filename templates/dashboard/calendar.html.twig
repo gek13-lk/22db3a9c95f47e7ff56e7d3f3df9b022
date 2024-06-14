@@ -18,7 +18,23 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-title">
-                    Events
+                    Ближайшая смена
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="overall-events">
+                    <a href="#" class="event-block bg-success">
+                        <i class="fa-solid fa-user-doctor"></i>
+                        <div class="total-events">{{ workingDay }} </div>
+                        {{ workingMonth }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    Ближайшие праздники
                 </div>
             </div>
             <div class="card-body">
@@ -28,8 +44,8 @@
                             <i class="icon-event_available"></i>
                         </div>
                         <div class="event-info">
-                            <div class="event-title">Doctors Meeting</div>
-                            <div class="event-date">Park View Hotel, at 10:00 AM</div>
+                            <div class="event-title">{{ holiday1 }}</div>
+                            <div class="event-date">{{ holidayName1 }}</div>
                         </div>
                     </div>
                     <div class="event-list">
@@ -37,8 +53,8 @@
                             <i class="icon-event_available"></i>
                         </div>
                         <div class="event-info">
-                            <div class="event-title">Staff Meeting</div>
-                            <div class="event-date">Cafe Mocha Inn, at 03:00 PM</div>
+                            <div class="event-title">{{ holiday2 }}</div>
+                            <div class="event-date">{{ holidayName2 }}</div>
                         </div>
                     </div>
                     <div class="event-list">
@@ -46,8 +62,8 @@
                             <i class="icon-event_available"></i>
                         </div>
                         <div class="event-info">
-                            <div class="event-title">Annual Function</div>
-                            <div class="event-date">Today evening, at 05:00 PM</div>
+                            <div class="event-title">{{ holiday3 }}</div>
+                            <div class="event-date">{{ holidayName3 }}</div>
                         </div>
                     </div>
                     <div class="event-list">
@@ -55,8 +71,8 @@
                             <i class="icon-event_available"></i>
                         </div>
                         <div class="event-info">
-                            <div class="event-title">Awards</div>
-                            <div class="event-date">25th at 03:00 PM</div>
+                            <div class="event-title">{{ holiday4 }}</div>
+                            <div class="event-date">{{ holidayName4 }}</div>
                         </div>
                     </div>
                 </div>
@@ -65,20 +81,20 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-title">
-                    Appointments
+                    Отпуск
                 </div>
             </div>
             <div class="card-body">
                 <div class="overall-events">
                     <a href="#" class="event-block bg-primary">
-                        <i class="icon-event_available"></i>
-                        <div class="total-events">65</div>
-                        Operations
+                        <i class="fa-solid fa-panorama"></i>
+                        <div class="total-events">28</div>
+                        дней доступно<br> основного отпуска
                     </a>
                     <a href="#" class="event-block bg-secondary">
-                        <i class="icon-event_available"></i>
-                        <div class="total-events">500</div>
-                        Treatments
+                        <i class="fa-solid fa-panorama"></i>
+                        <div class="total-events">7</div>
+                        дней доступно<br> доп. отпуска
                     </a>
                 </div>
             </div>
@@ -92,5 +108,10 @@
     <script src="{{ asset('vendor/calendar/js/fullcalendar.min.js') }}"></script>
     <script src="{{ asset('vendor/calendar/js/locale-all.js') }}"></script>
     <script src="{{ asset('vendor/calendar/js/custom-calendar.js') }}"></script>
+    <script>
+        let calendarEvents = {{ calendarEvents|json_encode|raw }};
+        $(function() {
+            CustomCalendar.init(calendarEvents);
+        });
+    </script>
 {% endblock %}
-
