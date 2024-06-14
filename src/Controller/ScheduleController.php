@@ -31,24 +31,32 @@ class ScheduleController extends DashboardController {
         $dateStart = \DateTime::createFromFormat('Y-m-d', $start);
         $dateEnd = \DateTime::createFromFormat('Y-m-d', $end);
 
-        if ($this->isGranted('ROLE_DOCTOR')) {
-            $doctors = $doctorRepository->findBy(['id' => 1]); // TODO: сделать связку пользователя с врачом
-        } else {
+        if ($this->isGranted('ROLE_HR') || $this->isGranted('ROLE_MANAGER')) {
             $doctors = $doctorRepository->findAll();
+        } else {
+            $doctors = $doctorRepository->findBy(['id' => 1]); // TODO: сделать связку пользователя с врачом
         }
-
-        //$countSchedule = 5;
-        //$user = $this->getUser();
-        ////$this->service3->run(new \DateTime('2024-01-01'), new \DateTime('2024-01-09'), $countSchedule);
-        ////$schedule = $this->entityManager->getRepository(TempSchedule::class)->find(2);
-        //
-        ////$this->timeAlgorithmService->setTime($schedule);
-        //$this->service3->run(new \DateTime('2024-01-01'), new \DateTime('2024-01-09'), $countSchedule);
 
         return $this->render('schedule/index.html.twig', [
             'title' => 'Расписание',
             'calendars' => $calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
         ]);
+    }
+
+    #[Route('/schedule/run', name: 'app_schedule_run')]
+    public function run(Request $request, AlgorithmWeekService $service3, SetTimeAlgorithmService $timeAlgorithmService): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $start = $request->get('dateStart', '2024-01-01');
+        $end = $request->get('dateEnd', '2024-01-31');
+
+        $dateStart = \DateTime::createFromFormat('Y-m-d', $start);
+        $dateEnd = \DateTime::createFromFormat('Y-m-d', $end);
+
+        $countSchedule = 1;
+        $service3->run($dateStart, $dateEnd, $countSchedule);
+
+        return $this->json([]);
     }
 }
