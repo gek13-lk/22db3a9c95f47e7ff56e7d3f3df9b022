@@ -2,16 +2,19 @@
 
 namespace App\Controller;
 
+use App\Entity\Calendar;
 use App\Entity\Doctor;
 use App\Entity\Role;
 use App\Entity\User;
+use App\Enum\Holiday;
 use App\Voter\DoctorVoter;
+use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
 use EasyCorp\Bundle\EasyAdminBundle\Config\UserMenu;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
-use EasyCorp\Bundle\EasyAdminBundle\Security\Permission;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -33,8 +36,45 @@ class DashboardController extends AbstractDashboardController
     }
 
     #[Route('/calendar', name: 'calendar')]
-    public function calendar(): Response {
-        return $this->render('dashboard/calendar.html.twig');
+    public function calendar(EntityManagerInterface $em, Security $security): Response {
+        /** @var User $user */
+        $user = $security->getUser();
+
+        $workingDate = $this->getDefaultWorkingDay();
+        $workingDay = $workingDate->format('d');
+        $workingMonth = Holiday::findMonth($workingDate->format('m'));
+
+        $currentDate = new \DateTime();
+        $calendar = $em->getRepository(Calendar::class)->findBy(['god' => $currentDate->format('Y')]);
+
+        foreach ($calendar as $date) {
+            if (1 === $date->getHoliday()) {
+                $calendarEvents[] = [
+                    'title' => $date->getHolidayName() ?? 'Выходной',
+                    'start' => $date->getDate()->format('Y-m-d'),
+                    'end' => $date->getDate()->format('Y-m-d'),
+                ];
+            }
+        }
+
+        return $this->render('dashboard/calendar.html.twig', array_merge(
+            Holiday::findNextHolidays(), [
+            'workingDay' => $workingDay,
+            'workingMonth' => $workingMonth,
+            'calendarEvents' => $calendarEvents ?? [],
+        ]));
+    }
+
+    private function getDefaultWorkingDay(): \DateTime
+    {
+        $currentDate = (new \DateTime())->modify('+3 hours');
+        while (true) {
+            if ($currentDate->format('N') < 6) {
+                return $currentDate;
+            }
+
+            $currentDate->modify('+1 day');
+        }
     }
 
     public function configureDashboard(): Dashboard {

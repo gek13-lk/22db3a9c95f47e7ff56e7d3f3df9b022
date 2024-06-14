@@ -224,13 +224,14 @@ a.fc-more {
 	padding: 1rem;
 }
 .fc td.fc-today {
-	color: #0066ff;
+	color: #06f;
 }
 .fc-day-grid-event .fc-time {
-	color: #0066ff;
+	color: #000000;
 }
 .fc-day-grid-event .fc-title {
-	color: #0066ff;
+	color: #ffffff;
+	white-space: normal;
 }
 .fc-row .fc-bg td.fc-day:hover {
 	background: #d9e4ea;
