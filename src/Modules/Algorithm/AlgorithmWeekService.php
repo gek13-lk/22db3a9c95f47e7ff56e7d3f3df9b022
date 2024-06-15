@@ -41,7 +41,7 @@ class AlgorithmWeekService
         $this->modalities = $this->entityManager->getRepository(Competencies::class)->findAll();
 
         $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
-       /* $this->doctors = $this->entityManager->getRepository(Doctor::class)->findBy([
+        /*$this->doctors = $this->entityManager->getRepository(Doctor::class)->findBy([
             'id' => 61
         ]);*/
         $this->offDoctorDays = $this->entityManager->getRepository(OffDoctorDays::class)->findAll();
@@ -91,15 +91,15 @@ class AlgorithmWeekService
     {
         $population = [];
         //TODO: Это для отладки
-        /*for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
+        for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
             $schedule = $this->createRandomSchedule();
             $tempScheduleEntity = $this->saveTempSchedule($schedule, 1);
-        }*/
+        }
 
         //TODO: Это рабочий вариант
-        for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
+        /*for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
             $population[] = $this->createRandomSchedule();
-        }
+        }*/
 
         return $population;
     }
@@ -272,11 +272,12 @@ class AlgorithmWeekService
                             continue 2;
                         }
                     }
-                    //TODO: После составления расписания на день, пытаемся уравновесить нагрузку по врачам
                 }
             }
         }
-//dd($this->schedule, $this->doctorsStat);
+
+        $this->timeAlgorithmService->timeBalance($this->schedule);
+
         return $this->schedule;
     }
 
