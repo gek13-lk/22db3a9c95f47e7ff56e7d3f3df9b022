@@ -14,6 +14,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
+use Symfony\Component\ExpressionLanguage\Expression;
 
 final class WeekStudiesCrudController extends AbstractCrudController {
     public static function getEntityFqcn(): string {
@@ -33,12 +34,19 @@ final class WeekStudiesCrudController extends AbstractCrudController {
     }
 
     public function configureActions(Actions $actions): Actions {
+        $trainingModelButton = Action::new('trainigModel', 'Обновить прогнозы')
+            ->linkToCrudAction('training_model')
+            ->createAsGlobalAction()
+            ->setCssClass('btn btn-primary training-model');
+
         return $actions
             ->disable(Action::DELETE)
             ->disable(Action::BATCH_DELETE)
-            ->setPermission(Action::NEW, 'ROLE_ADMIN')
-            ->setPermission(Action::EDIT, 'ROLE_ADMIN')
-            ->update(Crud::PAGE_INDEX, Action::NEW, fn(Action $action) => $action->setLabel('Добавить новые данные'));
+            ->setPermission(Action::NEW, new Expression('"ROLE_ADMIN" in role_names or "ROLE_MANAGER" in role_names'))
+            ->setPermission(Action::EDIT, new Expression('"ROLE_ADMIN" in role_names or "ROLE_MANAGER" in role_names'))
+            ->update(Crud::PAGE_INDEX, Action::NEW, fn(Action $action) => $action->setLabel('Добавить новые данные'))
+            ->add(Crud::PAGE_INDEX, $trainingModelButton)
+            ->setPermission('trainigModel', new Expression('"ROLE_ADMIN" in role_names or "ROLE_MANAGER" in role_names'));
     }
 
     public function configureFields(string $pageName): iterable {
