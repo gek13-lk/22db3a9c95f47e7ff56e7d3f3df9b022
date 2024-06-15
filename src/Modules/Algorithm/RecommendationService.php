@@ -301,6 +301,66 @@ class RecommendationService
                     }
                 }
             }
+
+            //Запрет на дневную смену после ночной
+            foreach ($doctorShifts as $doctorId => $shifts) {
+                for ($i = 1; $i < count($shifts); $i++) {
+                    if ($shifts[$i - 1] == 'Ночные смены' && strpos($shifts[$i], 'Дневные смены') !== false) {
+                        $recommendations['Запрет на дневную смену после ночной'][] = [
+                            "problem" => "Доктор $doctorId имеет дневную смену сразу после ночной",
+                            "solution" => "Пересмотрите график",
+                        ];
+                    }
+                }
+            }
+
+            //Запрет на три подряд смены по 11-12 часов
+            foreach ($doctorWorkTimes as $doctorId => $workTimes) {
+                $consecutiveLongShifts = 0;
+                foreach ($workTimes as $workTime) {
+                    list($start, $end) = $workTime;
+                    $workDuration = (strtotime($end) - strtotime($start)) / 3600; // Время работы в часах
+                    if ($workDuration >= 11) {
+                        $consecutiveLongShifts++;
+                        if ($consecutiveLongShifts >= 3) {
+                            $recommendations['Запрет на три подряд смены по 11-12 часов'][] = [
+                                "problem" => "Доктор $doctorId имеет три подряд смены по 11-12 часов",
+                                "solution" => "Пересмотрите график",
+                            ];
+                            break;
+                        }
+                    } else {
+                        $consecutiveLongShifts = 0;
+                    }
+                }
+            }
+
+            //Равномерное распределение часов в течение месяца
+            foreach ($doctorMonthlyHours as $doctorId => $monthlyHours) {
+                foreach ($monthlyHours as $month => $hours) {
+                    $halfMonthHours = $hours / 2;
+                    if (abs($halfMonthHours - ($hours / 2)) > 20) { // допустимое отклонение в часах
+                        $recommendations['Равномерное распределение часов в течение месяца'][] = [
+                            "problem" => "Доктор $doctorId имеет неравномерное распределение часов в месяце",
+                            "solution" => "Попробуйте сбалансировать",
+                        ];
+                    }
+                }
+            }
+
+            //Обязательный перерыв в 48 часов
+            foreach ($doctorDaysWorked as $doctorId => $daysWorked) {
+                $days = array_keys($daysWorked);
+                for ($i = 1; $i < count($days); $i++) {
+                    if ($days[$i] - $days[$i - 1] > 2) { // проверка на перерыв более 48 часов (2 дня)
+                        $recommendations['Обязательный перерыв в 48 часов'][] = [
+                            "problem" => "Доктор $doctorId не имеет обязательного перерыва в 48 часов между сменами",
+                            "solution" => "Попробуйте сбалансировать",
+                        ];
+                        break;
+                    }
+                }
+            }
         } catch (\Throwable) {
 
         }
