@@ -2,37 +2,36 @@
 
 namespace App\Controller;
 
-use App\Entity\Doctor;
-use App\Entity\TempDoctorSchedule;
 use App\Entity\TempSchedule;
 use App\Modules\Algorithm\AlgorithmWeekService;
+use App\Modules\Algorithm\DataService;
+use App\Modules\Algorithm\ExportService;
 use App\Modules\Algorithm\SetTimeAlgorithmService;
 use App\Repository\CalendarRepository;
 use App\Repository\DoctorRepository;
-use App\Repository\TempDoctorScheduleRepository;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 
 class ScheduleController extends DashboardController {
 
     public function __construct(
+        private AlgorithmWeekService $algorithmService,
+        private SetTimeAlgorithmService $timeAlgorithmService,
         private CalendarRepository $calendarRepository,
         private DoctorRepository $doctorRepository,
-        private TempDoctorScheduleRepository $tempDoctorScheduleRepository,
-        private AlgorithmWeekService $service3,
-        private SetTimeAlgorithmService $timeAlgorithmService
+        private DataService $dataService,
+        private ExportService $exportService
     )
     {
     }
 
     #[Route('/schedule', name: 'app_schedule')]
-    public function schedule(Request $request, CalendarRepository $calendarRepository, DoctorRepository $doctorRepository,
-        AlgorithmWeekService $service3, SetTimeAlgorithmService $timeAlgorithmService): Response {
+    public function schedule(Request $request): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         $start = $request->get('dateStart', '2024-01-01');
@@ -42,22 +41,21 @@ class ScheduleController extends DashboardController {
         $dateEnd = \DateTime::createFromFormat('Y-m-d', $end);
 
         if ($this->isGranted('ROLE_HR') || $this->isGranted('ROLE_MANAGER')) {
-            $doctors = $doctorRepository->findAll();
+            $doctors = $this->doctorRepository->findAll();
         } else {
-            $doctors = $doctorRepository->findBy(['id' => 1]); // TODO: сделать связку пользователя с врачом
+            $doctors = $this->doctorRepository->findBy(['id' => 1]); // TODO: сделать связку пользователя с врачом
         }
 
         return $this->render('schedule/index.html.twig', [
             'title' => 'Расписание',
-            'calendars' => $calendarRepository->getRange($dateStart, $dateEnd),
+            'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
         ]);
     }
 
     #[Route('/schedule/run', name: 'app_schedule_run')]
-    public function run(Request $request, AlgorithmWeekService $service3, CalendarRepository $calendarRepository,
-        DoctorRepository $doctorRepository): Response {
-//        $this->denyAccessUnlessGranted('ROLE_MANAGER');
+    public function run(Request $request): Response {
+        $this->denyAccessUnlessGranted('ROLE_MANAGER');
 
         $form = $this->createFormBuilder()
             ->add('month', DateType::class, [
@@ -82,115 +80,33 @@ class ScheduleController extends DashboardController {
         $dateStart = clone $data['month']->modify('first day of this month');
         $dateEnd = $data['month']->modify('last day of this month');
 
-        $service3->run($dateStart, $dateEnd, $data['count']);
+        $this->algorithmService->run($dateStart, $dateEnd, $data['count']);
 
         return $this->render('schedule/run.html.twig', [
             'form' => $form->createView(),
-            'calendars' => $calendarRepository->getRange($dateStart, $dateEnd),
-            'doctors' => $doctorRepository->findAll(),
+            'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
+            'doctors' => $this->doctorRepository->findAll(),
             'scheduleId' => 6 // TODO: получать из алгоритма
         ]);
     }
 
-    public function getScheduleById(TempSchedule $tempSchedule)
-    {
-        $doctorSchedules = $this->tempDoctorScheduleRepository->findByTempSchedule($tempSchedule);
-
-        $dateStart = (clone $doctorSchedules[0]->getDate())->modify('first day of this month');
-        $dateEnd = $doctorSchedules[0]->getDate()->modify('last day of this month');
-
-        $calendars = $this->calendarRepository->getRange($dateStart, $dateEnd);
-
-        $title[] = 'Врач';
-        $title[] = 'Модальность';
-        $title[] = 'Дополнительные модальности';
-        $title[] = 'Ставка';
-        $title[] = 'Таб';
-
-        $i = 1;
-        foreach ($calendars as $calendar) {
-            $title[] = $calendar->getDate()->format('d.m.Y');
-            if($i === 15) {
-                $title[] = 'Итого за 1 пол. месяца';
-            }
-            $i++;
-        }
-        $title[] = 'Итого за 2 пол. месяца';
-        $title[] = 'Норма часов по графику';
-        $title[] = 'Норма часов за полный месяц';
-
-        $doctors = $this->doctorRepository->findAll();
-
-        /** @var Doctor $doctor */
-        foreach ($doctors as $doctor) {
-            $workHours = 0;
-            $allWorkHours = 0;
-            $scheduleData[$doctor->getId()] = [
-                'doctor' => $doctor->getFio() ?? $doctor->getId(),
-                'modality' =>  \implode(',',  $doctor->getCompetency()),
-                'addonModality' =>  \implode(',',  $doctor->getAddonCompetencies()),
-                "stavka" => $doctor->getStavka(),
-                "tab" => ""
-                ];
-            $doctorSchedules = $this->tempDoctorScheduleRepository->findByTempScheduleAndDoctor($tempSchedule->getId(), $doctor->getId());
-            $i = 1;
-            foreach ($calendars as $calendar) {
-                $sch = array_filter($doctorSchedules, fn(TempDoctorSchedule $sch) => $sch->getDate() == $calendar->getDate());
-                if(!empty($sch)){
-                /** @var TempDoctorSchedule $doctorSchedule */
-                foreach ($sch as $doctorSchedule) {
-                $schedule = [$doctorSchedule->getTempScheduleWeekStudies()->getWeekStudies()->getCompetency()->getModality(),
-                    ' с ' . $doctorSchedule->getWorkTimeStart()->format('d.m.Y H:m:s') ?? '---',
-                    ' до ' . $doctorSchedule->getWorkTimeEnd()->format('d.m.Y H:m:s') ?? '---',
-                    ($doctorSchedule->getWorkHours() ?? '---') . ' часов',
-                    ($doctorSchedule->getOffMinutes() ?? '---'). ' минут',
-                    ];
-                $scheduleData[$doctor->getId()][$calendar->getDate()->format('d.m.Y')] = \implode(' ', $schedule);
-                $workHours += $doctorSchedule->getWorkHours() ?? 0;
-            }
-                } else {
-                    $scheduleData[$doctor->getId()][$calendar->getDate()->format('d.m.Y')] = null;
-                }
-                if($i == 15) {
-                    $scheduleData[$doctor->getId()]['Итого за 1 пол. месяца'] = $workHours;
-                    $allWorkHours += $workHours;
-                    $workHours = 0;
-                }
-                $i++;
-            }
-
-            $scheduleData[$doctor->getId()]['Итого за 2 пол. месяца'] = $workHours;
-            $scheduleData[$doctor->getId()]['Норма часов по графику'] = $allWorkHours + $workHours;
-            $scheduleData[$doctor->getId()]['Норма часов за полный месяц'] = 155;
-        }
-
-        return (array_merge([$title], $scheduleData));
-    }
-
-    #[Route('/schedule/export/{tempSchedule}', name: 'app_schedule_export_csv')]
+    #[Route('/schedule/export/csv/{tempSchedule}', name: 'app_schedule_export_csv')]
     public function exportCsv(TempSchedule $tempSchedule): Response
     {
-        $data = $this->getScheduleById($tempSchedule);
+        $data = $this->dataService->getScheduleById($tempSchedule);
 
-        $response = new StreamedResponse();
+        $file = $this->exportService->exportCsv($data);
 
-        $response->setCallback(function () use ($data) {
-            $handle = fopen('php://output', 'wb');
+        return $this->file($file, 'schedule.csv');
+    }
 
-            foreach ($data as $row) {
-                $rows = [];
-                foreach ($row as $r) {
-                    $rows[] = iconv( "UTF-8", "cp1251",  $r);
-                }
-                fputcsv($handle, $rows);
-            }
-            fclose($handle);
-        });
+    #[Route('/schedule/export/xlsx/{tempSchedule}', name: 'app_schedule_export_xlsx')]
+    public function exportXlsx(TempSchedule $tempSchedule): Response
+    {
+        $data = $this->dataService->getScheduleById($tempSchedule);
 
-        $response->setStatusCode(Response::HTTP_OK);
-        $response->headers->set('Content-Type', 'text/csv; charset=utf-8');
-        $response->headers->set('Content-Disposition', 'attachment; filename="export.csv"');
+        $file = $this->exportService->exportXlsx($data);
 
-        return $response;
+        return $this->file($file, 'schedule.xlsx', ResponseHeaderBag::DISPOSITION_INLINE);
     }
 }
