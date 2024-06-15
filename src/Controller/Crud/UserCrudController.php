@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller\Crud;
 
 use App\Entity\Privilege;
@@ -54,7 +56,7 @@ final class UserCrudController extends AbstractCrudController {
             ->setFormType(PasswordType::class)
             ->setFormTypeOption('empty_data', '')
             ->setRequired(false)
-            ->setHelp('Оставьте поле пустым, если не хотите изменять текущий пароль пароль!')
+            ->setHelp('Оставьте поле пустым, если не хотите изменять текущий пароль!')
             ->onlyWhenUpdating();
 
         yield TextField::new('plainPassword')

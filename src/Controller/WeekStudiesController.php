@@ -4,27 +4,35 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\User;
+use App\Messenger\Message\MLMessage;
 use App\Service\MLService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
 
 class WeekStudiesController extends AbstractController
 {
-    public function __construct(public EntityManagerInterface $em)
-    {
+    public function __construct(
+        public MLService $service,
+        public MessageBusInterface $bus
+    ) {
     }
 
     #[Route('/train', methods: 'POST')]
-    public function trainModel(MLService $service): Response
+    public function trainModel(): Response
     {
-        try {
-            $service->execute();
+        /** @var User $user */
+        $user = $this->getUser();
 
-            return new Response('success');
-        } catch (\Exception $exception) {
-            return new Response($exception->getMessage(), 500);
+        try {
+            $logs = $this->service->createLog($user);
+            $this->bus->dispatch(new MLMessage($logs->getId()));
+
+            return new Response('start models training');
+        } catch (\Exception $e) {
+            return new Response($e->getMessage(), 500);
         }
     }
 }

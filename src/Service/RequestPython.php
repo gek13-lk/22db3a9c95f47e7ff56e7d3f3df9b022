@@ -8,7 +8,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 
-class RequestPython
+final class RequestPython
 {
     private Client $client;
 
@@ -34,8 +34,8 @@ class RequestPython
             $body = $response->getBody();
             $output = json_decode($body->getContents(), true);
 
-            if ($statusCode !== 200 || $output['status'] !== 'success' || empty($output['result'])) {
-                throw new \Exception('[ code '.$statusCode.' ] : '.json_encode($output));
+            if ($statusCode !== 200 || $output['status'] !== 'success') {
+                throw new \Exception('code '.$statusCode.': '.json_encode($output));
             }
 
             return $output;

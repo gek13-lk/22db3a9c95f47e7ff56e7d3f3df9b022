@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller\Crud;
 
 use App\Entity\Doctor;
@@ -21,11 +23,11 @@ class DoctorCrudController extends AbstractCrudController
         return $crud
             ->setEntityLabelInPlural('Врачи')
             ->setEntityLabelInSingular('Врач')
+            ->setEntityPermission(DoctorVoter::LIST)
             ->setPageTitle(Crud::PAGE_INDEX, 'Список врачей')
             ->setPageTitle(Crud::PAGE_NEW, 'Добавление врача')
             ->setPageTitle(Crud::PAGE_EDIT, 'Редактирование врача')
-            ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр врача')
-            ;
+            ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр врача');
     }
 
     public function configureActions(Actions $actions): Actions {

@@ -1,0 +1,117 @@
+{% extends '@!EasyAdmin/page/content.html.twig' %}
+
+{% block page_title %}
+    Референс-центр - Вход
+{% endblock %}
+
+{% block head_stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('vendor/calendar/css/fullcalendar.min.css') }}" />
+    <link rel="stylesheet" href="{{ asset('vendor/calendar/css/custom-calendar.css') }}" />
+{% endblock %}
+
+{% block main %}
+    <div class="col-md-9 ">
+        <div id="calendar" class="fc-calendar"></div>
+    </div>
+    <div class="col-md-3 col-sm-4 col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    Ближайшая смена
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="overall-events">
+                    <a href="#" class="event-block bg-success">
+                        <i class="fa-solid fa-user-doctor"></i>
+                        <div class="total-events">{{ workingDay }} </div>
+                        {{ workingMonth }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    Ближайшие праздники
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="events-container">
+                    <div class="event-list">
+                        <div class="event-icon bg-info">
+                            <i class="icon-event_available"></i>
+                        </div>
+                        <div class="event-info">
+                            <div class="event-title">{{ holiday1 }}</div>
+                            <div class="event-date">{{ holidayName1 }}</div>
+                        </div>
+                    </div>
+                    <div class="event-list">
+                        <div class="event-icon bg-success">
+                            <i class="icon-event_available"></i>
+                        </div>
+                        <div class="event-info">
+                            <div class="event-title">{{ holiday2 }}</div>
+                            <div class="event-date">{{ holidayName2 }}</div>
+                        </div>
+                    </div>
+                    <div class="event-list">
+                        <div class="event-icon bg-warning">
+                            <i class="icon-event_available"></i>
+                        </div>
+                        <div class="event-info">
+                            <div class="event-title">{{ holiday3 }}</div>
+                            <div class="event-date">{{ holidayName3 }}</div>
+                        </div>
+                    </div>
+                    <div class="event-list">
+                        <div class="event-icon bg-danger">
+                            <i class="icon-event_available"></i>
+                        </div>
+                        <div class="event-info">
+                            <div class="event-title">{{ holiday4 }}</div>
+                            <div class="event-date">{{ holidayName4 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    Отпуск
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="overall-events">
+                    <a href="#" class="event-block bg-primary">
+                        <i class="fa-solid fa-panorama"></i>
+                        <div class="total-events">28</div>
+                        дней доступно<br> основного отпуска
+                    </a>
+                    <a href="#" class="event-block bg-secondary">
+                        <i class="fa-solid fa-panorama"></i>
+                        <div class="total-events">7</div>
+                        дней доступно<br> доп. отпуска
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+
+{% block body_javascript %}
+    {{ parent() }}
+    <script src="{{ asset('vendor/calendar/js/fullcalendar.min.js') }}"></script>
+    <script src="{{ asset('vendor/calendar/js/locale-all.js') }}"></script>
+    <script src="{{ asset('vendor/calendar/js/custom-calendar.js') }}"></script>
+    <script>
+        let calendarEvents = {{ calendarEvents|json_encode|raw }};
+        $(function() {
+            CustomCalendar.init(calendarEvents);
+        });
+    </script>
+{% endblock %}

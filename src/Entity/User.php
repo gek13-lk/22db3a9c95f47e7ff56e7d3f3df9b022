@@ -24,6 +24,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 180)]
     private ?string $username = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $email = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $firstname = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $surname = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $middlename = null;
+
     /**
      * @var list<string> The user roles
      */
@@ -44,6 +56,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     private $plainPassword;
 
+    /** @var Collection<MLLogs> */
+    #[ORM\OneToMany(targetEntity: MLLogs::class, mappedBy: 'user')]
+    private Collection $logs;
+
+    public function __construct()
+    {
+        $this->logs = new ArrayCollection();
+    }
+
     public function getId(): ?int
     {
         return $this->id;
@@ -54,9 +75,57 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->username;
     }
 
-    public function setUsername(string $username): static
+    public function setUsername(?string $username): static
     {
         $this->username = $username;
+
+        return $this;
+    }
+
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    public function setEmail(?string $email): static
+    {
+        $this->email = $email;
+
+        return $this;
+    }
+
+    public function getFirstname(): ?string
+    {
+        return $this->firstname;
+    }
+
+    public function setFirstname(?string $firstname): static
+    {
+        $this->firstname = $firstname;
+
+        return $this;
+    }
+
+    public function getSurname(): ?string
+    {
+        return $this->surname;
+    }
+
+    public function setSurname(?string $surname): static
+    {
+        $this->surname = $surname;
+
+        return $this;
+    }
+
+    public function getMiddlename(): ?string
+    {
+        return $this->middlename;
+    }
+
+    public function setMiddlename(?string $middlename): static
+    {
+        $this->middlename = $middlename;
 
         return $this;
     }
@@ -144,5 +213,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
+    }
+
+    public function getLogs(): Collection
+    {
+        return $this->logs;
+    }
+
+    public function addLogs(MLLogs $logs): self
+    {
+        if (!$this->logs->contains($logs)) {
+            $this->logs[] = $logs;
+        }
+
+        return $this;
     }
 }

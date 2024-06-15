@@ -28,3 +28,9 @@ services:
     App\Doctrine\Migrations\MigrationFactoryDecorator:
         decorates: 'doctrine.migrations.migrations_factory'
         arguments: ['@.inner', '@security.password_hasher_factory']
+
+    App\Service\TwigExtension:
+        arguments:
+            - '@security.helper'
+        tags:
+            - { name: twig.extension }

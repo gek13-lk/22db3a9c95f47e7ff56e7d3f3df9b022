@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller\Crud;
 
 use App\Entity\Privilege;
 use App\Entity\Role;
-use App\Voter\DoctorVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
@@ -26,8 +27,7 @@ class RoleCrudController extends AbstractCrudController {
             ->setPageTitle(Crud::PAGE_INDEX, 'Список ролей')
             ->setPageTitle(Crud::PAGE_NEW, 'Добавление роли')
             ->setPageTitle(Crud::PAGE_EDIT, 'Редактирование роли')
-            ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр роли')
-            ;
+            ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр роли');
     }
 
     public function configureActions(Actions $actions): Actions {
