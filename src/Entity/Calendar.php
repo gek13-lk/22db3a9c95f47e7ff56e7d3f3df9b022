@@ -230,7 +230,7 @@ class Calendar
         return $this->holidayName;
     }
 
-    public function setHolidayName(?string $holidayName): Calendar
+    public function setHolidayName(?string $holidayName = null): Calendar
     {
         $this->holidayName = $holidayName;
         return $this;

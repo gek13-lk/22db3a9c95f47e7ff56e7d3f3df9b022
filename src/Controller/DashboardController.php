@@ -3,9 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\Calendar;
+use App\Entity\Competencies;
 use App\Entity\Doctor;
 use App\Entity\Role;
 use App\Entity\User;
+use App\Entity\WeekStudies;
 use App\Enum\Holiday;
 use App\Voter\DoctorVoter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -133,5 +135,10 @@ class DashboardController extends AbstractDashboardController
                     ->setPermission('ROLE_MANAGER'),
             ]);
 
+        yield MenuItem::subMenu('Методы визуализации', 'icon-vibration')
+            ->setSubItems([
+                MenuItem::linkToCrud('Справочник', null, Competencies::class),
+                MenuItem::linkToCrud('История по неделям', null, WeekStudies::class),
+            ]);
     }
 }
