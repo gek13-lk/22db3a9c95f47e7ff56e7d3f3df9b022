@@ -40,6 +40,12 @@ class DoctorWorkSchedule
     #[ORM\Column(type: 'boolean', options: ['default' => false, "comment" => "Выходные на выходных и праздниках"])]
     private bool $isHolidayOff = false;
 
+    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Желаемое время начала смены (час)"])]
+    private ?int $shiftStartTimeHour = null;
+
+    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Желаемое время начала смены (Минуты)"])]
+    private ?int $shiftStartTimeMinutes = null;
+
     public function getId(): int
     {
         return $this->id;
@@ -108,6 +114,28 @@ class DoctorWorkSchedule
     public function setIsHolidayOff(bool $isHolidayOff): DoctorWorkSchedule
     {
         $this->isHolidayOff = $isHolidayOff;
+        return $this;
+    }
+
+    public function getShiftStartTimeHour(): ?int
+    {
+        return $this->shiftStartTimeHour;
+    }
+
+    public function setShiftStartTimeHour(?int $shiftStartTimeHour): DoctorWorkSchedule
+    {
+        $this->shiftStartTimeHour = $shiftStartTimeHour;
+        return $this;
+    }
+
+    public function getShiftStartTimeMinutes(): ?int
+    {
+        return $this->shiftStartTimeMinutes;
+    }
+
+    public function setShiftStartTimeMinutes(?int $shiftStartTimeMinutes): DoctorWorkSchedule
+    {
+        $this->shiftStartTimeMinutes = $shiftStartTimeMinutes;
         return $this;
     }
 }

@@ -42,8 +42,15 @@ class RecommendationService
         return $recommendations;
     }
 
-    public function generateRecommendations($scheduleData)
+    public function generateRecommendations($scheduleData): array
     {
+        //TODO: На empty - проверки не хватает, если нет возможности закрыть все потребности.
+        // Типа добавьте столько то врачей, чтобы закрыть потребность. Тут можно дернуть мой сервис,
+        // как-то его под это подстроить, чтобы он прям вернул количество врачей, например из текущего списка,
+        // только мы бы отдали, мол нужно ЕЩЕ столько то врачей с такими то режимами работы
+
+        //TODO: Рекомендацию + в фитнес функцию сделай, проверку empty по модальностям. Мол если где-то намного больше empty,
+        // чем на других модальностях, предложи сбалансировать + это мне тоже надо запилить
         $recommendations = [];
         $doctorWorkloads = [];
         $doctorDaysWorked = [];
@@ -199,6 +206,7 @@ class RecommendationService
                     $maxConsecutiveDaysOff = $currentConsecutiveDaysOff;
                 }
 
+                //TODO: а если сутки через трое ?
                 if ($maxConsecutiveDaysOff > 2) {
                     $recommendations['Минимизация выходных дней подряд'][] = [
                         "problem" => "Доктор $doctorId имеет более 2 выходных дней подряд",
@@ -282,7 +290,7 @@ class RecommendationService
             // Учет недельных и месячных часов работы врача
             foreach ($doctorWeeklyHours as $doctorId => $weeklyHours) {
                 foreach ($weeklyHours['hours'] as $weekNumber => $hours) {
-                    $expectedWeeklyHours = 40 * $weeklyHours['rate'];
+                    $expectedWeeklyHours = 36 * $weeklyHours['rate'];
                     if ($hours > $expectedWeeklyHours) {
                         $recommendations['Учет недельных и месячных часов работы врача'][] = [
                             "problem" => "Доктор $doctorId работает более $expectedWeeklyHours часов в неделю",
