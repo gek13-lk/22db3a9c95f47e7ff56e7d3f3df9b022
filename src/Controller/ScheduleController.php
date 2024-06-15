@@ -3,29 +3,35 @@
 namespace App\Controller;
 
 use App\Entity\TempSchedule;
-use App\Modules\Algorithm\AlgorithmService;
 use App\Modules\Algorithm\AlgorithmWeekService;
 use App\Modules\Algorithm\DataService;
+use App\Modules\Algorithm\ExportService;
 use App\Modules\Algorithm\SetTimeAlgorithmService;
-use App\Modules\Navbar\DefaultNavItem;
-use App\Modules\Navbar\NavElementInterface;
-use App\Modules\Navbar\NavItemInterface;
 use App\Repository\CalendarRepository;
 use App\Repository\DoctorRepository;
-use Doctrine\ORM\EntityManagerInterface;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Option\EA;
-use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 
 class ScheduleController extends DashboardController {
+
+    public function __construct(
+        private AlgorithmWeekService $algorithmService,
+        private SetTimeAlgorithmService $timeAlgorithmService,
+        private CalendarRepository $calendarRepository,
+        private DoctorRepository $doctorRepository,
+        private DataService $dataService,
+        private ExportService $exportService
+    )
+    {
+    }
+
     #[Route('/schedule', name: 'app_schedule')]
-    public function schedule(Request $request, CalendarRepository $calendarRepository, DoctorRepository $doctorRepository,
-        AlgorithmWeekService $service3, SetTimeAlgorithmService $timeAlgorithmService): Response {
+    public function schedule(Request $request): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         $start = $request->get('dateStart', '2024-01-01');
@@ -35,26 +41,28 @@ class ScheduleController extends DashboardController {
         $dateEnd = \DateTime::createFromFormat('Y-m-d', $end);
 
         if ($this->isGranted('ROLE_HR') || $this->isGranted('ROLE_MANAGER')) {
-            $doctors = $doctorRepository->findAll();
+            $doctors = $this->doctorRepository->findAll();
         } else {
-            $doctors = $doctorRepository->findBy(['id' => 1]); // TODO: сделать связку пользователя с врачом
+            $doctors = $this->doctorRepository->findBy(['id' => 1]); // TODO: сделать связку пользователя с врачом
         }
 
         return $this->render('schedule/index.html.twig', [
             'title' => 'Расписание',
-            'calendars' => $calendarRepository->getRange($dateStart, $dateEnd),
+            'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
         ]);
     }
 
     #[Route('/schedule/run', name: 'app_schedule_run')]
-    public function run(Request $request, AlgorithmWeekService $service3, CalendarRepository $calendarRepository,
-        DoctorRepository $doctorRepository): Response {
+    public function run(Request $request): Response {
         $this->denyAccessUnlessGranted('ROLE_MANAGER');
 
         $form = $this->createFormBuilder()
             ->add('month', DateType::class, [
                 'widget' => 'single_text',
+                'html5' => true,
+            ])
+            ->add('count', NumberType::class, [
                 'html5' => true,
             ])
             ->add('submit', SubmitType::class)
@@ -73,15 +81,34 @@ class ScheduleController extends DashboardController {
         $dateStart = clone $data['month']->modify('first day of this month');
         $dateEnd = $data['month']->modify('last day of this month');
 
-        //$countSchedule = 1;
-        //$service3->run($dateStart, $dateEnd, $countSchedule);
+        $this->algorithmService->run($dateStart, $dateEnd, $data['count']);
 
         return $this->render('schedule/run.html.twig', [
             'title' => 'Построить график',
             'form' => $form->createView(),
-            'calendars' => $calendarRepository->getRange($dateStart, $dateEnd),
-            'doctors' => $doctorRepository->findAll(),
+            'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
+            'doctors' => $this->doctorRepository->findAll(),
             'scheduleId' => 6 // TODO: получать из алгоритма
         ]);
+    }
+
+    #[Route('/schedule/export/csv/{tempSchedule}', name: 'app_schedule_export_csv')]
+    public function exportCsv(TempSchedule $tempSchedule): Response
+    {
+        $data = $this->dataService->getScheduleById($tempSchedule);
+
+        $file = $this->exportService->exportCsv($data);
+
+        return $this->file($file, 'schedule.csv');
+    }
+
+    #[Route('/schedule/export/xlsx/{tempSchedule}', name: 'app_schedule_export_xlsx')]
+    public function exportXlsx(TempSchedule $tempSchedule): Response
+    {
+        $data = $this->dataService->getScheduleById($tempSchedule);
+
+        $file = $this->exportService->exportXlsx($data);
+
+        return $this->file($file, 'schedule.xlsx', ResponseHeaderBag::DISPOSITION_INLINE);
     }
 }

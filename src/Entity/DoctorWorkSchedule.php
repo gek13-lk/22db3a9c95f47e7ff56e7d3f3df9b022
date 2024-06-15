@@ -37,6 +37,9 @@ class DoctorWorkSchedule
     #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Количество выходных дней за цикл"])]
     private ?int $daysOff = null;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false, "comment" => "Выходные на выходных и праздниках"])]
+    private bool $isHolidayOff = false;
+
     public function getId(): int
     {
         return $this->id;
@@ -94,6 +97,17 @@ class DoctorWorkSchedule
     public function setDaysOff(?int $daysOff): DoctorWorkSchedule
     {
         $this->daysOff = $daysOff;
+        return $this;
+    }
+
+    public function isHolidayOff(): bool
+    {
+        return $this->isHolidayOff;
+    }
+
+    public function setIsHolidayOff(bool $isHolidayOff): DoctorWorkSchedule
+    {
+        $this->isHolidayOff = $isHolidayOff;
         return $this;
     }
 }
