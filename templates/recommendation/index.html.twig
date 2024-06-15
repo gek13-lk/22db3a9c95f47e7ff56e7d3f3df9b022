@@ -1,4 +1,4 @@
-{% extends '@!EasyAdmin/page/content.html.twig' %}
+{% extends 'bundles/EasyAdminBundle/page/content.html.twig' %}
 
 {% block page_title %}Рекомендации{% endblock %}
 
@@ -13,18 +13,24 @@
             {% for schedule in schedules %}
                 <div class="card-body">
                     <div class="overall-events">
-                    {% if schedule.fitness  > 50000 %}
-                    <a href="{{ path('recommendation', {'tempSchedule': schedule.id}) }}" class="event-block bg-warning">
-                        <i class="fa-solid fa-exclamation-triangle"></i>
+                        {% if schedule.fitness  > 50000 %}
+                            <a href="{{ path('recommendation', {'tempSchedule': schedule.id}) }}"
+                               class="event-block bg-warning">
+                                <i class="fa-solid fa-exclamation-triangle"></i>
+                                <div class="total-events">Штраф:{{ schedule.fitness }}</div>
+                                Расписание № {{ schedule.id }} <br>
+                                сформировано {{ schedule.createdAt.format('d.m.Y H:m:s') }}
+                            </a>
                         {% else %}
-                        <a href="{{ path('recommendation', {'tempSchedule': schedule.id}) }}" class="event-block bg-success">
-                            <i class="fa-solid fa-thumbs-up"></i>
+                            <a href="{{ path('recommendation', {'tempSchedule': schedule.id}) }}"
+                               class="event-block bg-success">
+                                <i class="fa-solid fa-thumbs-up"></i>
+                                <div class="total-events">Штраф:{{ schedule.fitness }}</div>
+                                Расписание № {{ schedule.id }} <br>
+                                сформировано {{ schedule.createdAt.format('d.m.Y H:m:s') }}
+                            </a>
                         {% endif %}
-                            <div class="total-events">Штраф:{{ schedule.fitness }}</div>
-                            Расписание № {{ schedule.id }} <br>
-                            сформировано {{ schedule.createdAt.format('d.m.Y H:m:s') }}
-                        </a>
-                </div>
+                    </div>
                 </div>
             {% endfor %}
         </div>
