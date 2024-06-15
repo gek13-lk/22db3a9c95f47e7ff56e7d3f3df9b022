@@ -31,7 +31,7 @@ final class Version20240607143824 extends AbstractMigration
         $data = [
             ['type' => 'Сутки через трое', 'hours_per_shift' => 24, 'shift_per_cycle' => 1, 'days_off' => 3],
             ['type' => 'Два выходных', 'hours_per_shift' => 8, 'shift_per_cycle' => 5, 'days_off' => 2],
-            ['type' => 'Ночные смены', 'hours_per_shift' => 12, 'shift_per_cycle' => 4, 'days_off' => 3],
+            ['type' => 'Ночные смены', 'hours_per_shift' => 12, 'shift_per_cycle' => 2, 'days_off' => 2],
             ['type' => 'Дневные смены', 'hours_per_shift' => 8, 'shift_per_cycle' => 5, 'days_off' => 2],
             ['type' => 'День-ночь', 'hours_per_shift' => 12, 'shift_per_cycle' => 2, 'days_off' => 2],
         ];
