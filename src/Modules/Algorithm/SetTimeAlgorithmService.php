@@ -70,6 +70,55 @@ class SetTimeAlgorithmService
         $this->em->flush();
     }
 
+    // Балансировка времени врачей в расписании
+    public function timeBalance(array &$doctorsStat): void
+    {
+        $doctorsDaysStat = [];
+        foreach ($doctorsStat as $weekStat) {
+            foreach ($weekStat as $modalityStat) {
+                foreach ($modalityStat as $doctors) {
+                    foreach ($doctors as $doctorId => $doctorStat) {
+                        if ($doctorId == 'empty') {
+                            continue;
+                        }
+
+                        if (!isset($doctorsDaysStat[$doctorId]['hours'])) {
+                            $doctorsDaysStat[$doctorId]['hours'] = $doctorStat['time']['hours'];
+                            $doctorsDaysStat[$doctorId]['days'] = 1;
+                        } else {
+                            $doctorsDaysStat[$doctorId]['hours']+= $doctorStat['time']['hours'];
+                            $doctorsDaysStat[$doctorId]['days']++;
+                        }
+                    }
+                }
+            }
+        }
+
+        $doctorsAverageTime = [];
+
+        foreach ($doctorsDaysStat as $idDoctor => $doctorShiftStat) {
+            $doctorsAverageTime[$idDoctor] = $doctorShiftStat['hours'] / $doctorShiftStat['days'];
+        }
+
+        //Меняем количество часов работы на усредненное
+        foreach ($doctorsStat as $weekNumber => $weekStat) {
+            foreach ($weekStat as $modality => $modalityStat) {
+                foreach ($modalityStat as $day => $doctors) {
+                    foreach ($doctors as $doctorId => $doctorStat) {
+                        if ($doctorId == 'empty') {
+                            continue;
+                        }
+
+                        $doctorsStat[$weekNumber][$modality][$day][$doctorId]['time']['hours'] = $doctorsAverageTime[$doctorId];
+                        $minutes = floor($doctorsAverageTime[$doctorId] * 60);
+                        $endTime = (clone $doctorStat['time']['start'])->modify('+ '.$minutes + $doctorStat['time']['off'].' minutes');
+                        $doctorsStat[$weekNumber][$modality][$day][$doctorId]['time']['end'] = $endTime;
+                    }
+                }
+            }
+        }
+    }
+
     private function getOstNorms(Doctor $doctor, array $doctorsStat, \DateTime $currentDay): array
     {
         $startMonth = (clone $currentDay)->modify('first day of this month 00:00:00');
@@ -111,7 +160,7 @@ class SetTimeAlgorithmService
     {
         $lastShiftType = null;
         $doctorWorkSchedule = $doctor->getWorkSchedule();
-        $startTime = (clone $currentDay)->setTime(self::START_WORK_HOUR, self::START_WORK_MINUTES);
+        $startTime = (clone $currentDay)->setTime($doctorWorkSchedule->getShiftStartTimeHour() ?? self::START_WORK_HOUR, $doctorWorkSchedule->getShiftStartTimeMinutes() ?? self::START_WORK_MINUTES);
         $offTime = self::DEFAULT_OFF_TIME;
         switch ($doctorWorkSchedule->getType()) {
             case 'Сутки через трое':
@@ -120,21 +169,21 @@ class SetTimeAlgorithmService
             case 'Два выходных':
                 break;
             case 'Ночные смены':
-                $startTime = (clone $currentDay)->setTime(self::START_NIGHT_WORK_HOUR, self::START_WORK_MINUTES);
+                $startTime = (clone $currentDay)->setTime($doctorWorkSchedule->getShiftStartTimeHour() ?? self::START_NIGHT_WORK_HOUR, $doctorWorkSchedule->getShiftStartTimeMinutes() ?? self::START_WORK_MINUTES);
                 break;
             case 'Дневные смены':
                 break;
             case 'День-ночь':
                 if (isset($doctorStat[$doctor->getId()]['lastShiftType'])) {
                     if ($doctorStat[$doctor->getId()]['lastShiftType'] == 'День') {
-                        $startTime = (clone $currentDay)->setTime(self::START_NIGHT_WORK_HOUR, self::START_WORK_MINUTES);
+                        $startTime = (clone $currentDay)->setTime($doctorWorkSchedule->getShiftStartTimeHour() ?? self::START_NIGHT_WORK_HOUR, $doctorWorkSchedule->getShiftStartTimeMinutes() ?? self::START_WORK_MINUTES);
                         $lastShiftType = 'Ночь';
                     } else {
                         $lastShiftType = 'День';
                     }
                 } else {
                     if (rand(0, 1) == 1) {
-                        $startTime = (clone $currentDay)->setTime(self::START_NIGHT_WORK_HOUR, self::START_WORK_MINUTES);
+                        $startTime = (clone $currentDay)->setTime($doctorWorkSchedule->getShiftStartTimeHour() ?? self::START_NIGHT_WORK_HOUR, $doctorWorkSchedule->getShiftStartTimeMinutes() ?? self::START_WORK_MINUTES);
                         $lastShiftType = 'Ночь';
                     } else {
                         $lastShiftType = 'День';
