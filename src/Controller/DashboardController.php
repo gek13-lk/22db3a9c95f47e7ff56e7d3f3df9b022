@@ -11,8 +11,10 @@ use App\Voter\DoctorVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Option\EA;
 use EasyCorp\Bundle\EasyAdminBundle\Config\UserMenu;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
+use EasyCorp\Bundle\EasyAdminBundle\Dto\MenuItemDto;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -84,8 +86,12 @@ class DashboardController extends AbstractDashboardController
     }
 
     public function configureUserMenu(UserInterface $user): UserMenu {
+
         $userMenuItems = [
-            MenuItem::linkToRoute('Профиль', 'icon-user1', 'app_profile'),
+            MenuItem::linkToCrud('Профиль', 'icon-user1', User::class)
+                ->setAction('detail')
+                ->setEntityId($this->getUser()->getId()),
+
         ];
 
         if (class_exists(LogoutUrlGenerator::class)) {
@@ -123,7 +129,8 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::subMenu('График', 'icon-calendar')
             ->setSubItems([
                 MenuItem::linkToRoute('Календарь', null, 'calendar'),
-                MenuItem::linkToRoute('Составить график', null, 'app_schedule_run'),
+                MenuItem::linkToRoute('Составить график', null, 'app_schedule_run')
+                    ->setPermission('ROLE_MANAGER'),
             ]);
 
     }

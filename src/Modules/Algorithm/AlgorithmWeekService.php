@@ -41,7 +41,7 @@ class AlgorithmWeekService
     }
 
     // Основной метод для генерации расписания
-    public function run(\DateTime $startDay, \DateTime $endDay, int $countSchedule): void
+    public function run(\DateTime $startDay, \DateTime $endDay, int $countSchedule): array
     {
         $this->endDay = $endDay;
         $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers(
@@ -73,7 +73,7 @@ class AlgorithmWeekService
             $bestPopulation[$tempScheduleEntity->getId()] = $evolutionPopulation[$i]['schedule'];
         }
 
-        dd($bestPopulation);
+        return $bestPopulation;
     }
 
     // Метод для инициализации начальной популяции
