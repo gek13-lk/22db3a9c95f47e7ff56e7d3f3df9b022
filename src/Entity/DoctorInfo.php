@@ -45,9 +45,9 @@ class DoctorInfo
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "ИНН сотрудника"])]
     private ?string $inn = null;
     #[ORM\ManyToOne(targetEntity: RefCitizenShip::class)]
-    private RefCitizenShip $citizenShip;
+    private ?RefCitizenShip $citizenShip = null;
     #[ORM\ManyToOne(targetEntity: RefOksm::class)]
-    private RefOksm $oksm;
+    private ?RefOksm $oksm = null;
     #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Отношение к военной службе"])]
     private ?int $militaryRelationId = null;
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Номер телефона (+7)"])]
@@ -181,12 +181,12 @@ class DoctorInfo
         return $this;
     }
 
-    public function getGender(): ?string
+    public function getGender(): ?int
     {
         return $this->gender;
     }
 
-    public function setGender(?string $gender): static
+    public function setGender(?int $gender): static
     {
         $this->gender = $gender;
 

@@ -99,7 +99,6 @@ VALUES (?, ?, ?, ?, ?)',
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('CREATE SCHEMA public');
         $this->addSql('ALTER TABLE week_studies DROP start_of_week');
     }
 }

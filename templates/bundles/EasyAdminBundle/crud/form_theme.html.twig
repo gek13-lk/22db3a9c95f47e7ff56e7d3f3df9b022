@@ -1,0 +1,23 @@
+{# @var ea \EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext #}
+{% extends '@!EasyAdmin/crud/form_theme.html.twig' %}
+
+{% block ea_form_column_open_row %}
+    {% set field = form.vars.ea_vars.field %}
+    {% set field_icon = field.getCustomOption('icon') %}
+    {% set column_has_title = field_icon != null or field.label != false or field.label != null or field.label != '' or field.help != null %}
+
+<div class="form-column {{ not column_has_title ? 'form-column-no-header' }} {{ field.cssClass }}">
+    <div class="card">
+    {% if column_has_title %}
+        {% if field.label %}<div class="card-header">
+            <div class="card-title">{{ field.label|default('')|trans(domain = ea.i18n.translationDomain)|raw }}</div>
+        </div>{% endif %}
+    {% endif %}
+        <div class="card-body">
+    {% endblock ea_form_column_open_row %}
+
+    {% block ea_form_column_close_row %}
+        </div>
+    </div>
+</div>
+{% endblock ea_form_column_close_row %}
