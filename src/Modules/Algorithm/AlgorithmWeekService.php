@@ -40,10 +40,10 @@ class AlgorithmWeekService
     {
         $this->modalities = $this->entityManager->getRepository(Competencies::class)->findAll();
 
-        //$this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
-        $this->doctors = $this->entityManager->getRepository(Doctor::class)->findBy([
+        $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
+       /* $this->doctors = $this->entityManager->getRepository(Doctor::class)->findBy([
             'id' => 61
-        ]);
+        ]);*/
         $this->offDoctorDays = $this->entityManager->getRepository(OffDoctorDays::class)->findAll();
     }
 
@@ -91,15 +91,15 @@ class AlgorithmWeekService
     {
         $population = [];
         //TODO: Это для отладки
-        for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
+        /*for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
             $schedule = $this->createRandomSchedule();
             $tempScheduleEntity = $this->saveTempSchedule($schedule, 1);
-        }
+        }*/
 
         //TODO: Это рабочий вариант
-        /*for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
+        for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
             $population[] = $this->createRandomSchedule();
-        }*/
+        }
 
         return $population;
     }
@@ -193,17 +193,17 @@ class AlgorithmWeekService
             //Перемешиваем модальности в неделе
             //TODO: Убрать запрос
             /** @var WeekStudies[] $weekStudies */
-            /*$weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
+            $weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
                 'weekNumber' => $weekNumber['weekNumber'],
                 'year' => $weekNumber['year'],
             ]);
-            shuffle($weekStudies);*/
-            $comp = $this->entityManager->getRepository(Competencies::class)->find(3);
+            shuffle($weekStudies);
+            /*$comp = $this->entityManager->getRepository(Competencies::class)->find(3);
             $weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
                 'year' => 2024,
                 'competency' => $comp,
                 'weekNumber' => $weekNumber['weekNumber']
-                ], ['startOfWeek' => 'ASC']);
+                ], ['startOfWeek' => 'ASC']);*/
 
             $dayCount = 6;
 
