@@ -16,6 +16,10 @@ class DoctorInfo
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
+
+    #[ORM\OneToOne(targetEntity: Doctor::class, inversedBy: 'info')]
+    #[ORM\JoinColumn(nullable: false)]
+    private Doctor $doctor;
     #[ORM\Column(type: 'boolean', options: ["comment" => "Признак наличия работника в ФРМР (это и медицинские и фармацевтические работники)", "default" => false])]
     private bool $mr = false;
     #[ORM\Column(type: 'boolean', options: ["comment" => "Признак обучающегося", "default" => false])]
@@ -40,10 +44,10 @@ class DoctorInfo
     private ?string $snils = null;
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "ИНН сотрудника"])]
     private ?string $inn = null;
-    #[ORM\OneToOne(targetEntity: DoctorCitizenShipId::class, mappedBy: 'doctorInfo')]
-    private DoctorCitizenShipId $citizenShipId;
-    #[ORM\OneToOne(targetEntity: DoctorOksmId::class, mappedBy: 'doctorInfo')]
-    private DoctorOksmId $oksmId;
+    #[ORM\ManyToOne(targetEntity: RefCitizenShip::class)]
+    private RefCitizenShip $citizenShip;
+    #[ORM\ManyToOne(targetEntity: RefOksm::class)]
+    private RefOksm $oksm;
     #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Отношение к военной службе"])]
     private ?int $militaryRelationId = null;
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Номер телефона (+7)"])]
@@ -61,19 +65,24 @@ class DoctorInfo
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Идентификатор определяющий, что МР может быть дополнительно привлечен к оказанию медицинской помощи при угрозе распространения заболеваний, представляющих опасность для окружающих"])]
     private bool $covid19 = false;
     #[ORM\OneToMany(targetEntity: DoctorDocument::class, mappedBy: 'doctorInfo')]
-    private array $doctorDocument = [];
+    private Collection $doctorDocument;
     #[ORM\OneToMany(targetEntity: DoctorAddresses::class, mappedBy: 'doctorInfo')]
-    private array $doctorAddress = [];
+    private Collection $doctorAddress;
 
-    public function __construct()
+    public function __construct(Doctor $doctor)
     {
+        $this->doctor = $doctor;
         $this->doctorDocument = new ArrayCollection();
         $this->doctorAddress = new ArrayCollection();
     }
 
-    public function getId(): ?int
-    {
+    public function getId(): ?int {
         return $this->id;
+    }
+
+    public function getDoctor(): Doctor
+    {
+        return $this->doctor;
     }
 
     public function isMr(): ?bool
@@ -256,18 +265,6 @@ class DoctorInfo
         return $this;
     }
 
-    public function getIsDisabled(): ?string
-    {
-        return $this->isDisabled;
-    }
-
-    public function setIsDisabled(?string $isDisabled): static
-    {
-        $this->isDisabled = $isDisabled;
-
-        return $this;
-    }
-
     public function getDisabledGroupId(): ?string
     {
         return $this->disabledGroupId;
@@ -304,58 +301,27 @@ class DoctorInfo
         return $this;
     }
 
-    public function getCovid19(): ?string
+
+    public function getCitizenShip(): ?RefCitizenShip
     {
-        return $this->covid19;
+        return $this->citizenShip;
     }
 
-    public function setCovid19(?string $covid19): static
+    public function setCitizenShip(?RefCitizenShip $citizenShip): static
     {
-        $this->covid19 = $covid19;
+        $this->citizenShip = $citizenShip;
 
         return $this;
     }
 
-    public function getCitizenShipId(): ?DoctorCitizenShipId
+    public function getOksm(): ?RefOksm
     {
-        return $this->citizenShipId;
+        return $this->oksm;
     }
 
-    public function setCitizenShipId(?DoctorCitizenShipId $citizenShipId): static
+    public function setOksm(?RefOksm $oksm): static
     {
-        // unset the owning side of the relation if necessary
-        if ($citizenShipId === null && $this->citizenShipId !== null) {
-            $this->citizenShipId->setDoctorInfo(null);
-        }
-
-        // set the owning side of the relation if necessary
-        if ($citizenShipId !== null && $citizenShipId->getDoctorInfo() !== $this) {
-            $citizenShipId->setDoctorInfo($this);
-        }
-
-        $this->citizenShipId = $citizenShipId;
-
-        return $this;
-    }
-
-    public function getOksmId(): ?DoctorOksmId
-    {
-        return $this->oksmId;
-    }
-
-    public function setOksmId(?DoctorOksmId $oksmId): static
-    {
-        // unset the owning side of the relation if necessary
-        if ($oksmId === null && $this->oksmId !== null) {
-            $this->oksmId->setDoctorInfo(null);
-        }
-
-        // set the owning side of the relation if necessary
-        if ($oksmId !== null && $oksmId->getDoctorInfo() !== $this) {
-            $oksmId->setDoctorInfo($this);
-        }
-
-        $this->oksmId = $oksmId;
+        $this->oksm = $oksm;
 
         return $this;
     }

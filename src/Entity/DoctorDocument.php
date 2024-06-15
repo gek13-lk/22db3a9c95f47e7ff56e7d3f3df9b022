@@ -24,7 +24,7 @@ class DoctorDocument
     private ?string $codeOrg = null;
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Код документа, удостоверяющего личность"])]
     private ?int $documentId = null;
-    #[ORM\ManyToOne(targetEntity: DoctorInfo::class)]
+    #[ORM\ManyToOne(targetEntity: DoctorInfo::class, inversedBy: 'doctorDocument')]
     private DoctorInfo $doctorInfo;
 
     public function getId(): ?int

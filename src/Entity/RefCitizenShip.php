@@ -6,22 +6,17 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * Справочник ФРНСИ «Общероссийский классификатор стран мира», OID 1.2.643.5.1.13.2.1.1.63
- */
 #[ORM\Entity]
-class DoctorOksmId
+class RefCitizenShip
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
     private ?int $id = null;
-    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Код"])]
+    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Гражданство (id) Справочник ФРНСИ «Категории гражданства», OID 1.2.643.5.1.13.13.99.2.315"])]
     private ?int $code = null;
     #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Наименование"])]
     private ?string $name = null;
-    #[ORM\OneToOne(targetEntity: DoctorInfo::class, inversedBy: 'oksmId')]
-    private DoctorInfo $doctorInfo;
 
     public function getId(): ?int
     {
@@ -48,18 +43,6 @@ class DoctorOksmId
     public function setName(?string $name): static
     {
         $this->name = $name;
-
-        return $this;
-    }
-
-    public function getDoctorInfo(): ?DoctorInfo
-    {
-        return $this->doctorInfo;
-    }
-
-    public function setDoctorInfo(?DoctorInfo $doctorInfo): static
-    {
-        $this->doctorInfo = $doctorInfo;
 
         return $this;
     }

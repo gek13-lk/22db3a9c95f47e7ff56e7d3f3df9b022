@@ -8,21 +8,17 @@ use App\Repository\DoctorRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: DoctorRepository::class)]
-class Doctor
-{
+class Doctor {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Фамилия"])]
-    private ?string $surname = null;
+    #[ORM\OneToOne(targetEntity: User::class)]
+    private User $user;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Имя"])]
-    private ?string $firstname = null;
-
-    #[ORM\Column(type: 'string', length: 255, nullable: true, options: ["comment" => "Отчество"])]
-    private ?string $middlename = null;
+    #[ORM\OneToOne(targetEntity: DoctorInfo::class, mappedBy: 'doctor')]
+    private DoctorInfo $info;
 
     #[ORM\Column(type: 'json', options: ['jsonb' => true])]
     private array $addonCompetencies = [];
@@ -39,110 +35,94 @@ class Doctor
     #[ORM\Column(type: 'float')]
     private ?float $stavka = null;
 
-    public function __toString()
-    {
-        return $this->getFio() ?? 'Doctor#'.$this->id;
+    public function __construct() {
+        $this->info = new DoctorInfo($this);
     }
 
-    public function getSurname(): ?string
-    {
-        return $this->surname;
+    public function __toString() {
+        return $this->getFio() ?? 'Doctor#' . $this->id;
     }
 
-    public function setSurname(?string $surname): self
-    {
-        $this->surname = $surname;
+    public function getUser(): User {
+        return $this->user;
+    }
 
+    public function setUser(User $user): static {
+        $this->user = $user;
         return $this;
     }
 
-    public function getFirstname(): ?string
-    {
-        return $this->firstname;
+    public function getInfo(): DoctorInfo {
+        return $this->info;
     }
 
-    public function setFirstname(?string $firstname): self
-    {
-        $this->firstname = $firstname;
-
+    public function setInfo(DoctorInfo $info): static {
+        $this->info = $info;
         return $this;
     }
 
-    public function getMiddlename(): ?string
-    {
-        return $this->middlename;
+    public function getMainCompetencies(): array {
+        return $this->mainCompetencies;
     }
 
-    public function setMiddlename(?string $middlename): self
-    {
-        $this->middlename = $middlename;
-
+    public function setMainCompetencies(array $mainCompetencies): static {
+        $this->mainCompetencies = $mainCompetencies;
         return $this;
     }
 
-    public function getFio(): ?string
-    {
+    public function getFio(): ?string {
         $names = [];
 
-        if ($surName = $this->getSurname()) {
+        if ($surName = $this->info->getLastName()) {
             $names[] = $surName;
         }
 
-        if ($firstName = $this->getFirstname()) {
+        if ($firstName = $this->info->getFirstName()) {
             $names[] = $firstName;
         }
 
-        if ($middleName = $this->getMiddlename()) {
+        if ($middleName = $this->info->getPatronymic()) {
             $names[] = $middleName;
         }
 
         return empty($names) ? null : implode(' ', $names);
     }
 
-    public function getId(): ?int
-    {
+    public function getId(): ?int {
         return $this->id;
     }
 
-    public function getWorkSchedule(): ?DoctorWorkSchedule
-    {
+    public function getWorkSchedule(): ?DoctorWorkSchedule {
         return $this->workSchedule;
     }
 
-    public function setWorkSchedule(DoctorWorkSchedule $workSchedule): void
-    {
+    public function setWorkSchedule(DoctorWorkSchedule $workSchedule): void {
         $this->workSchedule = $workSchedule;
     }
 
-    public function getStavka(): ?float
-    {
+    public function getStavka(): ?float {
         return $this->stavka;
     }
 
-    public function setStavka(?float $stavka): Doctor
-    {
+    public function setStavka(?float $stavka): Doctor {
         $this->stavka = $stavka;
         return $this;
     }
 
-    public function getAddonCompetencies(): array
-    {
+    public function getAddonCompetencies(): array {
         return $this->addonCompetencies;
     }
 
-    public function setAddonCompetencies(array $addonCompetencies): Doctor
-    {
+    public function setAddonCompetencies(array $addonCompetencies): Doctor {
         $this->addonCompetencies = $addonCompetencies;
         return $this;
     }
 
-    public function getCompetency(): array
-    {
+    public function getCompetency(): array {
         return $this->mainCompetencies;
     }
 
-    public function setCompetency(array $competency): Doctor
-    {
+    public function setCompetency(array $competency): Doctor {
         $this->mainCompetencies = $competency;
         return $this;
     }
