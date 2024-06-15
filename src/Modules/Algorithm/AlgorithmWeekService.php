@@ -40,10 +40,10 @@ class AlgorithmWeekService
     {
         $this->modalities = $this->entityManager->getRepository(Competencies::class)->findAll();
 
-        $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
-        /*$this->doctors = $this->entityManager->getRepository(Doctor::class)->findBy([
+        //$this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
+        $this->doctors = $this->entityManager->getRepository(Doctor::class)->findBy([
             'id' => 61
-        ]);*/
+        ]);
         $this->offDoctorDays = $this->entityManager->getRepository(OffDoctorDays::class)->findAll();
     }
 
@@ -193,18 +193,17 @@ class AlgorithmWeekService
             //Перемешиваем модальности в неделе
             //TODO: Убрать запрос
             /** @var WeekStudies[] $weekStudies */
-            $weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
+            /*$weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
                 'weekNumber' => $weekNumber['weekNumber'],
                 'year' => $weekNumber['year'],
             ]);
-            shuffle($weekStudies);
-            /*$comp = $this->entityManager->getRepository(Competencies::class)->find(3);
+            shuffle($weekStudies);*/
+            $comp = $this->entityManager->getRepository(Competencies::class)->find(3);
             $weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
                 'year' => 2024,
                 'competency' => $comp,
                 'weekNumber' => $weekNumber['weekNumber']
-                ], ['startOfWeek' => 'ASC']);*/
-
+                ], ['startOfWeek' => 'ASC']);
 
             $dayCount = 6;
 
@@ -240,7 +239,7 @@ class AlgorithmWeekService
                         $doctor = $this->getRandomDoctorWhoCan($modalityCompetency, $this->doctorsInDay, $currentDate);
 
                         if ($doctor) {
-                            $doctorTimeStat = $this->timeAlgorithmService->setTimeByDoctor($doctor, $currentDate, $this->doctorsStat);
+                            $doctorTimeStat = $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDate, $this->doctorsStat);
                             $modalityDoctorMinimalCountPerShift = round($modalityHourMinCount * $doctorTimeStat['hours']);
                             $modalityDoctorMaxCountPerShift = floor($modalityHourMaxCount * $doctorTimeStat['hours']);
                         }
@@ -277,7 +276,7 @@ class AlgorithmWeekService
                 }
             }
         }
-//dd($this->schedule);
+//dd($this->schedule, $this->doctorsStat);
         return $this->schedule;
     }
 
@@ -417,7 +416,7 @@ class AlgorithmWeekService
             );
 
             $doctors = array_filter($doctorsIn, function (Doctor $doctor) use ($currentDay) {
-                return !$this->isDayOff($doctor, $currentDay);
+                return !$this->isDayOff($doctor, $currentDay) && $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDay, $this->doctorsStat);
             });
         }
 
@@ -430,7 +429,7 @@ class AlgorithmWeekService
             );
 
             $doctors = array_filter($doctors, function (Doctor $doctor) use ($currentDay) {
-                return !$this->isDayOff($doctor, $currentDay);
+                return !$this->isDayOff($doctor, $currentDay) && $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDay, $this->doctorsStat);
             });
         }
 
@@ -444,7 +443,7 @@ class AlgorithmWeekService
             );
 
             $doctors = array_filter($doctorsIn, function (Doctor $doctor) use ($currentDay) {
-                return !$this->isDayOff($doctor, $currentDay);
+                return !$this->isDayOff($doctor, $currentDay) && $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDay, $this->doctorsStat);
             });
         }
 
@@ -457,7 +456,7 @@ class AlgorithmWeekService
             );
 
             $doctors = array_filter($doctors, function (Doctor $doctor) use ($currentDay) {
-                return !$this->isDayOff($doctor, $currentDay);
+                return !$this->isDayOff($doctor, $currentDay) && $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDay, $this->doctorsStat);
             });
         }
 
