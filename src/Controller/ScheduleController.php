@@ -178,7 +178,11 @@ class ScheduleController extends DashboardController {
             $handle = fopen('php://output', 'wb');
 
             foreach ($data as $row) {
-                fputcsv($handle, $row);
+                $rows = [];
+                foreach ($row as $r) {
+                    $rows[] = iconv( "UTF-8", "cp1251",  $r);
+                }
+                fputcsv($handle, $rows);
             }
             fclose($handle);
         });
