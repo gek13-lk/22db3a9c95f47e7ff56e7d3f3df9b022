@@ -30,6 +30,26 @@ RUN apk add --no-cache linux-headers \
     && echo "xdebug.log=/var/log/xdebug.log" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && touch /var/log/xdebug.log && chown www-data:www-data /var/log/xdebug.log
 
+RUN apk add --no-cache \
+      freetype \
+      libjpeg-turbo \
+      libpng \
+      freetype-dev \
+      libjpeg-turbo-dev \
+      libpng-dev \
+      libzip-dev \
+    && docker-php-ext-configure gd \
+      --with-freetype=/usr/include/ \
+      --with-jpeg=/usr/include/ \
+    && docker-php-ext-install -j$(nproc) gd \
+    && docker-php-ext-enable gd \
+    && docker-php-ext-install -j$(nproc) zip \
+    && docker-php-ext-enable zip \
+    && apk del --no-cache \
+      freetype-dev \
+      libjpeg-turbo-dev \
+      libpng-dev
+
 WORKDIR /app
 
 RUN set -eux; \

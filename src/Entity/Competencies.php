@@ -40,6 +40,11 @@ class Competencies
     #[ORM\Column(length: 255, nullable: true, enumType: StudyType::class, options: ["comment" => "Код"])]
     private ?StudyType $code = null;
 
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
     public function getModality(): ?string
     {
         return $this->modality;
@@ -50,11 +55,6 @@ class Competencies
         $this->modality = $modality;
 
         return $this;
-    }
-
-    public function getId(): ?int
-    {
-        return $this->id;
     }
 
     public function getCoefficient(): ?float
@@ -132,5 +132,10 @@ class Competencies
         $this->code = $code;
 
         return $this;
+    }
+
+    public function __toString(): string
+    {
+        return $this->modality;
     }
 }
