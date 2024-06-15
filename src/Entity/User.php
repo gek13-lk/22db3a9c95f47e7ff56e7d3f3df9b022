@@ -60,6 +60,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: MLLogs::class, mappedBy: 'user')]
     private Collection $logs;
 
+    public function __toString(): string {
+        return $this->getUserIdentifier();
+    }
+
     public function __construct()
     {
         $this->logs = new ArrayCollection();
