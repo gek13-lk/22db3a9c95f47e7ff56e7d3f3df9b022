@@ -20,7 +20,7 @@ class WeekStudiesController extends AbstractController
     ) {
     }
 
-    #[Route('/train', methods: 'POST')]
+    #[Route('/train', name: 'training_model', methods: 'POST')]
     public function trainModel(): Response
     {
         /** @var User $user */
