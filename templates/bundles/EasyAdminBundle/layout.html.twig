@@ -190,7 +190,7 @@
                     </div>
                 </div>
                 <div class="content-wrapper" style="max-width: 100% !important;">
-                    <div class="row">{% block page_actions %}{% endblock %}</div>
+                    <div class="row gutters position-relative" style="margin: 0 auto 0.875rem auto; padding: 0;">{% block page_actions %}{% endblock %}</div>
                     <div class="row gutters position-relative" style="margin: 0 auto 0 auto; padding: 0; min-height: calc(100vh - 260px);">
                         {% block main %}{% endblock %}
                     </div>
@@ -208,6 +208,28 @@
         <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
         <script src="{{ asset('js/moment.js') }}"></script>
         <script src="{{ asset('js/main.js') }}"></script>
+        <script>document.addEventListener('DOMContentLoaded', () => {
+                const formWidgets = document.querySelectorAll('.form-widget');
+
+                formWidgets.forEach(widget => {
+                    const labels = widget.querySelectorAll('label');
+                    const inputs = widget.querySelectorAll('input');
+
+                    labels.forEach(label => {
+                        label.classList.add('form-control');
+                    });
+
+                    inputs.forEach(input => {
+                        input.classList.add('form-control');
+                    });
+                });
+
+                const clearButtons = document.querySelectorAll('.clear-button');
+                clearButtons.forEach(clearButton => {
+                    clearButton.textContent = 'Очистить всё';
+                    clearButton.style.color = '#b3b3b3';
+                });
+            });</script>
     {% endblock body_javascript %}
 
     {% block configured_body_contents %}
