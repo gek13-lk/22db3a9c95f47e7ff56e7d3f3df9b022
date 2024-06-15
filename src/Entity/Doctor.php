@@ -14,11 +14,11 @@ class Doctor {
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\OneToOne(targetEntity: User::class)]
-    private User $user;
+    #[ORM\OneToOne(targetEntity: User::class, cascade: ['persist'])]
+    private ?User $user = null;
 
-    #[ORM\OneToOne(targetEntity: DoctorInfo::class, mappedBy: 'doctor')]
-    private DoctorInfo $info;
+    #[ORM\OneToOne(targetEntity: DoctorInfo::class, mappedBy: 'doctor', cascade: ['persist'])]
+    private ?DoctorInfo $info = null;
 
     #[ORM\Column(type: 'json', options: ['jsonb' => true])]
     private array $addonCompetencies = [];
@@ -29,7 +29,7 @@ class Doctor {
     /**
      * Норма выхода врача в смену.
      */
-    #[ORM\OneToOne(targetEntity: DoctorWorkSchedule::class, mappedBy: 'doctor')]
+    #[ORM\OneToOne(targetEntity: DoctorWorkSchedule::class, mappedBy: 'doctor', cascade: ['persist'])]
     private DoctorWorkSchedule $workSchedule;
 
     #[ORM\Column(type: 'float')]
@@ -37,6 +37,8 @@ class Doctor {
 
     public function __construct() {
         $this->info = new DoctorInfo($this);
+        $this->workSchedule = new DoctorWorkSchedule();
+        $this->workSchedule->setDoctor($this);
     }
 
     public function __toString() {
@@ -44,7 +46,7 @@ class Doctor {
     }
 
     public function getUser(): User {
-        return $this->user;
+        return $this->user ?? new User();
     }
 
     public function setUser(User $user): static {

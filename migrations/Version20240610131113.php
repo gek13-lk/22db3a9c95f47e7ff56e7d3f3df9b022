@@ -88,7 +88,6 @@ final class Version20240610131113 extends AbstractMigration
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('CREATE SCHEMA public');
         $this->addSql('ALTER TABLE doctor_addresses DROP CONSTRAINT FK_A0D814FDCE26A255');
         $this->addSql('ALTER TABLE doctor_addresses_reg DROP CONSTRAINT FK_DE173EE6C2A086E4');
         $this->addSql('ALTER TABLE doctor_citizen_ship_id DROP CONSTRAINT FK_BD417756CE26A255');
@@ -187,7 +186,7 @@ final class Version20240610131113 extends AbstractMigration
                 $doctorinfo["inn"],
                 $doctorinfo["militaryRelationId"],
                 $doctorinfo["phone"],
-                $doctorinfo["email"],
+                $i.$doctorinfo["email"],
                 $doctorinfo["isDisabled"],
                 $doctorinfo["disabledGroupId"],
                 $doctorinfo["disabledGroupName"],
@@ -430,7 +429,7 @@ final class Version20240610131113 extends AbstractMigration
 
     private function getSnils()
     {
-        return rand(79999999901, 9999999999999);
+        return rand(79999999901, 99999999999);
     }
 
     private function getInn()
