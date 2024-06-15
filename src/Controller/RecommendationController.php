@@ -4,25 +4,37 @@ namespace App\Controller;
 
 use App\Entity\TempSchedule;
 use App\Modules\Algorithm\RecommendationService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 class RecommendationController extends DashboardController {
-    public function index(): Response
+
+    public function __construct(private readonly EntityManagerInterface $em)
     {
-        throw new \LogicException('');
     }
 
-    #[Route('/recommendation/{tempSchedule}', name: 'app_recommendation')]
+    #[Route('/recommendations', name: 'recommendation_list')]
+    public function index(): Response
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $schedules = $this->em->getRepository(TempSchedule::class)->findAll();
+
+        return $this->render('recommendation/index.html.twig', [
+            'title' => 'Рекомендации',
+            'schedules' => $schedules
+        ]);
+    }
+
+    #[Route('/recommendation/{tempSchedule}', name: 'recommendation')]
     public function recommendation(TempSchedule $tempSchedule, RecommendationService $service): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-        $user = $this->getUser();
 
         $recommendations = $service->getRecommendation($tempSchedule);
 
-        return $this->render('recommendation/index.html.twig', [
-            'controller_name' => 'RecommendationController',
-            'username' => $user->getUserIdentifier(),
+        return $this->render('recommendation/recommendation.html.twig', [
+            'title' => 'Рекомендации',
             'recommendations' => $recommendations
         ]);
     }

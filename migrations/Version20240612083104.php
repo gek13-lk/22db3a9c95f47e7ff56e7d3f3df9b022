@@ -29,7 +29,6 @@ final class Version20240612083104 extends AbstractMigration
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('CREATE SCHEMA public');
         $this->addSql('ALTER TABLE temp_doctor_schedule ADD start_work_time VARCHAR(255) DEFAULT NULL');
         $this->addSql('ALTER TABLE temp_doctor_schedule ADD end_work_time VARCHAR(255) DEFAULT NULL');
         $this->addSql('ALTER TABLE temp_doctor_schedule DROP work_time_start');
