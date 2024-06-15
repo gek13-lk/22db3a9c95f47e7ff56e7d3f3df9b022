@@ -140,5 +140,10 @@ class DashboardController extends AbstractDashboardController
                 MenuItem::linkToCrud('Справочник', null, Competencies::class),
                 MenuItem::linkToCrud('История по неделям', null, WeekStudies::class),
             ]);
+
+        yield MenuItem::subMenu('Рекомендации', 'fa fa-thumbs-up')
+            ->setSubItems([
+                MenuItem::linkToRoute('Рекомендации', null, 'recommendation_list'),
+            ]);
     }
 }
