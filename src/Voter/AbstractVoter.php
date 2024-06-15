@@ -38,7 +38,7 @@ abstract class AbstractVoter extends Voter implements PrivilegeGroupInterface {
         /** @var User|null $user */
         $user = $token->getUser();
 
-        if (\in_array($attribute, $user->getPrivileges())) {
+        if (\in_array($attribute, $user->getPrivileges()) || \in_array('ROLE_ADMIN',$user->getRoles())) {
             return true;
         }
 
