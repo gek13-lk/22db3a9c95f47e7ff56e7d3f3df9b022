@@ -72,6 +72,7 @@ class ScheduleController extends DashboardController {
 
         if (!$form->isSubmitted() || !$form->isValid()) {
             return $this->render('schedule/run.html.twig', [
+                'title' => 'Построить график',
                 'form' => $form->createView(),
             ]);
         }
@@ -83,6 +84,7 @@ class ScheduleController extends DashboardController {
         $this->algorithmService->run($dateStart, $dateEnd, $data['count']);
 
         return $this->render('schedule/run.html.twig', [
+            'title' => 'Построить график',
             'form' => $form->createView(),
             'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $this->doctorRepository->findAll(),
