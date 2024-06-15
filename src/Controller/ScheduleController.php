@@ -50,6 +50,7 @@ class ScheduleController extends DashboardController {
             'title' => 'Расписание',
             'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
+            'scheduleId' => 1 // TODO: получать из алгоритма
         ]);
     }
 
