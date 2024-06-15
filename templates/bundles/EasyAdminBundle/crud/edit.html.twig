@@ -1,0 +1,48 @@
+{# @var ea \EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext #}
+{# @var entities \EasyCorp\Bundle\EasyAdminBundle\Collection\EntityCollection #}
+{# @var paginator \EasyCorp\Bundle\EasyAdminBundle\Orm\EntityPaginator #}
+{% extends '@!EasyAdmin/crud/edit.html.twig' %}
+
+
+{% block head_stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('vendor/tom-select/tom-select.css') }}"/>
+    <script src="{{ asset('vendor/tom-select/tom-select.complete.min.js') }}"></script>
+    <style>
+        .ts-control {
+            border: 1px solid #cddcea;
+            min-height: 43px;
+        }
+        .ts-control:not(.rtl) {
+            padding-right: 24px !important;
+        }
+
+        .plugin-dropdown_input.focus.dropdown-active .ts-control {
+            border-color: #66a3ff!important;
+            box-shadow: none;
+        }
+
+        .plugin-dropdown_input .items-placeholder {
+            display: none!important;
+        }
+
+        .plugin-dropdown_input .dropdown-input {
+            border-color: #cddcea;
+        }
+        .ts-dropdown {
+            -webkit-border-radius: 2px;
+            -moz-border-radius: 2px;
+            border-radius: 2px;
+            border: 1px solid #cddcea;
+            font-size: .825rem;
+        }
+
+        .plugin-clear_button.form-select .clear-button, .plugin-clear_button.single .clear-button {
+            right: 2px!important;
+        }
+    </style>
+{% endblock %}
+
+{% block breadcrumb %}
+    {% block content_title %}{{ parent() }}{% endblock %}
+{% endblock %}
