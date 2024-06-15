@@ -170,7 +170,7 @@ class DoctorCrudController extends AbstractCrudController {
             ->renderAsBadges();
         yield NumberField::new('stavka', 'Ставка')
             ->setNumDecimals(2)
-            ->setFormTypeOption('attr', ['min' => 0.25, 'max' => 1]);
+            ->setFormTypeOption('attr', ['min' => 0.25, 'step' => 0.25, 'max' => 1]);
         yield ChoiceField::new('workSchedule.type')
             ->setLabel('Тип смены')
             ->setChoices([
@@ -193,15 +193,27 @@ class DoctorCrudController extends AbstractCrudController {
             ->setFormTypeOption('attr', ['min' => 1, 'max' => 12])
             ->onlyOnForms();
         yield BooleanField::new('info.mr', 'Признак наличия работника в ФРМР')
+            ->setFormTypeOption('row_attr', ['class' => 'custom-control custom-checkbox pl-1'])
+            ->setFormTypeOption('attr', ['class' => 'custom-control-input'])
+            ->setFormTypeOption('label_attr', ['class' => 'custom-control-label p-0 border-0', 'style' => 'height: unset;'])
             ->onlyOnForms();
         yield TextField::new('info.oid', 'OID работника')
             ->onlyOnForms();
         yield BooleanField::new('info.student', 'Признак обучающегося')
+            ->setFormTypeOption('row_attr', ['class' => 'custom-control custom-checkbox pl-1'])
+            ->setFormTypeOption('attr', ['class' => 'custom-control-input'])
+            ->setFormTypeOption('label_attr', ['class' => 'custom-control-label p-0 border-0', 'style' => 'height: unset;'])
             ->onlyOnForms();
         yield BooleanField::new('info.isMedicalWorker', 'Признак медицинского работника')
+            ->setFormTypeOption('row_attr', ['class' => 'custom-control custom-checkbox pl-1'])
+            ->setFormTypeOption('attr', ['class' => 'custom-control-input'])
+            ->setFormTypeOption('label_attr', ['class' => 'custom-control-label p-0 border-0', 'style' => 'height: unset;'])
             ->setHelp('работники, которые трудоустроены на медицинских должностях в организации, имеющей лицензию на медицинскую деятельность, которые в тоже время имеют действующую аккредитацию/сертификат специалиста по медицинским специальностям')
             ->onlyOnForms();
         yield BooleanField::new('info.isPharmWorker', 'Признак фармацевтического работника')
+            ->setFormTypeOption('row_attr', ['class' => 'custom-control custom-checkbox pl-1'])
+            ->setFormTypeOption('attr', ['class' => 'custom-control-input'])
+            ->setFormTypeOption('label_attr', ['class' => 'custom-control-label p-0 border-0', 'style' => 'height: unset;'])
             ->setHelp('работники, которые трудоустроены на фармацевтических должностях в организации, имеющей лицензию на фармацевтическую деятельность, которые в тоже время имеют действующую аккредитацию/сертификат специалиста по фармацевтическим специальностям')
             ->onlyOnForms();
     }
