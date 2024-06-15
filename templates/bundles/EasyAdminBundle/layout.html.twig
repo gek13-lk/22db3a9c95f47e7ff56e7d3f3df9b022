@@ -12,11 +12,18 @@
     <link rel="icon" href="{{ asset('./img/favicon.svg') }}" type="image/x-icon">
 {% endblock head_metas %}
 
+{% block page_title %}Референс-центр - {{ block('content_title') }}{% endblock %}
+
 {% block head_stylesheets %}
     <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}"/>
     <link rel="stylesheet" href="{{ asset('fonts/style.css') }}"/>
     <link rel="stylesheet" href="{{ asset('css/main.min.css') }}"/>
     <link rel="stylesheet" href="{{ asset('dist/fontawesome-pro-6.5.2-web/css/all.min.css') }}"/>
+    <style>
+        .badge + .badge {
+            margin-left: 2px;
+        }
+    </style>
 {% endblock %}
 
 {% block body %}
@@ -40,7 +47,7 @@
         <div class="container-fluid">
             <div class="row gutters">
                 <div class="col-sm-4 col-4">
-                    <a href="" class="logo">Референс-центр <span>Графики</span></a>
+                    <a href="" class="logo">Референс-центр <span>{{ block('content_title') }}</span></a>
                 </div>
                 <div class="col-sm-8 col-8">
                     <ul class="header-actions">
@@ -166,32 +173,33 @@
                 <div class="page-header">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item active">
-                            {% set break = false %}
-                            {% for menuItem in ea.mainMenu.items %}
-                                {% if not break and menuItem.isSelected %}
-                                    {{ menuItem.label|trans|raw }}
-                                    {% set break = true %}
-                                {% endif %}
+                            {% block breadcrumb %}
+                                {% set break = false %}
+                                {% for menuItem in ea.mainMenu.items %}
+                                    {% if not break and menuItem.isSelected %}
+                                        {{ menuItem.label|trans|raw }}
+                                        {% set break = true %}
+                                    {% endif %}
 
-                                {% if not break %}
-                                    {% for subItem in menuItem.subItems %}
-                                        {% if not break and subItem.isSelected %}
-                                            {{ menuItem.label|trans|raw }} / {{ subItem.label|trans|raw }}
-                                            {% set break = true %}
-                                        {% endif %}
-                                    {% endfor %}
-                                {% endif %}
-                            {% endfor %}
-
+                                    {% if not break %}
+                                        {% for subItem in menuItem.subItems %}
+                                            {% if not break and subItem.isSelected %}
+                                                {{ menuItem.label|trans|raw }} / {{ subItem.label|trans|raw }}
+                                                {% set break = true %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endblock %}
                         </li>
                     </ol>
                     <div class="site-award">
                         <img src="img/award.png">
                     </div>
                 </div>
-                <div class="content-wrapper" style="max-width: 100% !important;">
-                    <div class="row gutters position-relative" style="margin: 0 auto 0.875rem auto; padding: 0;">{% block page_actions %}{% endblock %}</div>
-                    <div class="row gutters position-relative" style="margin: 0 auto 0 auto; padding: 0; min-height: calc(100vh - 260px);">
+                <div class="content content-wrapper" style="max-width: 100% !important;">
+                    <div class="row gutters mb-2 d-flex justify-content-end">{% block page_actions %}{% endblock %}</div>
+                    <div class="row gutters position-relative" style="min-height: calc(100vh - 260px);">
                         {% block main %}{% endblock %}
                     </div>
                 </div>
@@ -224,7 +232,8 @@
         <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
         <script src="{{ asset('js/moment.js') }}"></script>
         <script src="{{ asset('js/main.js') }}"></script>
-        <script>document.addEventListener('DOMContentLoaded', () => {
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
                 const formWidgets = document.querySelectorAll('.form-widget');
 
                 formWidgets.forEach(widget => {

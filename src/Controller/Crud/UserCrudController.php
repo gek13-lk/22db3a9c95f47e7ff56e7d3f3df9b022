@@ -13,6 +13,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -35,7 +36,7 @@ final class UserCrudController extends AbstractCrudController {
             ->setPageTitle(Crud::PAGE_NEW, 'Добавление пользователя')
             ->setPageTitle(Crud::PAGE_EDIT, 'Редактирование пользователя')
             ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр пользователя')
-            ;
+            ->setFormOptions(['attr' => ['class' => 'w-100']]);
     }
 
     public function configureActions(Actions $actions): Actions {
@@ -49,7 +50,8 @@ final class UserCrudController extends AbstractCrudController {
     }
 
     public function configureFields(string $pageName): iterable {
-        yield TextField::new('username', 'Имя пользователя');
+        yield TextField::new('username', 'Имя пользователя')
+            ->hideOnDetail();
 
         yield TextField::new('plainPassword')
             ->setLabel("Новый пароль")
@@ -74,10 +76,12 @@ final class UserCrudController extends AbstractCrudController {
             ->setLabel('Роли')
             ->setRequired(false)
             ->setChoices($roles ?? [])
+            ->setColumns('col-md-6 col-xxl-5')
             ->allowMultipleChoices()
             ->autocomplete()
             ->renderAsBadges()
-            ->setSortable(false);
+            ->setSortable(false)
+            ->hideOnDetail();
 
         foreach ($this->getEntityManager()->getRepository(Privilege::class)->findAll() as $privilege) {
             $privileges[$privilege->getName()] = $privilege->getCode();
@@ -87,10 +91,53 @@ final class UserCrudController extends AbstractCrudController {
             ->setLabel('Привилегии')
             ->setRequired(false)
             ->setChoices($privileges ?? [])
+            ->setColumns('col-md-6 col-xxl-5')
             ->allowMultipleChoices()
             ->autocomplete()
             ->renderAsBadges()
-            ->setSortable(false);
+            ->setSortable(false)
+            ->hideOnDetail();
+
+
+        yield FormField::addColumn()
+            ->onlyOnDetail();
+
+        yield TextField::new('username', 'Имя пользователя')
+            ->onlyOnDetail();
+
+        yield ChoiceField::new('roles')
+            ->setLabel('Роли')
+            ->setChoices($roles ?? [])
+            ->setColumns('col-12')
+            ->allowMultipleChoices()
+            ->autocomplete()
+            ->renderAsBadges()
+            ->onlyOnDetail();
+
+        yield ChoiceField::new('privileges')
+            ->setLabel('Привилегии')
+            ->setChoices($privileges ?? [])
+            ->setColumns('col-12')
+            ->allowMultipleChoices()
+            ->formatValue(fn($value) => $value?:'---')
+            ->renderAsBadges()
+            ->onlyOnDetail();
+
+        yield FormField::addColumn()
+            ->onlyOnDetail();
+
+        yield TextField::new('email', 'Адрес электронной почты')
+            ->onlyOnDetail();
+
+        yield TextField::new('surname', 'Фамилия')
+            ->onlyOnDetail();
+
+        yield TextField::new('firstname', 'Имя')
+            ->onlyOnDetail();
+
+        yield TextField::new('middlename', 'Отчество')
+            ->onlyOnDetail();
+
     }
 
     /**

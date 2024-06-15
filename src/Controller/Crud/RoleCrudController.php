@@ -27,7 +27,8 @@ class RoleCrudController extends AbstractCrudController {
             ->setPageTitle(Crud::PAGE_INDEX, 'Список ролей')
             ->setPageTitle(Crud::PAGE_NEW, 'Добавление роли')
             ->setPageTitle(Crud::PAGE_EDIT, 'Редактирование роли')
-            ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр роли');
+            ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр роли')
+            ->setFormOptions(['attr' => ['class' => 'w-100']]);
     }
 
     public function configureActions(Actions $actions): Actions {
@@ -54,6 +55,7 @@ class RoleCrudController extends AbstractCrudController {
             ->setLabel('Привилегии')
             ->setRequired(false)
             ->setChoices($privileges ?? [])
+            ->setColumns('col-md-6 col-xxl-5')
             ->allowMultipleChoices()
             ->autocomplete()
             ->renderAsBadges()

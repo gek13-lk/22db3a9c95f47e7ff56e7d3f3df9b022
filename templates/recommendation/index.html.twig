@@ -1,6 +1,4 @@
-{% extends '@!EasyAdmin/page/content.html.twig' %}
-
-{% block page_title %}Рекомендации{% endblock %}
+{% extends 'bundles/EasyAdminBundle/page/content.html.twig' %}
 
 {% block page_content %}
     <div class='col-md-12'>
@@ -30,7 +28,6 @@
                                 сформировано {{ schedule.createdAt.format('d.m.Y H:m:s') }}
                             </a>
                         {% endif %}
-
                     </div>
                 </div>
             {% endfor %}
