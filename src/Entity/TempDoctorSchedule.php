@@ -36,6 +36,9 @@ class TempDoctorSchedule
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $workHours = null;
 
+    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Планируемое количество исследований"])]
+    private ?int $studyCount = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -116,6 +119,17 @@ class TempDoctorSchedule
     public function setWorkHours(?int $workHours): TempDoctorSchedule
     {
         $this->workHours = $workHours;
+        return $this;
+    }
+
+    public function getStudyCount(): ?int
+    {
+        return $this->studyCount;
+    }
+
+    public function setStudyCount(?int $studyCount): TempDoctorSchedule
+    {
+        $this->studyCount = $studyCount;
         return $this;
     }
 }
