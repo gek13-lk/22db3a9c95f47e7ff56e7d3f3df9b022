@@ -20,6 +20,6 @@ class ScheduleExtension extends AbstractExtension {
 
     public function findSchedule(int $scheduleId, int $doctorId)
     {
-        return $this->repository->findByTempSchedule($scheduleId, $doctorId);
+        return $this->repository->findByTempScheduleAndDoctor($scheduleId, $doctorId);
     }
 }
