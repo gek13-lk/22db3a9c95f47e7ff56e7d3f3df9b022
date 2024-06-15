@@ -18,7 +18,9 @@ class SetTimeAlgorithmService
     private const MAX_HOUR_WEEK = 36;
     private const MAX_HOUR_MONTH = 155;
 
-    public function __construct(private readonly EntityManagerInterface $em) {}
+    public function __construct(private readonly EntityManagerInterface $em)
+    {
+    }
 
     public function setTimeByTempSchedule(TempSchedule $tempSchedule): void
     {
@@ -50,8 +52,8 @@ class SetTimeAlgorithmService
                     break;
             }
 
-            $endTime = (clone $startTime)->modify('+ '.$doctorWorkSchedule->getHoursPerShift().' hours')->modify(' +'. (self::START_WORK_MINUTES + $offTime). ' minutes');
-            $workHours = (clone $endTime)->modify('- '.$offTime.' minutes')->diff($startTime);
+            $endTime = (clone $startTime)->modify('+ ' . $doctorWorkSchedule->getHoursPerShift() . ' hours')->modify(' +' . (self::START_WORK_MINUTES + $offTime) . ' minutes');
+            $workHours = (clone $endTime)->modify('- ' . $offTime . ' minutes')->diff($startTime);
 
             if ($workHours->days) {
                 $workHours = 24 + $workHours->h;
@@ -68,12 +70,47 @@ class SetTimeAlgorithmService
         $this->em->flush();
     }
 
-    public function setTimeByDoctor(Doctor $doctor, \DateTime $currentDay, array $doctorStat): array
+    private function getOstNorms(Doctor $doctor, array $doctorsStat, \DateTime $currentDay): array
+    {
+        $startMonth = (clone $currentDay)->modify('first day of this month 00:00:00');
+        $startWeek = (clone $currentDay)->modify('monday this week 00:00:00');
+        $currentMonthHours = 0;
+        $currentWeekHours = 0;
+
+        if (isset($doctorsStat[$doctor->getId()]) && isset($doctorsStat[$doctor->getId()]['days'])) {
+            foreach ($doctorsStat[$doctor->getId()]['days'] as $dayString => $dayStat) {
+
+                $day = \DateTime::createFromFormat('Y-m-d', $dayString);
+
+                $startMonthInStat = (clone $day)->modify('first day of this month 00:00:00');
+                $startWeekInStat = (clone $day)->modify('monday this week 00:00:00');
+                if ($startMonthInStat != $startMonth) {
+                    continue;
+                }
+
+                $currentMonthHours+= $dayStat['hours'];
+
+                if ($startWeekInStat != $startWeek) {
+                    continue;
+                }
+
+                $currentWeekHours+= $dayStat['hours'];
+            }
+        }
+
+        return [
+                'month' => self::MAX_HOUR_MONTH - $currentMonthHours,
+                'week' => self::MAX_HOUR_WEEK - $currentWeekHours,
+            ];
+    }
+
+    /**
+     * Получаем время работы по врачу, если это возможно, не нарушая нормы
+     */
+    public function getTimeByDoctor(Doctor $doctor, \DateTime $currentDay, array $doctorStat): array|false
     {
         $lastShiftType = null;
         $doctorWorkSchedule = $doctor->getWorkSchedule();
-        $currentWeek = (clone $currentDay)->modify('Monday this week');
-        //$currentWeekString = (clone $currentWeek)->format('Y-m-d');
         $startTime = (clone $currentDay)->setTime(self::START_WORK_HOUR, self::START_WORK_MINUTES);
         $offTime = self::DEFAULT_OFF_TIME;
         switch ($doctorWorkSchedule->getType()) {
@@ -104,7 +141,6 @@ class SetTimeAlgorithmService
                     }
                 }
 
-
                 break;
         }
 
@@ -115,8 +151,8 @@ class SetTimeAlgorithmService
         }
 
         $doctorWorkMinutes = $doctorWorkHoursCount * 60;
-        $endTime = (clone $startTime)->modify(' +'. (self::START_WORK_MINUTES + $offTime + $doctorWorkMinutes). ' minutes');
-        $workHours = (clone $endTime)->modify('- '.$offTime.' minutes')->diff($startTime);
+        $endTime = (clone $startTime)->modify(' +' . (self::START_WORK_MINUTES + $offTime + $doctorWorkMinutes) . ' minutes');
+        $workHours = (clone $endTime)->modify('- ' . $offTime . ' minutes')->diff($startTime);
 
         if ($workHours->days) {
             $workHours = 24 + $workHours->h;
@@ -124,34 +160,31 @@ class SetTimeAlgorithmService
             $workHours = $workHours->h;
         }
 
-        $weekHours = 0;
-        $weeksCount = 0;
-        $monthHours = 0;
+        $res = $this->getOstNorms($doctor, $doctorStat, $currentDay);
 
-        foreach ($doctorStat[$doctor->getId()]['days'] ?? [] as $date => $week) {
-            //TODO: Обнуление времени, если прошел месяц
-            //if ($weeksCount )
-            $weekHours = 0;
-            if (isset($week[$doctor->getId()])) {
-                $weekHours = array_sum($week[$doctor->getId()]);
+        $monthHoursOst = $res['month'];
+        $weekHoursOst = $res['week'];
+
+        if ($monthHoursOst < $workHours) {
+            $diff = $workHours - $monthHoursOst;
+
+            if ($diff <= 0) {
+                return false;
             }
 
-            $weekString = (new \DateTime($date));
-            if ($currentWeek->diff($weekString)->m == 0) {
-                $monthHours = $monthHours + $weekHours;
-            } else {
-                $monthHours = 0;
-            }
-
-            $weeksCount++;
+            $endTime->modify('- ' . $diff . ' hours');
+            $workHours = $monthHoursOst;
         }
 
-        $ostHoursWeek = self::MAX_HOUR_WEEK - $weekHours;
+        if ($weekHoursOst < $workHours) {
+            $diff = $workHours - $weekHoursOst;
 
-        if ($ostHoursWeek < $workHours) {
-            $diff = $workHours - $ostHoursWeek;
-            $endTime->modify('- '.$diff.' hours');
-            $workHours = $ostHoursWeek;
+            if ($diff <= 0) {
+                return false;
+            }
+
+            $endTime->modify('- ' . $diff . ' hours');
+            $workHours = $weekHoursOst;
         }
 
         return [
