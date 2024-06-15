@@ -20,7 +20,7 @@ class DoctorAddresses
     private ?\DateTime $regDate = null;
     #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Справочник ФРНСИ «ФРМР. Тип адреса медицинского работника», OID 1.2.643.5.1.13.13.99.2.296"])]
     private ?int $addressTypeId = null;
-    #[ORM\ManyToOne(targetEntity: DoctorInfo::class)]
+    #[ORM\ManyToOne(targetEntity: DoctorInfo::class, inversedBy: 'doctorAddress')]
     private DoctorInfo $doctorInfo;
     #[ORM\OneToOne(targetEntity: DoctorAddressesReg::class, mappedBy: 'doctorAddress')]
     private DoctorAddressesReg $doctorAddressesReg;

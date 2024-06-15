@@ -35,7 +35,7 @@ final class UserCrudController extends AbstractCrudController {
             ->setPageTitle(Crud::PAGE_NEW, 'Добавление пользователя')
             ->setPageTitle(Crud::PAGE_EDIT, 'Редактирование пользователя')
             ->setPageTitle(Crud::PAGE_DETAIL, 'Просмотр пользователя')
-            ;
+            ->setFormOptions(['attr' => ['class' => 'w-100']]);
     }
 
     public function configureActions(Actions $actions): Actions {
@@ -74,6 +74,7 @@ final class UserCrudController extends AbstractCrudController {
             ->setLabel('Роли')
             ->setRequired(false)
             ->setChoices($roles ?? [])
+            ->setColumns('col-md-6 col-xxl-5')
             ->allowMultipleChoices()
             ->autocomplete()
             ->renderAsBadges()
@@ -87,6 +88,7 @@ final class UserCrudController extends AbstractCrudController {
             ->setLabel('Привилегии')
             ->setRequired(false)
             ->setChoices($privileges ?? [])
+            ->setColumns('col-md-6 col-xxl-5')
             ->allowMultipleChoices()
             ->autocomplete()
             ->renderAsBadges()
