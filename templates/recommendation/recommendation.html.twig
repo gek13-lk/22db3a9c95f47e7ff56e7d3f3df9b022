@@ -1,8 +1,6 @@
 {% extends '@!EasyAdmin/page/content.html.twig' %}
 
-{% block page_title %}Рекомендации{% endblock %}
-
-{% block page_content %}
+{% block main %}
     {% for key, groupRecommendation in recommendations %}
     <div class='col-md-3'>
         <div class="card">

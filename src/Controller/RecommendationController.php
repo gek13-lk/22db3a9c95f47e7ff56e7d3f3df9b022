@@ -22,6 +22,7 @@ class RecommendationController extends DashboardController {
         $schedules = $this->em->getRepository(TempSchedule::class)->findAll();
 
         return $this->render('recommendation/index.html.twig', [
+            'title' => 'Рекомендации',
             'schedules' => $schedules
         ]);
     }
@@ -33,6 +34,7 @@ class RecommendationController extends DashboardController {
         $recommendations = $service->getRecommendation($tempSchedule);
 
         return $this->render('recommendation/recommendation.html.twig', [
+            'title' => 'Рекомендации',
             'recommendations' => $recommendations
         ]);
     }
