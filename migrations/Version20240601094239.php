@@ -431,10 +431,8 @@ final class Version20240601094239 extends AbstractMigration
     {
         $data = [
             ['schedule_type' => 'Дневные смены', 'hours_per_shift' => 8, 'shifts_per_cycle' => 5, 'days_off' => 2],
-            ['schedule_type' => 'Ночные смены', 'hours_per_shift' => 12, 'shifts_per_cycle' => 4, 'days_off' => 3],
-            ['schedule_type' => 'Сутки через трое', 'hours_per_shift' => 24, 'shifts_per_cycle' => 1, 'days_off' => 3],
-            ['schedule_type' => 'День-ночь', 'hours_per_shift' => 12, 'shifts_per_cycle' => 2, 'days_off' => 2],
-            ['schedule_type' => 'Два выходных', 'hours_per_shift' => 8, 'shifts_per_cycle' => 5, 'days_off' => 2],
+            ['schedule_type' => 'Ночные смены', 'hours_per_shift' => 12, 'shifts_per_cycle' => 1, 'days_off' => 1],
+            ['schedule_type' => 'День-ночь', 'hours_per_shift' => 12, 'shifts_per_cycle' => 1, 'days_off' => 1],
         ];
 
         foreach ($data as $schedule) {
