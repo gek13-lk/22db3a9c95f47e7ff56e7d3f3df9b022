@@ -51,7 +51,7 @@ class AlgorithmWeekService
         private PredictionService $predictionService
     ) {
         $this->modalities = $this->entityManager->getRepository(Competencies::class)->findAll();
-
+        $this->weeksNumber = [];
         $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
         /*$this->doctors = $this->entityManager->getRepository(Doctor::class)->findBy([
             'id' => 308
@@ -67,7 +67,18 @@ class AlgorithmWeekService
         $this->isPredicated = $isPredicated;
 
         if ($isPredicated) {
-            $this->weeksNumber = $this->predictionService->getPredictedDataByDate($startDay);
+            $predictionResults = $this->predictionService->getPredictedDataByDate($startDay);
+
+            foreach ($predictionResults as $prediction) {
+                $weekNumber = [
+                    'weekNumber' => $prediction->getWeekNumber(),
+                    'year' =>  $prediction->getYear()
+                ];
+
+                if (!in_array($weekNumber, $this->weeksNumber)) {
+                    $this->weeksNumber[] = $weekNumber;
+                }
+            }
         } else {
             $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers(
                 $startDay, $endDay
@@ -242,13 +253,6 @@ class AlgorithmWeekService
             }
 
             shuffle($weekStudies);
-            /*$comp = $this->entityManager->getRepository(Competencies::class)->find(3);
-            $weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
-                'year' => 2024,
-                'competency' => $comp,
-                'weekNumber' => $weekNumber['weekNumber']
-                ], ['startOfWeek' => 'ASC']);*/
-
             $dayCount = 6;
 
             if (!empty($weekStudies)) {
