@@ -263,7 +263,7 @@ class RecommendationService
             foreach ($doctorModalityAssignments as $doctorId => $modality) {
                 if (!in_array($modality['studyModality'], $modality['doctorModality'])) {
                     $recommendations['Учет соответствия компетенций и модальностей исследований'][] = [
-                        "problem" => "Доктор $doctorId назначен на исследование" . $modality['studyModality']. ", которое не соответствует его компетенциям.",
+                        "problem" => "Доктор $doctorId назначен на исследование " . $modality['studyModality']. ", которое не соответствует его компетенциям.",
                         "solution" => "Назначте другого врача",
                     ];
                 }

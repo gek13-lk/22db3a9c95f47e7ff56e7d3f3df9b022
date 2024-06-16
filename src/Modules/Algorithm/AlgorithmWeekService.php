@@ -13,6 +13,7 @@ use App\Entity\TempDoctorSchedule;
 use App\Entity\TempSchedule;
 use App\Entity\TempScheduleWeekStudies;
 use App\Entity\WeekStudies;
+use App\Service\PredictionService;
 use Doctrine\ORM\EntityManagerInterface;
 
 class AlgorithmWeekService
@@ -22,7 +23,7 @@ class AlgorithmWeekService
     // Статистика по врачам
     private array $doctorsStat = [];
     private const EVOLUTION_COUNT = 20;
-    private const POPULATION_COUNT = 2;
+    private const POPULATION_COUNT = 3;
 
     /** @var Competencies[]  */
     private array $modalities;
@@ -44,8 +45,11 @@ class AlgorithmWeekService
     private array $doctorsInDay = [];
     private array $doctorsTwoOffInWeek = [];
 
-    public function __construct(private EntityManagerInterface $entityManager, private SetTimeAlgorithmService $timeAlgorithmService)
-    {
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private SetTimeAlgorithmService $timeAlgorithmService,
+        private PredictionService $predictionService
+    ) {
         $this->modalities = $this->entityManager->getRepository(Competencies::class)->findAll();
 
         $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
@@ -63,9 +67,7 @@ class AlgorithmWeekService
         $this->isPredicated = $isPredicated;
 
         if ($isPredicated) {
-            $this->weeksNumber = $this->entityManager->getRepository(PredictedWeekStudies::class)->getAllWeekNumbers(
-                $startDay, $endDay
-            );
+            $this->weeksNumber = $this->predictionService->getPredictedDataByDate($startDay);
         } else {
             $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers(
                 $startDay, $endDay

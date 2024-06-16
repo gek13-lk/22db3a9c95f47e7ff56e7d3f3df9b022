@@ -12,10 +12,10 @@ final class RequestPython
 {
     private Client $client;
 
-    public function __construct()
+    public function __construct(string $baseUri)
     {
         $this->client = new Client([
-            'base_uri' => 'http://django:8000',
+            'base_uri' => $baseUri,
         ]);
     }
 

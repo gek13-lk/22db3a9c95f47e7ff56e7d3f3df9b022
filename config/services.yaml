@@ -24,6 +24,9 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+    App\Service\RequestPython:
+        arguments:
+            - '%env(resolve:DJANGO_URL)%'
 
     App\Doctrine\Migrations\MigrationFactoryDecorator:
         decorates: 'doctrine.migrations.migrations_factory'
