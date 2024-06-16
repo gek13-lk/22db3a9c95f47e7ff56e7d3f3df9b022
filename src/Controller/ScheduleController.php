@@ -208,7 +208,7 @@ class ScheduleController extends DashboardController {
 
     function getScheduleByDate(\DateTime $month): ?TempSchedule
     {
-        $entity = $this->tempScheduleRepository->findOneBy([], ['id' => 'DESC']); // TODO: приделать месяц
+        $entity = $this->tempScheduleRepository->findOneBy(['id' => 36], ['id' => 'DESC']); // TODO: приделать месяц
 
         return $entity;
     }
