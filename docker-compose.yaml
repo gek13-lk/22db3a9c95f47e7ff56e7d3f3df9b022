@@ -102,6 +102,8 @@ services:
       /bin/sh -c "
       php bin/console doctrine:database:create --if-not-exists &&
       php bin/console doctrine:migration:migrate &&
+      php bin/console app:sync:privileges &&
+      php bin/console app:holiday:update &&
       chown 777 -R var/cache
       "
     depends_on:
