@@ -11,7 +11,7 @@
             {% for schedule in schedules %}
                 <div class="card-body">
                     <div class="overall-events">
-                        {% if schedule.fitness  > 50000 %}
+                        {% if schedule.fitness  > 350000 %}
                             <a href="{{ path('recommendation', {'tempSchedule': schedule.id}) }}"
                                class="event-block bg-warning">
                                 <i class="fa-solid fa-exclamation-triangle"></i>
