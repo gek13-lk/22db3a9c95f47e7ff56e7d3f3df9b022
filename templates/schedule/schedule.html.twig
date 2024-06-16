@@ -2,13 +2,12 @@
 
 {% block page_actions %}
     <div class="col-auto">
-        {{ form(form) }}
-    </div>
-    <div class="col-auto">
+        <a href="{{ path('app_schedule_approve', {'tempSchedule': scheduleId}) }}" type="button" class="btn btn-secondary" id="cancelButton" data-dismiss="modal">Согласовать</a>
         <a href="{{ path('app_schedule_export_csv', {'tempSchedule': scheduleId}) }}" type="button" class="btn btn-success" id="cancelButton" data-dismiss="modal">CSV</a>
         <a href="{{ path('app_schedule_export_xlsx', {'tempSchedule': scheduleId}) }}" type="button" class="btn btn-success" id="cancelButton" data-dismiss="modal">XLSX</a>
     </div>
 {% endblock %}
+
 
 {% block main %}
     <style>
@@ -209,8 +208,8 @@
                 <th class="cal-view" rowspan="2">Ставка</th>
                 <th class="cal-view" rowspan="2">Таб. №</th>
                 <th class="cal-view-month" colspan="{{ calendars|length + 2 }}">Числа месяца</th>
-                <th class="cal-view-result" rowspan="2">Норма часов по графику</th>
-                <th class="cal-view-result" rowspan="2">Норма часов за полный месяц</th>
+                <th class="cal-view result" rowspan="2">Норма часов по графику</th>
+                <th class="cal-view result" rowspan="2">Норма часов за полный месяц</th>
             </tr>
             <tr>
                 {% for calendar in calendars %}
@@ -236,19 +235,17 @@
                     {% set partStart = 0 %}
                     {% set partEnd = 0 %}
 
-
                     {% set scheduleDoctor = findSchedule(scheduleId, doctor.id) %}
                     {% for calendar in calendars %}
                         {% set is_first_part = loop.index0 < 15 %}
                         {% set is_last_part = loop.index0 >= 15 %}
 
                         {% if loop.index0 == 15 %}
-                            <td class="cal-part-start">{{ partStart|round(2) }}</td>
+                            <td class="cal-part-start">{{ partStart }}</td>
                         {% endif %}
 
-                        {% set filterScheduleDoctor = scheduleDoctor|filter(s => s.date == calendar.date) %}
-                        <td class="cal-schedule ui-droppable {% if calendar.holiday %}weekend{% endif %}" data-date="{{ calendar.date|date('Y-m-d') }}" data-doctor-id="{{ doctor.id }}">
-                            {% for schedule in filterScheduleDoctor %}
+                        <td class="cal-schedule">
+                            {% for schedule in scheduleDoctor|filter(s => s.date == calendar.date) %}
                                 {% if is_first_part %}
                                     {% set partStart = partStart + schedule.workHours %}
                                 {% endif %}
@@ -257,44 +254,23 @@
                                 {% endif %}
 
                                 {# @var schedule \App\Entity\TempDoctorSchedule #}
-                                <div class="drag details ui-draggable ui-draggable-handle" data-taskid="{{ schedule.id }}" data-doctor-id="{{ doctor.id }}"
-                                     data-hour="{{ schedule.workHours ? schedule.workHours|round(2)  : 0 }}"
-                                     data-time-start="{{ schedule.workTimeStart ? schedule.workTimeStart|date('H:i')  : '' }}"
-                                     data-time-end="{{ schedule.workTimeEnd ? schedule.workTimeEnd|date('H:i')  : '' }}"
-                                     data-off-minutes="{{ schedule.offMinutes ? schedule.offMinutes|round(2)  : 0 }}"
-                                >
-                                    <h3 class="details-task" style=" background: #7E7E7E; color: #FFFFFF">{{ schedule.tempScheduleWeekStudies.weekStudies.competency.modality }}</h3>
-                                    <div class="details-uren details-time">
-                                        <span>{{ schedule.workTimeStart ? schedule.workTimeStart|date('H:i')  : '---' }} - {{ schedule.workTimeEnd ? schedule.workTimeEnd|date('H:i')  : '---' }}</span>
-                                    </div>
-                                    <div class="details-uren details-hour">
-                                        <span>{{ schedule.workHours ? schedule.workHours|round(2)  : 0 }}</span> часов
-                                    </div>
-                                    <div class="details-uren details-off-minutes">
-                                        обед <span>{{ schedule.offMinutes ? schedule.offMinutes|round(2)  : 0 }}</span> минут
-                                    </div>
-                                </div>
+                                <ul class="border" style="border-color: black">
+                                    <li class="text-nowrap">Модальность {{ schedule.tempScheduleWeekStudies.weekStudies.competency.modality }}</li>
+                                    <li class="text-nowrap">смена с {{ schedule.workTimeStart ? schedule.workTimeStart|date('H:i')  : '---' }} до {{ schedule.workTimeEnd ? schedule.workTimeEnd|date('H:i')  : '---' }}</li>
+                                    <li class="text-nowrap">{{ schedule.workHours ? schedule.workHours|round(2) : '---' }} часов</li>
+                                    <li class="text-nowrap">обед {{ schedule.offMinutes ? schedule.offMinutes|round(2) : '---' }} минут</li>
+                                </ul>
                             {% endfor %}
                         </td>
                         {% if loop.last %}
                             <td class="cal-part-end">{{ partEnd|round(2) }}</td>
                         {% endif %}
                     {% endfor %}
-                    <td class="cal-part-main">{{ (partStart + partEnd)|round(2) }}</td>
+                    <td class="cal-userinfo">{{ (partStart + partEnd)|round(2) }}</td>
                     <td class="cal-userinfo">155</td>
                 </tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
-{% endblock %}
-
-{% block body_javascript %}
-    {{ parent() }}
-    <script src="{{ asset('js/jquery-ui.min.js') }}"></script>
-    <script src="{{ asset('js/bootstrap-show-modal.js') }}"></script>
-    {% if can_edit is defined and can_edit %}
-        <script src="{{ asset('js/schedule.js') }}"></script>
-    {% endif %}
-
 {% endblock %}

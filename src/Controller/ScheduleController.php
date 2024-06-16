@@ -30,7 +30,7 @@ class ScheduleController extends DashboardController {
         private DoctorRepository $doctorRepository,
         private TempScheduleRepository $tempScheduleRepository,
         private DataService $dataService,
-        private ExportService $exportService
+        private ExportService $exportService,
     )
     {
     }
@@ -120,6 +120,51 @@ class ScheduleController extends DashboardController {
             'doctors' => $doctors,
             'scheduleId' => $this->getScheduleByDate($date)?->getId() ?? 1
         ]);
+    }
+
+    #[Route('/schedule/list', name: 'app_schedule_list')]
+    public function scheduleList(Request $request): Response {
+        if (!$this->isGranted('ROLE_HR') && !$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
+
+        $schedules = $this->tempScheduleRepository->findBy([], ['id' => 'DESC']);
+
+        return $this->render('schedule/list.html.twig', [
+            'title' => 'Составленные расписания',
+            'schedules' => $schedules
+        ]);
+    }
+
+    #[Route('/schedule/{tempSchedule}', name: 'app_schedule_temp')]
+    public function tempSchedule(TempSchedule $tempSchedule): Response {
+        if (!$this->isGranted('ROLE_HR') && !$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
+
+        $date = $tempSchedule->getDate();
+        $dateStart = (clone $date)->modify('first day of this month');
+        $dateEnd = (clone $date)->modify('last day of this month');
+
+        $doctors = $this->doctorRepository->findAll();
+
+        return $this->render('schedule/schedule.html.twig', [
+            'title' => 'Расписание',
+            'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
+            'doctors' => $doctors,
+            'scheduleId' => $tempSchedule->getId()
+        ]);
+    }
+
+    #[Route('/schedule/approve/{tempSchedule}', name: 'app_schedule_approve')]
+    public function approve(TempSchedule $tempSchedule): Response {
+        if (!$this->isGranted('ROLE_HR') && !$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
+
+        $this->dataService->approveSchedule($tempSchedule);
+
+        return $this->redirectToRoute('app_schedule_list');
     }
 
     #[Route('/schedule/run', name: 'app_schedule_run')]
@@ -231,6 +276,39 @@ class ScheduleController extends DashboardController {
         $file = $this->exportService->exportXlsx($data);
 
         return $this->file($file, 'schedule.xlsx', ResponseHeaderBag::DISPOSITION_INLINE);
+    }
+
+
+    #[Route('/schedule/{task}/edit', name: 'app_schedule_task_edit', methods: ["PUT"])]
+    public function edit(TempDoctorSchedule $task, Request $request, EntityManagerInterface $entityManager): Response
+    {
+        if (!$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
+
+        $date = \DateTime::createFromFormat('Y-m-d', $request->get('date', $task->getDate()->format('Y-m-d')))->setTime(0,0);
+        $timeStart = \DateTime::createFromFormat('Y-m-d H:i', $task->getDate()->format('Y-m-d') . ' ' . $request->get('timeStart', $task->getWorkTimeStart()->format('H:i')));
+        $timeEnd = \DateTime::createFromFormat('Y-m-d H:i', $task->getDate()->format('Y-m-d') . ' ' . $request->get('timeEnd', $task->getWorkTimeEnd()->format('H:i')));
+
+        if($timeEnd->getTimestamp() < $timeStart->getTimestamp()) {
+            $timeEnd->modify('+1day');
+        }
+
+        $offMinutes = $request->get('offMinutes', $task->getOffMinutes());
+
+        $minutes = ($timeEnd->getTimestamp() - $timeStart->getTimestamp()) / 60;
+        $workHours = ($minutes - $offMinutes) / 60;
+
+        $task->setDate($date);
+        $task->setWorkTimeStart($timeStart);
+        $task->setWorkTimeEnd($timeEnd);
+        $task->setWorkHours($workHours);
+        $task->setOffMinutes($offMinutes);
+
+        $entityManager->persist($task);
+        $entityManager->flush();
+
+        return new JsonResponse();
     }
 
     #[Route('/schedule/{task}/delete', name: 'app_schedule_task_delete', methods: ["DELETE"])]
