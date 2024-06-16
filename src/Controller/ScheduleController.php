@@ -233,6 +233,38 @@ class ScheduleController extends DashboardController {
         return $this->file($file, 'schedule.xlsx', ResponseHeaderBag::DISPOSITION_INLINE);
     }
 
+
+    #[Route('/schedule/{task}/edit', name: 'app_schedule_task_edit', methods: ["PUT"])]
+    public function edit(TempDoctorSchedule $task, Request $request, EntityManagerInterface $entityManager): Response
+    {
+        if (!$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
+
+        $date = \DateTime::createFromFormat('Y-m-d', $request->get('date', $task->getDate()->format('Y-m-d')))->setTime(0,0);
+        $timeStart = \DateTime::createFromFormat('Y-m-d H:i', $task->getDate()->format('Y-m-d') . ' ' . $request->get('timeStart', $task->getWorkTimeStart()->format('H:i')));
+        $timeEnd = \DateTime::createFromFormat('Y-m-d H:i', $task->getDate()->format('Y-m-d') . ' ' . $request->get('timeEnd', $task->getWorkTimeEnd()->format('H:i')));
+        if($timeEnd->getTimestamp() < $timeEnd->getTimestamp()) {
+            $timeEnd->modify('+1day');
+        }
+
+        $offMinutes = $request->get('offMinutes', $task->getOffMinutes());
+
+        $minutes = ($timeEnd->getTimestamp() - $timeStart->getTimestamp()) / 60;
+        $workHours = ($minutes - $offMinutes) / 60;
+
+        $task->setDate($date);
+        $task->setWorkTimeStart($timeStart);
+        $task->setWorkTimeEnd($timeEnd);
+        $task->setWorkHours($workHours);
+        $task->setOffMinutes($offMinutes);
+
+        $entityManager->persist($task);
+        $entityManager->flush();
+
+        return new JsonResponse();
+    }
+
     #[Route('/schedule/{task}/delete', name: 'app_schedule_task_delete', methods: ["DELETE"])]
     public function delete(TempDoctorSchedule $task, EntityManagerInterface $entityManager): Response
     {

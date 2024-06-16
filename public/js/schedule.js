@@ -2,14 +2,16 @@ $(function() {
     var rounded = (num, decimals) => Number(num.toFixed(decimals));
 
     $(".drag").draggable({
-        revert: true,
+        revert : "invalid",
+        zIndex: 10000,
         start: function (e, ui) {
             // Date from where task was dragged from
             $(this).data("oldDate", $(this).parent().data("date"));
             $(this).data("oldDoctor", $(this).parent().data("doctor-id"));
 
-            console.log($(this).parent().data("date"));
-            console.log($(this).parent().data("doctor-id"));
+            var top = ui.position.top;
+            var left = ui.position.left;
+            $(this).attr({"data-top": top, "data-left": left});
         }
     });
 
@@ -21,16 +23,44 @@ $(function() {
                 newDate = drop.data("date"),
                 oldDoctor = drag.data("oldDoctor"),
                 newDoctor = drop.data("doctor-id");
-            console.log(oldDate);
-            console.log(newDate);
-            console.log(oldDoctor);
-            console.log(newDoctor);
 
             if (oldDate == newDate || oldDoctor != newDoctor) {
                 return $(drag).css({ top: 0, left: 0 }); // Return task to old position
             }
 
-            $(drag).detach().css({ top: 0, left: 0 }).appendTo(drop);
+            $.ajax({
+                url: '/schedule/'+ drag.data('taskid')+'/edit',
+                type: 'PUT',
+                processing: true,
+                data: { date: newDate },
+                beforeSend: () => {$("#loading-wrapper").fadeIn(500);},
+                success: function(data){
+                    var date1 = parseInt(oldDate.substr(8,2));
+                    var date2 = parseInt(newDate.substr(8,2));
+                    var $tdResultStart, $tdResultEnd;
+                    $tdResultStart = $(drag).closest('tr').find('.cal-part-start');
+                    $tdResultEnd = $(drag).closest('tr').find('.cal-part-end');
+
+                    if (date1 <= 15 && date2 > 15) {
+                        changeResult($tdResultStart, (-1) * $(drag).data('hour'));
+                        changeResult($tdResultEnd, $(drag).data('hour'));
+                    }
+
+                    if (date2 <= 15 && date1 > 15) {
+                        changeResult($tdResultStart, $(drag).data('hour'));
+                        changeResult($tdResultEnd, (-1) * $(drag).data('hour'));
+                    }
+
+                    $(drag).detach().css({ top: 0, left: 0 }).appendTo(drop);
+                },
+                error: function(result) {
+                    alert('Ошибка удаления! Обновите страницу и попробуйте еще раз!')
+                    $(drag).css({ top: 0, left: 0 }); // Return task to old position
+                },
+                complete: () => {$("#loading-wrapper").fadeOut(500);},
+            });
+
+
         }
     });
 
@@ -85,15 +115,17 @@ $(function() {
                 $.ajax({
                     url: '/schedule/'+$task.data('taskid')+'/delete',
                     type: 'DELETE',
+                    success: function () {
+                        changeResult($tdResult, (-1) * $task.data('hour'));
+                        changeResult($tdResultMain, (-1) * $task.data('hour'));
+
+                        $task.remove();
+                    },
                     error: function(result) {
                         alert('Ошибка удаления! Обновите страницу и попробуйте еще раз!')
                     },
                 });
 
-                changeResult($tdResult, (-1) * $task.data('hour'));
-                changeResult($tdResultMain, (-1) * $task.data('hour'));
-
-                $task.remove();
             }
         }).show();
     });
