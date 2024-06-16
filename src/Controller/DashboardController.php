@@ -155,6 +155,8 @@ class DashboardController extends AbstractDashboardController
                     ->setPermission('ROLE_DOCTOR'),
                 MenuItem::linkToRoute('Расписание', 'icon-home', 'app_schedule')
                     ->setPermission(new Expression('"ROLE_ADMIN" in role_names or "ROLE_HR" in role_names or "ROLE_MANAGER" in role_names')),
+                MenuItem::linkToRoute('Список расписаний', null, 'app_schedule_list')
+                    ->setPermission(new Expression('"ROLE_ADMIN" in role_names or "ROLE_MANAGER" in role_names')),
                 MenuItem::linkToRoute('Календарь', null, 'calendar'),
                 MenuItem::linkToRoute('Составить график', null, 'app_schedule_run')
                     ->setPermission(new Expression('"ROLE_ADMIN" in role_names or "ROLE_MANAGER" in role_names')),
