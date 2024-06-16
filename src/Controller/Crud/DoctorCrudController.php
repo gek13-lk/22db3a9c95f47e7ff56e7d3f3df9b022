@@ -76,7 +76,7 @@ class DoctorCrudController extends AbstractCrudController {
 
         yield FormField::addColumn(label: 'Учетная запись')
             ->onlyOnForms();
-        yield TextField::new('user.username', 'Имя пользователя')
+        yield TextField::new('user.username', 'Логин')
             ->onlyOnForms();
         yield TextField::new('user.plainPassword')
             ->setLabel("Новый пароль")

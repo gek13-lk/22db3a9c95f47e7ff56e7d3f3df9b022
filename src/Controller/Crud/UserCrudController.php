@@ -50,7 +50,7 @@ final class UserCrudController extends AbstractCrudController {
     }
 
     public function configureFields(string $pageName): iterable {
-        yield TextField::new('username', 'Имя пользователя')
+        yield TextField::new('username', 'Логин')
             ->hideOnDetail();
 
         yield TextField::new('plainPassword')
@@ -102,7 +102,7 @@ final class UserCrudController extends AbstractCrudController {
         yield FormField::addColumn()
             ->onlyOnDetail();
 
-        yield TextField::new('username', 'Имя пользователя')
+        yield TextField::new('username', 'Логин')
             ->onlyOnDetail();
 
         yield ChoiceField::new('roles')
