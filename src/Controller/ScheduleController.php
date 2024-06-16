@@ -179,7 +179,7 @@ class ScheduleController extends DashboardController {
                 'empty_data' => '01.01.2024',
             ])
             ->add('count', ChoiceType::class, [
-                'label' => 'Источник данных исследований',
+                'label' => 'Сформировать расписаний',
                 'choices' => [
                     '1' => 1,
                     '2' => 2,
