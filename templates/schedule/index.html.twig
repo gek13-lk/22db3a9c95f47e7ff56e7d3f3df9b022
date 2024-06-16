@@ -99,21 +99,34 @@
                     <td class="cal-userinfo"></td>
                     {% set partStart = 0 %}
                     {% set partEnd = 0 %}
-                    {% for calendar in calendars %}
-                        {% set schedule = null %}
-                        {% if schedule and loop.index0 < 15 %}
-                            {% set partStart = partStart + schedule.work_hours %}
-                        {% endif %}
 
-                        {% if schedule and loop.index0 >= 15 %}
-                            {% set partEnd = partEnd + schedule.work_hours %}
-                        {% endif %}
+                    {% set scheduleDoctor = findSchedule(scheduleId, doctor.id) %}
+                    {% for calendar in calendars %}
+                        {% set is_first_part = loop.index0 < 15 %}
+                        {% set is_last_part = loop.index0 >= 15 %}
 
                         {% if loop.index0 == 15 %}
                             <th class="cal-part-start">{{ partStart }}</th>
                         {% endif %}
 
-                        <th class="cal-schedule"></th>
+                        <th class="cal-schedule">
+                            {% for schedule in scheduleDoctor|filter(s => s.date == calendar.date) %}
+                                {% if is_first_part %}
+                                    {% set partStart = partStart + schedule.workHours %}
+                                {% endif %}
+                                {% if is_last_part %}
+                                    {% set partEnd = partEnd + schedule.workHours %}
+                                {% endif %}
+
+                                {# @var schedule \App\Entity\TempDoctorSchedule #}
+                                <ul class="border" style="border-color: black">
+                                    <li class="text-nowrap">Модальность {{ schedule.tempScheduleWeekStudies.weekStudies.competency.modality }}</li>
+                                    <li class="text-nowrap">смена с {{ schedule.workTimeStart ? schedule.workTimeStart|date('H:i')  : '---' }} до {{ schedule.workTimeEnd ? schedule.workTimeEnd|date('H:i')  : '---' }}</li>
+                                    <li class="text-nowrap">{{ schedule.workHours ? schedule.workHours|round(2) : '---' }} часов</li>
+                                    <li class="text-nowrap">обед {{ schedule.offMinutes ? schedule.offMinutes|round(2) : '---' }} минут</li>
+                                </ul>
+                            {% endfor %}
+                        </th>
                         {% if loop.last %}
                             <th class="cal-part-end">{{ partEnd }}</th>
                         {% endif %}
