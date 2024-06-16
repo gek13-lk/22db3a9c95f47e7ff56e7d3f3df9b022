@@ -192,7 +192,7 @@ class ScheduleController extends DashboardController {
                 ],
             ])
             ->add('maxDoctorsCount', NumberType::class, [
-                'label' => 'Количество врачей',
+                'label' => 'Максимальное количество врачей',
                 'html5' => true,
                 'row_attr'=>['class'=>'form-group mb-2 mr-2'],
                 'label_attr'=>['class'=>'col-form-label mr-2'],

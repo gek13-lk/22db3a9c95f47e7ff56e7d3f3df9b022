@@ -234,7 +234,7 @@
             <tbody class="cal-tbody">
             {% for doctor in doctors %}
                 <tr>
-                    <td class="cal-userinfo">{{ doctor.fio ?? 'Врач'~doctor.id }}</td>
+                    <td class="cal-userinfo">{{ doctor.id~' - '~doctor.fio ?? 'Врач' }}</td>
                     <td class="cal-userinfo">{{ doctor.competency|join(', ') }}</td>
                     <td class="cal-userinfo">{{ doctor.addonCompetencies|join(', ') }}</td>
                     <td class="cal-userinfo">{{ doctor.stavka }}</td>
