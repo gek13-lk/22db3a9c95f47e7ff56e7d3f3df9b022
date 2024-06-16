@@ -23,6 +23,7 @@ class PredictedWeekStudiesRepository extends ServiceEntityRepository
                 ->select('ws.weekNumber, ws.year')
                 ->andWhere('ws.startOfWeek >= :from')
                 ->andWhere('ws.startOfWeek <= :to')
+                ->andWhere('ws.isNew = true')
                 ->setParameter('from', $from)
                 ->setParameter('to', $to)
                 ->orderBy('ws.weekNumber', 'ASC')

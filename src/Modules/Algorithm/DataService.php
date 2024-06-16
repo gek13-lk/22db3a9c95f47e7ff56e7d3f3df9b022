@@ -252,17 +252,7 @@ class DataService
 
     public function getPredictedData(\DateTime $date)
     {
-        $weekNumbers = $this->entityManager->getRepository(PredictedWeekStudies::class)->findBy([
-            'weekNumber' => $date->format('m'),
-            'year' => $date->format('Y'),
-            'isNew' => true
-        ]);
-
-        if (!empty($weekNumbers)) {
-            $result = $weekNumbers;
-        } else {
-            $result = $this->predictionService->getPredictedDataByDate($date);
-        }
+        $result = $this->predictionService->getPredictedDataByDate($date);
 
         $weekStudies = [];
 
