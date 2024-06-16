@@ -22,20 +22,19 @@ final class Version20240605145220 extends AbstractMigration implements HasherInt
     public function up(Schema $schema): void
     {
         $this->addSql('INSERT INTO role (code, name, privileges) VALUES (\'ROLE_ADMIN\', \'Администратор\', \'[]\')');
-        $this->addSql('INSERT INTO role (code, name, privileges) VALUES (\'ROLE_MANAGER\', \'Руководитель референс-центра\', \'[]\')');
-        $this->addSql('INSERT INTO role (code, name, privileges) VALUES (\'ROLE_HR\', \'Сотрудник кадровой службы\', \'[]\')');
+        $this->addSql('INSERT INTO role (code, name, privileges) VALUES (\'ROLE_MANAGER\', \'Руководитель референс-центра\', \'["DOCTOR_LIST","DOCTOR_SHOW","DOCTOR_ADD","DOCTOR_EDIT"]\')');
+        $this->addSql('INSERT INTO role (code, name, privileges) VALUES (\'ROLE_HR\', \'Сотрудник кадровой службы\', \'["DOCTOR_LIST","DOCTOR_SHOW","DOCTOR_ADD","DOCTOR_EDIT"]\')');
         $this->addSql('INSERT INTO role (code, name, privileges) VALUES (\'ROLE_DOCTOR\', \'Врач\', \'[]\')');
 
         $this->addSql('INSERT INTO "user" (username, roles, password) VALUES (\'admin\', \'["ROLE_ADMIN"]\', :password);', ['password' => $this->getHasher()->getPasswordHasher(new User())->hash('admin')]);
         $this->addSql('INSERT INTO "user" (username, roles, password) VALUES (\'manager\', \'["ROLE_MANAGER"]\', :password);', ['password' => $this->getHasher()->getPasswordHasher(new User())->hash('manager')]);
         $this->addSql('INSERT INTO "user" (username, roles, password) VALUES (\'hr\', \'["ROLE_HR"]\', :password);', ['password' => $this->getHasher()->getPasswordHasher(new User())->hash('hr')]);
-        $this->addSql('INSERT INTO "user" (username, roles, password) VALUES (\'doctor\', \'["ROLE_DOCTOR"]\', :password);', ['password' => $this->getHasher()->getPasswordHasher(new User())->hash('doctor')]);
     }
 
     public function down(Schema $schema): void
     {
         $this->addSql('DELETE FROM role WHERE code IN (\'ROLE_ADMIN\', \'ROLE_MANAGER\', \'ROLE_HR\', \'ROLE_DOCTOR\')');
-        $this->addSql('DELETE FROM "user" WHERE username IN (\'admin\', \'manager\', \'hr\', \'doctor\')');
+        $this->addSql('DELETE FROM "user" WHERE username IN (\'admin\', \'manager\', \'hr\')');
     }
 
     public function getHasher(): PasswordHasherFactoryInterface {
