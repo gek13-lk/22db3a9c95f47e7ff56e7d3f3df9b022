@@ -11,12 +11,15 @@ use Doctrine\ORM\EntityManagerInterface;
 class SetTimeAlgorithmService
 {
     private const START_WORK_HOUR = 8;
+    private const START_WORK_HOUR2 = 9;
+    private const START_WORK_HOUR3 = 14;
     private const START_WORK_MINUTES = 0;
     private const START_NIGHT_WORK_HOUR = 20;
     private const START_NIGHT_WORK_MINUTES = 0;
     private const DEFAULT_OFF_TIME = 30;
     private const MAX_HOUR_WEEK = 36;
     private const MAX_HOUR_MONTH = 155;
+    private const MINIMUM_WORK_MIN_FOR_ONE_HOUR_OFF = 660;
 
     public function __construct(private readonly EntityManagerInterface $em)
     {
@@ -30,7 +33,9 @@ class SetTimeAlgorithmService
         foreach ($doctorSchedules as $doctorSchedule) {
             $doctorWorkSchedule = $doctorSchedule->getDoctor()->getWorkSchedule();
             $currentDay = $doctorSchedule->getDate();
-            $startTime = $currentDay->setTime(self::START_WORK_HOUR, self::START_WORK_MINUTES);
+
+            $startWorkHour = array_rand([self::START_WORK_HOUR, self::START_WORK_HOUR2, self::START_WORK_HOUR3]);
+            $startTime = $currentDay->setTime($startWorkHour, self::START_WORK_MINUTES);
             $endTime = null;
             $offTime = self::DEFAULT_OFF_TIME;
 
@@ -109,8 +114,15 @@ class SetTimeAlgorithmService
                             continue;
                         }
 
-                        $doctorsStat[$weekNumber][$modality][$day][$doctorId]['time']['hours'] = $doctorsAverageTime[$doctorId];
-                        $minutes = floor($doctorsAverageTime[$doctorId] * 60);
+                        $flooredHours = floor($doctorsAverageTime[$doctorId]);
+                        $minutes = floor($flooredHours * 60);
+                        $doctorsStat[$weekNumber][$modality][$day][$doctorId]['time']['hours'] = $flooredHours;
+
+                        if ($minutes < self::MINIMUM_WORK_MIN_FOR_ONE_HOUR_OFF && $doctorStat['time']['off'] == 60) {
+                            $doctorStat['time']['off'] = self::DEFAULT_OFF_TIME;
+                            $doctorsStat[$weekNumber][$modality][$day][$doctorId]['time']['off'] = self::DEFAULT_OFF_TIME;
+                        }
+
                         $endTime = (clone $doctorStat['time']['start'])->modify('+ '.$minutes + $doctorStat['time']['off'].' minutes');
                         $doctorsStat[$weekNumber][$modality][$day][$doctorId]['time']['end'] = $endTime;
                     }
@@ -234,6 +246,14 @@ class SetTimeAlgorithmService
 
             $endTime->modify('- ' . $diff . ' hours');
             $workHours = $weekHoursOst;
+        }
+
+        if ($workHours == 0) {
+            return false;
+        }
+
+        if ($workHours < 11) {
+            $offTime = self::DEFAULT_OFF_TIME;
         }
 
         return [

@@ -30,7 +30,7 @@ class Doctor {
      * Норма выхода врача в смену.
      */
     #[ORM\OneToOne(targetEntity: DoctorWorkSchedule::class, mappedBy: 'doctor', cascade: ['persist'])]
-    private DoctorWorkSchedule $workSchedule;
+    private ?DoctorWorkSchedule $workSchedule = null;
 
     #[ORM\Column(type: 'float')]
     private ?float $stavka = null;
