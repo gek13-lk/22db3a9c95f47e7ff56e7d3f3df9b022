@@ -233,9 +233,12 @@ class DataService
 
     public function approveSchedule(TempSchedule $tempSchedule): void
     {
-        $oldSchedule = $this->entityManager->getRepository(TempSchedule::class)->findOneBy(['date' => $tempSchedule->getDate()]);
-        $oldSchedule->setIsApproved(false);
-        $this->entityManager->persist($oldSchedule);
+        $oldSchedules = $this->entityManager->getRepository(TempSchedule::class)->findBy(['date' => $tempSchedule->getDate()]);
+
+        foreach (array_filter($oldSchedules, fn(TempSchedule $sch) => $sch->getId() !== $tempSchedule->getId()) as $oldSchedule) {
+            $oldSchedule->setIsApproved(false);
+            $this->entityManager->persist($oldSchedule);
+        }
 
         $tempSchedule->setIsApproved(true);
         $this->entityManager->persist($tempSchedule);
