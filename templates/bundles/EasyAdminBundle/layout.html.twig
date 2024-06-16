@@ -109,7 +109,7 @@
                         <li class="dropdown">
                             {% set user_menu_avatar %}
                                 {% if null == ea.userMenu.avatarUrl %}
-                                    {{ ea.userMenu.name|trim|first|upper }}<span class="status busy"></span>
+                                    <img class="user-avatar" src="{{ asset('img/user/user' ~ (app.user.id % 20) ~ '.png') }}" />
                                 {% else %}
                                     <img class="user-avatar" src="{{ ea.userMenu.avatarUrl }}" />
                                 {% endif %}
