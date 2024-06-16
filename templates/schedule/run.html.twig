@@ -5,3 +5,9 @@
         {{ form(form) }}
     </div>
 {% endblock %}
+
+{% block main %}
+    {% if calendars is defined and calendars %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
