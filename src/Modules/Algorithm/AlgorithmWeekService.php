@@ -97,7 +97,7 @@ class AlgorithmWeekService
 
         // Выбираем наилучшие расписания по оценкам и сохраняем в БД
         for ($i = 0; $i < $countSchedule; $i++) {
-            $tempScheduleEntity = $this->saveTempSchedule($evolutionPopulation[$i]['schedule'], $evolutionPopulation[$i]['fitnessScore']);
+            $tempScheduleEntity = $this->saveTempSchedule($evolutionPopulation[$i]['schedule'], $evolutionPopulation[$i]['fitnessScore'], $startDay);
             $bestPopulation[$tempScheduleEntity->getId()] = $evolutionPopulation[$i]['schedule'];
         }
 
@@ -317,7 +317,7 @@ class AlgorithmWeekService
                 }
             }
         }
-
+//dd($this->schedule);
         $this->timeAlgorithmService->timeBalance($this->schedule);
 
         return $this->schedule;
@@ -363,6 +363,19 @@ class AlgorithmWeekService
     //TODO: Посмотреть количество запросов из-за первой строки в методе. Есть еще в проставлении времени схожий момент
     private function isDayOff(Doctor $doctor, \DateTime $currentDay): bool
     {
+        $lastOffDay = null;
+        if (!isset($this->doctorsStat[$doctor->getId()]['lastOffDay'])) {
+            $this->doctorsStat[$doctor->getId()]['lastOffDay'] = null;
+        }
+
+        if ($this->doctorsStat[$doctor->getId()]['lastOffDay']) {
+            $lastOffDay = new \DateTime($this->doctorsStat[$doctor->getId()]['lastOffDay']);
+        }
+
+        if ($lastOffDay && $lastOffDay >= $currentDay) {
+            return true;
+        }
+
         /* Есть запрошенный и утвержденный выходной (отгул) на этот день */
         $offDay = array_filter(
             $this->offDoctorDays, fn(OffDoctorDays $offDays) => $doctor === $offDays->getDoctor() &&
@@ -400,16 +413,11 @@ class AlgorithmWeekService
         if (!isset($this->doctorsStat[$doctor->getId()]['offCount']) || !isset($this->doctorsStat[$doctor->getId()]['shiftCount'])) {
             $this->doctorsStat[$doctor->getId()]['offCount'] = 0;
             $this->doctorsStat[$doctor->getId()]['shiftCount'] = 0;
-            $this->doctorsStat[$doctor->getId()]['lastOffDay'] = null;
             return false;
         }
 
         if (!isset($this->doctorsStat[$doctor->getId()]['offCount'])) {
             $this->doctorsStat[$doctor->getId()]['offCount'] = 0;
-        }
-
-        if (!isset($this->doctorsStat[$doctor->getId()]['lastOffDay'])) {
-            $this->doctorsStat[$doctor->getId()]['lastOffDay'] = null;
         }
 
         //Выходные (2 дня подряд, раз в неделю) для графика День - ночь
@@ -475,7 +483,7 @@ class AlgorithmWeekService
             if ($isMaxCount) {
                 $secondDocArray = $doctors;
                 $doctors = array_filter($secondDocArray, function (Doctor $doctor) {
-                   return in_array($doctor->getId(), $this->doctorsInSchedule);
+                    return in_array($doctor->getId(), $this->doctorsInSchedule);
                 });
             }
         }
