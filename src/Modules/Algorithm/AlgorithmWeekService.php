@@ -17,7 +17,9 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class AlgorithmWeekService
 {
+    // Календарь
     private array $calendar;
+    // Статистика по врачам
     private array $doctorsStat = [];
     private const EVOLUTION_COUNT = 20;
     private const POPULATION_COUNT = 2;
