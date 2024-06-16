@@ -171,27 +171,6 @@ class DoctorCrudController extends AbstractCrudController {
         yield NumberField::new('stavka', 'Ставка')
             ->setNumDecimals(2)
             ->setFormTypeOption('attr', ['min' => 0.25, 'step' => 0.25, 'max' => 1]);
-        yield ChoiceField::new('workSchedule.type')
-            ->setLabel('Тип смены')
-            ->setChoices([
-                DoctorWorkSchedule::TYPE_DAY => DoctorWorkSchedule::TYPE_DAY,
-                DoctorWorkSchedule::TYPE_NIGHT => DoctorWorkSchedule::TYPE_NIGHT,
-                DoctorWorkSchedule::TYPE_ONE_TO_THREE => DoctorWorkSchedule::TYPE_ONE_TO_THREE,
-                DoctorWorkSchedule::TYPE_DAY_NIGHT => DoctorWorkSchedule::TYPE_DAY_NIGHT,
-                DoctorWorkSchedule::TYPE_TWO_OFF => DoctorWorkSchedule::TYPE_TWO_OFF,
-            ])
-            ->setColumns('col-12')
-            ->renderAsBadges()
-            ->onlyOnForms();
-        yield IntegerField::new('workSchedule.hoursPerShift', 'Количество часов за смену')
-            ->setFormTypeOption('attr', ['min' => 1, 'max' => 12])
-            ->onlyOnForms();
-        yield IntegerField::new('workSchedule.shiftPerCycle', 'Смен за цикл')
-            ->setFormTypeOption('attr', ['min' => 1, 'max' => 12])
-            ->onlyOnForms();
-        yield IntegerField::new('workSchedule.daysOff', 'Количество выходных дней за цикл')
-            ->setFormTypeOption('attr', ['min' => 1, 'max' => 12])
-            ->onlyOnForms();
         yield BooleanField::new('info.mr', 'Признак наличия работника в ФРМР')
             ->setFormTypeOption('row_attr', ['class' => 'custom-control custom-checkbox pl-1'])
             ->setFormTypeOption('attr', ['class' => 'custom-control-input'])
@@ -215,6 +194,30 @@ class DoctorCrudController extends AbstractCrudController {
             ->setFormTypeOption('attr', ['class' => 'custom-control-input'])
             ->setFormTypeOption('label_attr', ['class' => 'custom-control-label p-0 border-0', 'style' => 'height: unset;'])
             ->setHelp('работники, которые трудоустроены на фармацевтических должностях в организации, имеющей лицензию на фармацевтическую деятельность, которые в тоже время имеют действующую аккредитацию/сертификат специалиста по фармацевтическим специальностям')
+            ->onlyOnForms();
+
+        yield FormField::addColumn(label: 'Режим работы')
+            ->onlyOnForms();
+        yield ChoiceField::new('workSchedule.type')
+            ->setLabel('Тип смены')
+            ->setChoices([
+                DoctorWorkSchedule::TYPE_DAY => DoctorWorkSchedule::TYPE_DAY,
+                DoctorWorkSchedule::TYPE_NIGHT => DoctorWorkSchedule::TYPE_NIGHT,
+                DoctorWorkSchedule::TYPE_ONE_TO_THREE => DoctorWorkSchedule::TYPE_ONE_TO_THREE,
+                DoctorWorkSchedule::TYPE_DAY_NIGHT => DoctorWorkSchedule::TYPE_DAY_NIGHT,
+                DoctorWorkSchedule::TYPE_TWO_OFF => DoctorWorkSchedule::TYPE_TWO_OFF,
+            ])
+            ->setColumns('col-12')
+            ->renderAsBadges()
+            ->onlyOnForms();
+        yield IntegerField::new('workSchedule.hoursPerShift', 'Количество часов за смену')
+            ->setFormTypeOption('attr', ['min' => 1, 'max' => 12])
+            ->onlyOnForms();
+        yield IntegerField::new('workSchedule.shiftPerCycle', 'Смен за цикл')
+            ->setFormTypeOption('attr', ['min' => 1, 'max' => 12])
+            ->onlyOnForms();
+        yield IntegerField::new('workSchedule.daysOff', 'Количество выходных дней за цикл')
+            ->setFormTypeOption('attr', ['min' => 1, 'max' => 12])
             ->onlyOnForms();
     }
 
