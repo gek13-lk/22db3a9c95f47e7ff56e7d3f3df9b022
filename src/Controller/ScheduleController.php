@@ -122,7 +122,9 @@ class ScheduleController extends DashboardController {
 
     #[Route('/schedule/run', name: 'app_schedule_run')]
     public function run(Request $request): Response {
-        $this->denyAccessUnlessGranted('ROLE_MANAGER');
+        if (!$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
 
         $data = [
             'month' => '01.01.2024',
