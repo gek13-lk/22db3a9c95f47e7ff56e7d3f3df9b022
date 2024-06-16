@@ -6,6 +6,7 @@ use App\Entity\Calendar;
 use App\Entity\Competencies;
 use App\Entity\Doctor;
 use App\Entity\Role;
+use App\Entity\TempDoctorSchedule;
 use App\Entity\User;
 use App\Entity\WeekStudies;
 use App\Enum\Holiday;
@@ -55,14 +56,38 @@ class DashboardController extends AbstractDashboardController
 
         $currentDate = new \DateTime();
         $calendar = $em->getRepository(Calendar::class)->findBy(['god' => $currentDate->format('Y')]);
-
+        $doctorSheduleRepository = $em->getRepository(TempDoctorSchedule::class);
+        $byDoctor = $doctorSheduleRepository->findByDoctor($user->getId());
+        $existsData = [];
         foreach ($calendar as $date) {
-            if (1 === $date->getHoliday()) {
-                $calendarEvents[] = [
-                    'title' => $date->getHolidayName() ?? 'Выходной',
-                    'start' => $date->getDate()->format('Y-m-d'),
-                    'end' => $date->getDate()->format('Y-m-d'),
-                ];
+            foreach ($byDoctor as $dateShel) {
+                if ($dateShel->getWorkTimeStart()->format('d.m.Y') === $date->getDate()->format('d.m.Y')) {
+                    if(isset($existsData[$dateShel->getWorkTimeStart()->format('Y-m-d H:i:s')])){
+                        continue;
+                    }
+                    $existsData[$dateShel->getWorkTimeStart()->format('Y-m-d H:i:s')] = true;
+                    if ($dateShel->getWorkTimeEnd()->format('d') > $dateShel->getWorkTimeStart()->format('d')) {
+
+                        $calendarEvents[] = [
+                            'title' => 'Смена c ' . $dateShel->getWorkTimeStart()->format('H:i') . ' по ' . "23:59",
+                            'start' => $dateShel->getWorkTimeStart()->format('Y-m-d H:i:s'),
+                            'end' => $dateShel->getWorkTimeStart()->format('Y-m-d')." 23:59:59",
+                        ];
+
+                        $calendarEvents[] = [
+                            'title' => 'Смена c 00:00 по ' .$dateShel->getWorkTimeEnd()->format('H:i'),
+                            'start' => $dateShel->getWorkTimeEnd()->format('Y-m-d')." 00:00:00",
+                            'end' => $dateShel->getWorkTimeEnd()->format('Y-m-d H:i:s'),
+                        ];
+
+                    } else {
+                        $calendarEvents[] = [
+                            'title' => 'Смена c ' . $dateShel->getWorkTimeStart()->format('H:i') . ' по ' . $dateShel->getWorkTimeEnd()->format('H:i'),
+                            'start' => $dateShel->getWorkTimeStart()->format('Y-m-d H:i:s'),
+                            'end' => $dateShel->getWorkTimeEnd()->format('Y-m-d H:i:s'),
+                        ];
+                    }
+                }
             }
         }
 
