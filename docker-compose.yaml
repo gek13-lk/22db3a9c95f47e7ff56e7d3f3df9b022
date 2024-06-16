@@ -3,7 +3,8 @@ version: '3.8'
 services:
   app:
     build:
-      context: ./docker/php
+      context: ./
+      dockerfile: ./docker/php/Dockerfile
     environment:
       PHP_IDE_CONFIG: ${PHP_IDE_CONFIG:-serverName=docker}
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
@@ -13,6 +14,7 @@ services:
       - cache-data:/app/var:cached
     depends_on:
       - rabbitmq
+      - db
     networks:
       - app-network
 
@@ -81,6 +83,33 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq/
+    networks:
+      - app-network
+
+
+  migrate:
+    build:
+      context: ./
+      dockerfile: ./docker/php/Dockerfile
+    environment:
+      PHP_IDE_CONFIG: ${PHP_IDE_CONFIG:-serverName=docker}
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+      XDEBUG_TRIGGER: 'yes'
+    volumes:
+      - ./:/app:cached
+      - cache-data:/app/var:cached
+    command:  >
+      /bin/sh -c "
+      php bin/console doctrine:database:create --if-not-exists &&
+      php bin/console doctrine:migration:migrate &&
+      php bin/console app:sync:privileges &&
+      php bin/console app:holiday:update &&
+      chown 777 -R var/cache
+      "
+    depends_on:
+      - rabbitmq
+      - db
+      - app
     networks:
       - app-network
 

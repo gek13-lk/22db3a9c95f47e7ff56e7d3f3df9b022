@@ -1,6 +1,6 @@
 {% extends '@!EasyAdmin/page/content.html.twig' %}
 
-{% block content_title %}
+{% block page_title %}
     Референс-центр - Регистрация
 {% endblock %}
 
@@ -17,16 +17,17 @@
                 <div class="login-screen">
                     <div class="login-box">
                         <a href="#" class="login-logo">
-                            Референс-центр
+                            Референс-центр. <h3>Графики</h3>
                         </a>
                         <h4>Регистрация</h4> <br/>
-                        <h5>Введите логин и пароль.</h5>
+                        <h5>Введите логин, e-mail и пароль.</h5>
 
                         {{ form_start(registrationForm) }}
 
                         {{ form_errors(registrationForm) }}
 
                         {{ form_row(registrationForm.username) }}
+                        {{ form_row(registrationForm.email) }}
                         {{ form_row(registrationForm.plainPassword) }}
                         {{ form_row(registrationForm.agreeTerms) }}
 

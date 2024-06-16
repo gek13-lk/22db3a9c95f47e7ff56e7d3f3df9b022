@@ -1,0 +1,11 @@
+{% extends 'schedule/index.html.twig' %}
+
+{% block page_actions %}
+    <div class="col-auto">
+        {{ form(form) }}
+    </div>
+    <div class="col-auto">
+        <a href="{{ path('app_schedule_export_csv_my', {'tempSchedule': scheduleId}) }}" type="button" class="btn btn-success" id="cancelButton" data-dismiss="modal">CSV</a>
+        <a href="{{ path('app_schedule_export_xlsx_my', {'tempSchedule': scheduleId}) }}" type="button" class="btn btn-success" id="cancelButton" data-dismiss="modal">XLSX</a>
+    </div>
+{% endblock %}

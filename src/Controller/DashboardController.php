@@ -31,11 +31,16 @@ class DashboardController extends AbstractDashboardController
     #[Route('/', name: 'app_home')]
     public function index(): Response
     {
-        return $this->redirectToRoute('app_schedule');
+        return $this->redirectToRoute('dashboard');
     }
 
     #[Route('/dashboard', name: 'dashboard')]
-    public function dashboard(AdminUrlGenerator $urlGenerator): Response {
+    public function dashboard(AdminUrlGenerator $urlGenerator): Response
+    {
+        if ($this->isGranted('ROLE_DOCTOR')) {
+            return $this->redirect($urlGenerator->setRoute('app_schedule_my')->generateUrl());
+        }
+
         return $this->redirect($urlGenerator->setRoute('app_schedule')->generateUrl());
     }
 
@@ -83,7 +88,7 @@ class DashboardController extends AbstractDashboardController
 
     public function configureDashboard(): Dashboard {
         return Dashboard::new()
-            ->setTitle('Референс-центр')
+            ->setTitle('Референс-центр. Графики')
             ->renderContentMaximized();
     }
 
@@ -112,8 +117,6 @@ class DashboardController extends AbstractDashboardController
     }
 
     public function configureMenuItems(): iterable {
-        yield MenuItem::linkToRoute('Расписание', 'icon-home', 'app_schedule');
-
         yield MenuItem::subMenu('Администрирование', 'icon-settings')
             ->setPermission('ROLE_ADMIN')
             ->setSubItems([
@@ -121,18 +124,22 @@ class DashboardController extends AbstractDashboardController
                 MenuItem::linkToCrud('Роли', null, Role::class)->setPermission('ROLE_ADMIN'),
             ]);
 
+        yield MenuItem::subMenu('График', 'icon-calendar')
+            ->setSubItems([
+                MenuItem::linkToRoute('Мое расписание', 'icon-home', 'app_schedule_my')
+                    ->setPermission('ROLE_DOCTOR'),
+                MenuItem::linkToRoute('Расписание', 'icon-home', 'app_schedule')
+                    ->setPermission(new Expression('"ROLE_ADMIN" in role_names or "ROLE_HR" in role_names or "ROLE_MANAGER" in role_names')),
+                MenuItem::linkToRoute('Календарь', null, 'calendar'),
+                MenuItem::linkToRoute('Составить график', null, 'app_schedule_run')
+                    ->setPermission('ROLE_MANAGER'),
+            ]);
+
         yield MenuItem::subMenu('Сотрудники', 'icon-contact_mail')
             ->setPermission(new Expression('"ROLE_ADMIN" in role_names or "ROLE_HR" in role_names or "ROLE_MANAGER" in role_names'))
             ->setSubItems([
                 MenuItem::linkToCrud('Врачи', null, Doctor::class)
                     ->setPermission(DoctorVoter::LIST)
-            ]);
-
-        yield MenuItem::subMenu('График', 'icon-calendar')
-            ->setSubItems([
-                MenuItem::linkToRoute('Календарь', null, 'calendar'),
-                MenuItem::linkToRoute('Составить график', null, 'app_schedule_run')
-                    ->setPermission('ROLE_MANAGER'),
             ]);
 
         yield MenuItem::subMenu('Методы визуализации', 'icon-vibration')
