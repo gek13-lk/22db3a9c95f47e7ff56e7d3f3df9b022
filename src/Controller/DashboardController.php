@@ -177,7 +177,8 @@ class DashboardController extends AbstractDashboardController
 
         yield MenuItem::subMenu('Рекомендации', 'fa fa-thumbs-up')
             ->setSubItems([
-                MenuItem::linkToRoute('Рекомендации', null, 'recommendation_list'),
+                MenuItem::linkToRoute('Рекомендации', null, 'recommendation_list')
+                    ->setPermission(new Expression('"ROLE_ADMIN" in role_names or "ROLE_HR" in role_names or "ROLE_MANAGER" in role_names')),
             ]);
     }
 }
