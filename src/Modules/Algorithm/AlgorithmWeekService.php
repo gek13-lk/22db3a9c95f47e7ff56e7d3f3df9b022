@@ -67,18 +67,10 @@ class AlgorithmWeekService
         $this->isPredicated = $isPredicated;
 
         if ($isPredicated) {
-            $predictionResults = $this->predictionService->getPredictedDataByDate($startDay);
-
-            foreach ($predictionResults as $prediction) {
-                $weekNumber = [
-                    'weekNumber' => $prediction->getWeekNumber(),
-                    'year' =>  $prediction->getYear()
-                ];
-
-                if (!in_array($weekNumber, $this->weeksNumber)) {
-                    $this->weeksNumber[] = $weekNumber;
-                }
-            }
+            $this->predictionService->getPredictedDataByDate($startDay);
+            $this->weeksNumber = $this->entityManager->getRepository(PredictedWeekStudies::class)->getAllWeekNumbers(
+                $startDay, $endDay
+            );
         } else {
             $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers(
                 $startDay, $endDay
@@ -148,6 +140,7 @@ class AlgorithmWeekService
             if ($this->isPredicated) {
                 $weekStudiesByWeek = $this->entityManager->getRepository(PredictedWeekStudies::class)->findBy([
                     'weekNumber' => $weekNumber,
+                    'isNew' => true
                 ]);
             } else {
                 $weekStudiesByWeek = $this->entityManager->getRepository(WeekStudies::class)->findBy([
@@ -243,6 +236,7 @@ class AlgorithmWeekService
                 $weekStudies = $this->entityManager->getRepository(PredictedWeekStudies::class)->findBy([
                     'weekNumber' => $weekNumber['weekNumber'],
                     'year' => $weekNumber['year'],
+                    'isNew' => true
                 ]);
             } else {
                 /** @var WeekStudies[] $weekStudies */
