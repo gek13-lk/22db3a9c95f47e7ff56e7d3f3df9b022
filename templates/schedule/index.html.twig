@@ -130,12 +130,15 @@
             margin: 2px;
             z-index: 1;
         }
+
+        {% if can_edit is defined and can_edit %}
         #scheduler .details.drag:hover {
             cursor: grab;
         }
         #scheduler .details.drag:active {
             cursor: grabbing;
         }
+        {% endif %}
 
         #scheduler .details.ui-draggable-dragging {
             z-index: 1000;
