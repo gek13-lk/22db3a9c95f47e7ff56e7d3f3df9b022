@@ -17,6 +17,9 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class AlgorithmWeekService
 {
+    /*
+     * Производственный календарь
+     */
     private array $calendar;
     private array $doctorsStat = [];
     private const EVOLUTION_COUNT = 20;
