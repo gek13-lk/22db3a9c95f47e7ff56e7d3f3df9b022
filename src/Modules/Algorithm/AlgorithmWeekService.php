@@ -158,11 +158,14 @@ class AlgorithmWeekService
                             $empty = $stat;
                             continue;
                         }
-
+                        $date = new \DateTime($day);
+                        if (!$firstDate) {
+                            $firstDate = $date;
+                        }
                         $doctor = current(array_filter($this->doctors, fn(Doctor $doc) => $doc->getId() === $idDoctor));
                         $tempDoctorSchedule = new TempDoctorSchedule();
                         $tempDoctorSchedule->setDoctor($doctor);
-                        $tempDoctorSchedule->setDate(new \DateTime($day));
+                        $tempDoctorSchedule->setDate($date);
                         $tempDoctorSchedule->setTempScheduleWeekStudies($tempScheduleWeekStudies);
                         $tempDoctorSchedule->setOffMinutes($stat['time']['off'] ?? null);
                         $tempDoctorSchedule->setWorkHours($stat['time']['hours'] ?? null);
