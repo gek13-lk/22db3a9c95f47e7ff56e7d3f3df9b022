@@ -15,7 +15,7 @@
                             <a href="{{ path('recommendation', {'tempSchedule': schedule.id}) }}"
                                class="event-block bg-warning">
                                 <i class="fa-solid fa-exclamation-triangle"></i>
-                                <div class="total-events">Штраф:{{ schedule.fitness }}</div>
+                                <div class="total-events">Штрафной балл: {{ schedule.fitness }}</div>
                                 Расписание № {{ schedule.id }} <br>
                                 сформировано {{ schedule.createdAt.format('d.m.Y H:m:s') }}
                             </a>
@@ -23,7 +23,7 @@
                             <a href="{{ path('recommendation', {'tempSchedule': schedule.id}) }}"
                                class="event-block bg-success">
                                 <i class="fa-solid fa-thumbs-up"></i>
-                                <div class="total-events">Штраф:{{ schedule.fitness }}</div>
+                                <div class="total-events">Штрафной балл: {{ schedule.fitness }}</div>
                                 Расписание № {{ schedule.id }} <br>
                                 сформировано {{ schedule.createdAt.format('d.m.Y H:m:s') }}
                             </a>

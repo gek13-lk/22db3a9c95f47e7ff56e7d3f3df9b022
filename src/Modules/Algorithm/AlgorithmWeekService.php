@@ -97,7 +97,7 @@ class AlgorithmWeekService
 
         // Выбираем наилучшие расписания по оценкам и сохраняем в БД
         for ($i = 0; $i < $countSchedule; $i++) {
-            $tempScheduleEntity = $this->saveTempSchedule($evolutionPopulation[$i]['schedule'], $evolutionPopulation[$i]['fitnessScore']);
+            $tempScheduleEntity = $this->saveTempSchedule($evolutionPopulation[$i]['schedule'], $evolutionPopulation[$i]['fitnessScore'], $startDay);
             $bestPopulation[$tempScheduleEntity->getId()] = $evolutionPopulation[$i]['schedule'];
         }
 
@@ -123,11 +123,12 @@ class AlgorithmWeekService
         return $population;
     }
 
-    private function saveTempSchedule(array $randomSchedule, int $fitness): TempSchedule
+    private function saveTempSchedule(array $randomSchedule, int $fitness, \DateTime $day): TempSchedule
     {
         $tempScheduleEntity = new TempSchedule();
         $tempScheduleEntity->setFitness($fitness);
         $tempScheduleEntity->setDoctorsMaxCount($this->maxDoctorsCount);
+        $tempScheduleEntity->setDate($day);
         $this->entityManager->persist($tempScheduleEntity);
         $firstDate = null;
 

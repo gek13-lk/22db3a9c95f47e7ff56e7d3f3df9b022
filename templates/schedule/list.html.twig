@@ -196,7 +196,7 @@
                 <th class="cal-view" rowspan="2">Идентификатор</th>
                 <th class="cal-view" rowspan="2">Дата расписания</th>
                 <th class="cal-view" rowspan="2">Дата создания расписания</th>
-                <th class="cal-view" rowspan="2">Балл</th>
+                <th class="cal-view" rowspan="2">Штрафной балл</th>
                 <th class="cal-view" rowspan="2">Согласовано</th>
                 <th class="cal-view" rowspan="2"></th>
             </tr>
@@ -206,7 +206,7 @@
                 <tr>
                     <td class="cal-userinfo">{{ schedule.id }}</td>
                     <td class="cal-userinfo">{{ schedule.date|date('d.m.Y') }}</td>
-                    <td class="cal-userinfo">{{ schedule.date|date('d.m.Y') }}</td>
+                    <td class="cal-userinfo">{{ schedule.createdAt|date('d.m.Y') }}</td>
                     <td class="cal-userinfo">{{ schedule.fitness }}</td>
                     <td class="cal-userinfo">{{ schedule.isApproved ? 'Да' : 'Нет' }}</td>
                     <td class="cal-userinfo">

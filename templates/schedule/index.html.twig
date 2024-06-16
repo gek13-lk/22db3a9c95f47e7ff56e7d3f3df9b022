@@ -4,10 +4,12 @@
     <div class="col-auto">
         {{ form(form) }}
     </div>
+    {% if scheduleId %}
     <div class="col-auto">
         <a href="{{ path('app_schedule_export_csv', {'tempSchedule': scheduleId}) }}" type="button" class="btn btn-success" id="cancelButton" data-dismiss="modal">CSV</a>
         <a href="{{ path('app_schedule_export_xlsx', {'tempSchedule': scheduleId}) }}" type="button" class="btn btn-success" id="cancelButton" data-dismiss="modal">XLSX</a>
     </div>
+    {% endif %}
 {% endblock %}
 
 {% block main %}
@@ -199,6 +201,7 @@
             background-color: #cc0000;
         }
     </style>
+    {% if scheduleId %}
     <div class="col-12 table-responsive" id="scheduler">
         <table class="table table-striped table-bordered">
             <thead class="cal-thead">
@@ -287,6 +290,7 @@
             </tbody>
         </table>
     </div>
+    {% endif %}
 {% endblock %}
 
 {% block body_javascript %}
