@@ -106,10 +106,10 @@
                         {% set is_last_part = loop.index0 >= 15 %}
 
                         {% if loop.index0 == 15 %}
-                            <th class="cal-part-start">{{ partStart }}</th>
+                            <td class="cal-part-start">{{ partStart }}</td>
                         {% endif %}
 
-                        <th class="cal-schedule">
+                        <td class="cal-schedule">
                             {% for schedule in scheduleDoctor|filter(s => s.date == calendar.date) %}
                                 {% if is_first_part %}
                                     {% set partStart = partStart + schedule.workHours %}
@@ -126,9 +126,9 @@
                                     <li class="text-nowrap">обед {{ schedule.offMinutes ? schedule.offMinutes|round(2) : '---' }} минут</li>
                                 </ul>
                             {% endfor %}
-                        </th>
+                        </td>
                         {% if loop.last %}
-                            <th class="cal-part-end">{{ partEnd|round(2) }}</th>
+                            <td class="cal-part-end">{{ partEnd|round(2) }}</td>
                         {% endif %}
                     {% endfor %}
                     <td class="cal-userinfo">{{ (partStart + partEnd)|round(2) }}</td>
