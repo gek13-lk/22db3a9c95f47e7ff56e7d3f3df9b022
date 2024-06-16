@@ -128,10 +128,10 @@
                             {% endfor %}
                         </th>
                         {% if loop.last %}
-                            <th class="cal-part-end">{{ partEnd }}</th>
+                            <th class="cal-part-end">{{ partEnd|round(2) }}</th>
                         {% endif %}
                     {% endfor %}
-                    <td class="cal-userinfo">{{ partStart + partEnd }}</td>
+                    <td class="cal-userinfo">{{ (partStart + partEnd)|round(2) }}</td>
                     <td class="cal-userinfo">155</td>
                 </tr>
             {% endfor %}

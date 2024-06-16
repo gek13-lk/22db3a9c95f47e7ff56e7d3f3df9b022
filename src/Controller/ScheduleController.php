@@ -74,7 +74,7 @@ class ScheduleController extends DashboardController {
             'form' => $form->createView(),
             'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
-            'scheduleId' => $this->getScheduleByDate($date)?->getId()
+            'scheduleId' => $this->getScheduleByDate($date)?->getId() ?? 1
         ]);
     }
 
@@ -116,7 +116,7 @@ class ScheduleController extends DashboardController {
             'form' => $form->createView(),
             'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
-            'scheduleId' => $this->getScheduleByDate($date)?->getId()
+            'scheduleId' => $this->getScheduleByDate($date)?->getId() ?? 1
         ]);
     }
 
