@@ -13,6 +13,7 @@ use App\Repository\CalendarRepository;
 use App\Repository\DoctorRepository;
 use App\Repository\TempDoctorScheduleRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 
 class DataService
 {
@@ -20,7 +21,8 @@ class DataService
         private readonly EntityManagerInterface $entityManager,
         private CalendarRepository $calendarRepository,
         private DoctorRepository $doctorRepository,
-        private TempDoctorScheduleRepository $tempDoctorScheduleRepository
+        private TempDoctorScheduleRepository $tempDoctorScheduleRepository,
+        private Security $security
     )
     {
     }
@@ -150,7 +152,7 @@ class DataService
         return date('Y-m-d', mt_rand($secondDate->getTimestamp(), $firstDate->getTimestamp()));
     }
 
-    public function getScheduleById(TempSchedule $tempSchedule)
+    public function getScheduleById(TempSchedule $tempSchedule, bool $onlyMy = false)
     {
         $doctorSchedules = $this->tempDoctorScheduleRepository->findByTempSchedule($tempSchedule);
 
@@ -177,7 +179,11 @@ class DataService
         $title[] = 'Норма часов по графику';
         $title[] = 'Норма часов за полный месяц';
 
-        $doctors = $this->doctorRepository->findAll();
+        if ($onlyMy) {
+            $doctors = $this->doctorRepository->findBy(['user' => $this->security->getUser()]);
+        } else {
+            $doctors = $this->doctorRepository->findAll();
+        }
 
         /** @var Doctor $doctor */
         foreach ($doctors as $doctor) {
