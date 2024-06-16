@@ -36,6 +36,9 @@ class ExportService
             $row++;
         }
 
+        $sheet->getDefaultColumnDimension()->setWidth(70);
+        $sheet->getDefaultRowDimension()->setRowHeight(20);
+
         $writer = new Xlsx($spreadsheet);
         $fileName = 'template.xlsx';
         $temp_file = tempnam(sys_get_temp_dir(), $fileName);

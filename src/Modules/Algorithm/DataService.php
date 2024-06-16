@@ -229,7 +229,7 @@ class DataService
 
             $scheduleData[$doctor->getId()]['Итого за 2 пол. месяца'] = $workHours;
             $scheduleData[$doctor->getId()]['Норма часов по графику'] = $allWorkHours + $workHours;
-            $scheduleData[$doctor->getId()]['Норма часов за полный месяц'] = 155;
+            $scheduleData[$doctor->getId()]['Норма часов за полный месяц'] = 155 * $doctor->getStavka();
         }
 
         return (array_merge([$title], $scheduleData));
