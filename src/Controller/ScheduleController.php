@@ -9,10 +9,8 @@ use App\Modules\Algorithm\ExportService;
 use App\Modules\Algorithm\SetTimeAlgorithmService;
 use App\Repository\CalendarRepository;
 use App\Repository\DoctorRepository;
-use App\Repository\TempDoctorScheduleRepository;
 use App\Repository\TempScheduleRepository;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
@@ -129,6 +127,8 @@ class ScheduleController extends DashboardController {
         $data = [
             'month' => '01.01.2024',
             'count' => 1,
+            'maxDoctorsCount' => 260,
+            'isPredicated' => false
         ];
 
         $form = $this->createFormBuilder(options: ['attr'=>['class'=>'form-inline']])
@@ -145,6 +145,27 @@ class ScheduleController extends DashboardController {
             ->add('count', NumberType::class, [
                 'label' => 'Количество',
                 'html5' => true,
+                'row_attr'=>['class'=>'form-group mb-2 mr-2'],
+                'label_attr'=>['class'=>'col-form-label mr-2'],
+                'attr'=>[
+                    'class'=>'form-control',
+                ],
+            ])
+            ->add('maxDoctorsCount', NumberType::class, [
+                'label' => 'Количество врачей',
+                'html5' => true,
+                'row_attr'=>['class'=>'form-group mb-2 mr-2'],
+                'label_attr'=>['class'=>'col-form-label mr-2'],
+                'attr'=>[
+                    'class'=>'form-control',
+                ],
+            ])
+            ->add('isPredicated', ChoiceType::class, [
+                'label' => 'Источник данных исследований',
+                'choices' => [
+                    'Исходные данные' => false,
+                    'Спрогнозированные данные' => true
+                ],
                 'row_attr'=>['class'=>'form-group mb-2 mr-2'],
                 'label_attr'=>['class'=>'col-form-label mr-2'],
                 'attr'=>[
@@ -175,7 +196,7 @@ class ScheduleController extends DashboardController {
         $dateStart = (clone $date)->modify('first day of this month');
         $dateEnd = (clone $date)->modify('last day of this month');
 
-        $this->algorithmService->run($dateStart, $dateEnd, $data['count']);
+        $this->algorithmService->run($dateStart, $dateEnd, $data['count'], $data['maxDoctorsCount'], $data['isPredicated']);
 
         return $this->render('schedule/run.html.twig', [
             'title' => 'Построить график',
