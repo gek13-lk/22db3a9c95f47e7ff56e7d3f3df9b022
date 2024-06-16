@@ -53,6 +53,9 @@ final class PredictionService
                     $prediction->setYear($data['Year']);
                     $prediction->setWeekNumber($data['Week']);
 
+                    $date = (new \DateTime())->setISODate($data['Year'], $data['Week']);
+                    $prediction->setStartOfWeek($date);
+
                     $this->em->persist($prediction);
                     $result[] = $prediction;
                 }
