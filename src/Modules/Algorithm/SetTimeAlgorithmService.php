@@ -15,7 +15,6 @@ class SetTimeAlgorithmService
     private const START_WORK_HOUR3 = 14;
     private const START_WORK_MINUTES = 0;
     private const START_NIGHT_WORK_HOUR = 20;
-    private const START_NIGHT_WORK_MINUTES = 0;
     private const DEFAULT_OFF_TIME = 30;
     private const MAX_HOUR_WEEK = 36;
     private const MAX_HOUR_MONTH = 155;
@@ -115,6 +114,7 @@ class SetTimeAlgorithmService
                         }
 
                         $flooredHours = floor($doctorsAverageTime[$doctorId]);
+
                         $minutes = floor($flooredHours * 60);
                         $doctorsStat[$weekNumber][$modality][$day][$doctorId]['time']['hours'] = $flooredHours;
 
@@ -209,10 +209,12 @@ class SetTimeAlgorithmService
 
         if ($doctorWorkHoursCount >= 11) {
             $offTime = 60;
+        } elseif ($doctorWorkHoursCount < 6) {
+            $offTime = 0;
         }
 
         $doctorWorkMinutes = $doctorWorkHoursCount * 60;
-        $endTime = (clone $startTime)->modify(' +' . (self::START_WORK_MINUTES + $offTime + $doctorWorkMinutes) . ' minutes');
+        $endTime = (clone $startTime)->modify(' +' . ($offTime + $doctorWorkMinutes) . ' minutes');
         $workHours = (clone $endTime)->modify('- ' . $offTime . ' minutes')->diff($startTime);
 
         if ($workHours->days) {
@@ -250,10 +252,6 @@ class SetTimeAlgorithmService
 
         if ($workHours == 0) {
             return false;
-        }
-
-        if ($workHours < 11) {
-            $offTime = self::DEFAULT_OFF_TIME;
         }
 
         return [
