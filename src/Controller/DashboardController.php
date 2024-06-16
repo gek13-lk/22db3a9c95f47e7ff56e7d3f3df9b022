@@ -113,7 +113,7 @@ class DashboardController extends AbstractDashboardController
 
     public function configureDashboard(): Dashboard {
         return Dashboard::new()
-            ->setTitle('Референс-центр. Графики')
+            ->setTitle('Референс-центр. Планирование')
             ->renderContentMaximized();
     }
 
