@@ -75,7 +75,7 @@ class ScheduleController extends DashboardController {
             'form' => $form->createView(),
             'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
-            'scheduleId' => $this->getScheduleByDate($date)?->getId() ?? 1,
+            'scheduleId' => $this->getApproveScheduleByDate($date)?->getId(),
             'can_edit' => $this->isGranted('ROLE_MANAGER') || $this->isGranted('ROLE_ADMIN') ? 1 : 0
         ]);
     }
@@ -118,7 +118,7 @@ class ScheduleController extends DashboardController {
             'form' => $form->createView(),
             'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
-            'scheduleId' => $this->getScheduleByDate($date)?->getId() ?? 1
+            'scheduleId' => $this->getApproveScheduleByDate($date)?->getId()
         ]);
     }
 
@@ -136,7 +136,7 @@ class ScheduleController extends DashboardController {
         ]);
     }
 
-    #[Route('/schedule/{tempSchedule}', name: 'app_schedule_temp')]
+    #[Route('/schedule/temp/{tempSchedule}', name: 'app_schedule_temp')]
     public function tempSchedule(TempSchedule $tempSchedule): Response {
         if (!$this->isGranted('ROLE_HR') && !$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException('нет прав');
@@ -324,9 +324,9 @@ class ScheduleController extends DashboardController {
         return new JsonResponse();
     }
 
-    function getScheduleByDate(\DateTime $month): ?TempSchedule
+    function getApproveScheduleByDate(\DateTime $month): ?TempSchedule
     {
-        $entity = $this->tempScheduleRepository->findOneBy(['id' => 36], ['id' => 'DESC']); // TODO: приделать месяц
+        $entity = $this->tempScheduleRepository->findOneBy(['date' => $month,], ['isApproved' => 'DESC', 'id' => 'DESC']);
 
         return $entity;
     }
