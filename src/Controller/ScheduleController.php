@@ -138,7 +138,8 @@ class ScheduleController extends DashboardController {
             'title' => 'Расписание',
             'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
-            'scheduleId' => $tempSchedule->getId()
+            'scheduleId' => $tempSchedule->getId(),
+            'can_edit' => $this->isGranted('ROLE_MANAGER') || $this->isGranted('ROLE_ADMIN') ? 1 : 0
         ]);
     }
 
