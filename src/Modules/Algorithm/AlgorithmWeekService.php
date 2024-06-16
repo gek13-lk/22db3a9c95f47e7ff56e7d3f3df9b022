@@ -8,6 +8,7 @@ use App\Entity\Calendar;
 use App\Entity\Competencies;
 use App\Entity\Doctor;
 use App\Entity\OffDoctorDays;
+use App\Entity\PredictedWeekStudies;
 use App\Entity\TempDoctorSchedule;
 use App\Entity\TempSchedule;
 use App\Entity\TempScheduleWeekStudies;
@@ -36,6 +37,7 @@ class AlgorithmWeekService
     private const HIGH_LEVEL = 'HIGH_LEVEL';
     private const SUPER_HIGH_LEVEL = 'SUPER_HIGH_LEVEL';
     private int $maxDoctorsCount = 0;
+    private bool $isPredicated;
 
     public function __construct(private EntityManagerInterface $entityManager, private SetTimeAlgorithmService $timeAlgorithmService)
     {
@@ -53,9 +55,18 @@ class AlgorithmWeekService
     {
         $this->maxDoctorsCount = $maxDoctorsCount;
         $this->endDay = $endDay;
-        $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers(
-            $startDay, $endDay
-        );
+        $this->isPredicated = $isPredicated;
+
+        if ($isPredicated) {
+            $this->weeksNumber = $this->entityManager->getRepository(PredictedWeekStudies::class)->getAllWeekNumbers(
+                $startDay, $endDay
+            );
+        } else {
+            $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers(
+                $startDay, $endDay
+            );
+        }
+
         $this->calendar = $this->entityManager->getRepository(Calendar::class)->getRange($startDay, $endDay);
         set_time_limit(600);
         ini_set('memory_limit', '-1');
@@ -111,21 +122,35 @@ class AlgorithmWeekService
     {
         $tempScheduleEntity = new TempSchedule();
         $tempScheduleEntity->setFitness($fitness);
+        $tempScheduleEntity->setDoctorsMaxCount($this->maxDoctorsCount);
         $this->entityManager->persist($tempScheduleEntity);
+        $firstDate = null;
 
         foreach ($randomSchedule as $weekNumber => $scheduleForModality) {
-            $weekStudiesByWeek = $this->entityManager->getRepository(WeekStudies::class)->findBy([
-                'weekNumber' => $weekNumber,
-            ]);
+            if ($this->isPredicated) {
+                $weekStudiesByWeek = $this->entityManager->getRepository(PredictedWeekStudies::class)->findBy([
+                    'weekNumber' => $weekNumber,
+                ]);
+            } else {
+                $weekStudiesByWeek = $this->entityManager->getRepository(WeekStudies::class)->findBy([
+                    'weekNumber' => $weekNumber,
+                ]);
+            }
+
             foreach ($scheduleForModality as $modality => $scheduleWeek) {
                 /** @var Competencies $competency */
                 $competency = current(array_filter($this->modalities, fn(Competencies $comp) => $comp->getModality() === $modality));
-                /** @var WeekStudies $weekStudies */
-                $weekStudies = current(array_filter($weekStudiesByWeek, fn(WeekStudies $ws) => $ws->getCompetency() === $competency));
+                /** @var WeekStudies|PredictedWeekStudies $weekStudies */
+                $weekStudies = current(array_filter($weekStudiesByWeek, fn(WeekStudies|PredictedWeekStudies $ws) => $ws->getCompetency() === $competency));
 
                 $tempScheduleWeekStudies = new TempScheduleWeekStudies();
                 $tempScheduleWeekStudies->setTempSchedule($tempScheduleEntity);
-                $tempScheduleWeekStudies->setWeekStudies($weekStudies);
+                if ($this->isPredicated) {
+                    $tempScheduleWeekStudies->setPredicatedWeekStudies($weekStudies);
+                } else {
+                    $tempScheduleWeekStudies->setWeekStudies($weekStudies);
+                }
+
                 $empty = 0;
                 foreach ($scheduleWeek as $day => $scheduleDay) {
                     foreach ($scheduleDay as $idDoctor => $stat) {
@@ -133,11 +158,14 @@ class AlgorithmWeekService
                             $empty = $stat;
                             continue;
                         }
-
+                        $date = new \DateTime($day);
+                        if (!$firstDate) {
+                            $firstDate = $date;
+                        }
                         $doctor = current(array_filter($this->doctors, fn(Doctor $doc) => $doc->getId() === $idDoctor));
                         $tempDoctorSchedule = new TempDoctorSchedule();
                         $tempDoctorSchedule->setDoctor($doctor);
-                        $tempDoctorSchedule->setDate(new \DateTime($day));
+                        $tempDoctorSchedule->setDate($date);
                         $tempDoctorSchedule->setTempScheduleWeekStudies($tempScheduleWeekStudies);
                         $tempDoctorSchedule->setOffMinutes($stat['time']['off'] ?? null);
                         $tempDoctorSchedule->setWorkHours($stat['time']['hours'] ?? null);
@@ -152,13 +180,14 @@ class AlgorithmWeekService
                 $this->entityManager->persist($tempScheduleWeekStudies);
             }
         }
+        $tempScheduleEntity->setDate($firstDate);
 
         $this->entityManager->flush();
 
         return $tempScheduleEntity;
     }
 
-    private function addDoctorStat(Doctor $doctor, string $currentDay, array $time, WeekStudies $modalityWeek, Competencies $modalityCompetency, int $countPerShift, $modalityDoctorMaxCountPerShift): void
+    private function addDoctorStat(Doctor $doctor, string $currentDay, array $time, WeekStudies|PredictedWeekStudies $modalityWeek, Competencies $modalityCompetency, int $countPerShift): void
     {
         if (!isset($this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['get'])) {
             $this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['get'] = 0;
@@ -195,11 +224,20 @@ class AlgorithmWeekService
             $this->doctorsTwoOffInWeek = [];
             //Перемешиваем модальности в неделе
             //TODO: Убрать запрос
-            /** @var WeekStudies[] $weekStudies */
-            $weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
-                'weekNumber' => $weekNumber['weekNumber'],
-                'year' => $weekNumber['year'],
-            ]);
+            if ($this->isPredicated) {
+                /** @var PredictedWeekStudies[] $weekStudies */
+                $weekStudies = $this->entityManager->getRepository(PredictedWeekStudies::class)->findBy([
+                    'weekNumber' => $weekNumber['weekNumber'],
+                    'year' => $weekNumber['year'],
+                ]);
+            } else {
+                /** @var WeekStudies[] $weekStudies */
+                $weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
+                    'weekNumber' => $weekNumber['weekNumber'],
+                    'year' => $weekNumber['year'],
+                ]);
+            }
+
             shuffle($weekStudies);
             /*$comp = $this->entityManager->getRepository(Competencies::class)->find(3);
             $weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
@@ -432,7 +470,8 @@ class AlgorithmWeekService
             });
 
             if ($isMaxCount) {
-                $doctors = array_filter($doctors, function (Doctor $doctor) {
+                $secondDocArray = $doctors;
+                $doctors = array_filter($secondDocArray, function (Doctor $doctor) {
                    return in_array($doctor->getId(), $this->doctorsInSchedule);
                 });
             }
@@ -451,7 +490,8 @@ class AlgorithmWeekService
             });
 
             if ($isMaxCount) {
-                $doctors = array_filter($doctors, function (Doctor $doctor) {
+                $secondDocArray = $doctors;
+                $doctors = array_filter($secondDocArray, function (Doctor $doctor) {
                     return in_array($doctor->getId(), $this->doctorsInSchedule);
                 });
             }
@@ -471,7 +511,8 @@ class AlgorithmWeekService
             });
 
             if ($isMaxCount) {
-                $doctors = array_filter($doctors, function (Doctor $doctor) {
+                $secondDocArray = $doctors;
+                $doctors = array_filter($secondDocArray, function (Doctor $doctor) {
                     return in_array($doctor->getId(), $this->doctorsInSchedule);
                 });
             }
@@ -490,7 +531,8 @@ class AlgorithmWeekService
             });
 
             if ($isMaxCount) {
-                $doctors = array_filter($doctors, function (Doctor $doctor) {
+                $secondDocArray = $doctors;
+                $doctors = array_filter($secondDocArray, function (Doctor $doctor) {
                     return in_array($doctor->getId(), $this->doctorsInSchedule);
                 });
             }

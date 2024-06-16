@@ -15,6 +15,22 @@ class PredictedWeekStudiesRepository extends ServiceEntityRepository
         parent::__construct($registry, PredictedWeekStudies::class);
     }
 
+    public function getAllWeekNumbers(\DateTime $from, \DateTime $to): array
+    {
+        return
+            $this
+                ->createQueryBuilder('ws')
+                ->select('ws.weekNumber, ws.year')
+                ->andWhere('ws.startOfWeek >= :from')
+                ->andWhere('ws.startOfWeek <= :to')
+                ->setParameter('from', $from)
+                ->setParameter('to', $to)
+                ->orderBy('ws.weekNumber', 'ASC')
+                ->distinct()
+                ->getQuery()
+                ->getResult();
+    }
+
     public function findByYearAndWeeks(int $year, array $weeks): array
     {
         return $this->createQueryBuilder('pws')
