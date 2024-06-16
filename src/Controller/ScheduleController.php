@@ -9,6 +9,8 @@ use App\Modules\Algorithm\ExportService;
 use App\Modules\Algorithm\SetTimeAlgorithmService;
 use App\Repository\CalendarRepository;
 use App\Repository\DoctorRepository;
+use App\Repository\TempDoctorScheduleRepository;
+use App\Repository\TempScheduleRepository;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
@@ -25,6 +27,7 @@ class ScheduleController extends DashboardController {
         private SetTimeAlgorithmService $timeAlgorithmService,
         private CalendarRepository $calendarRepository,
         private DoctorRepository $doctorRepository,
+        private TempScheduleRepository $tempScheduleRepository,
         private DataService $dataService,
         private ExportService $exportService
     )
@@ -33,7 +36,9 @@ class ScheduleController extends DashboardController {
 
     #[Route('/schedule', name: 'app_schedule')]
     public function schedule(Request $request): Response {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        if (!$this->isGranted('ROLE_HR') && !$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
 
         $data = [
             'month' => '01.01.2024'
@@ -62,18 +67,56 @@ class ScheduleController extends DashboardController {
         $dateStart = (clone $date)->modify('first day of this month');
         $dateEnd = (clone $date)->modify('last day of this month');
 
-        if ($this->isGranted('ROLE_HR') || $this->isGranted('ROLE_MANAGER') || $this->isGranted('ROLE_ADMIN')) {
             $doctors = $this->doctorRepository->findAll();
-        } else {
-            $doctors = $this->doctorRepository->findOneBy(['user' => $this->getUser()]);
-        }
 
         return $this->render('schedule/index.html.twig', [
             'title' => 'Расписание',
             'form' => $form->createView(),
             'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
-            'scheduleId' => 1 // TODO: получать из алгоритма
+            'scheduleId' => $this->getScheduleByDate($date)?->getId()
+        ]);
+    }
+
+    #[Route('/schedule/my', name: 'app_schedule_my')]
+    public function my(Request $request): Response {
+        $this->denyAccessUnlessGranted('ROLE_DOCTOR');
+
+        $data = [
+            'month' => '01.01.2024'
+        ];
+
+        $form = $this->createFormBuilder(options: ['attr'=>['class'=>'form-inline']])
+            ->add('month', ChoiceType::class, [
+                'label' => 'Месяц',
+                'choices' => array_reverse(array_flip($this->getDatesFromLastTwoYears())),
+                'row_attr'=>['class'=>'form-group mb-2 mr-2'],
+                'label_attr'=>['class'=>'col-form-label mr-2'],
+                'attr'=>[
+                    'class'=>'form-control',
+                    'onchange' => '$("#loading-wrapper").fadeIn(500); this.form.submit()',
+                ],
+                'empty_data' => '01.01.2024',
+            ])
+            ->getForm();
+
+        $form->setData($data);
+
+        $form->handleRequest($request);
+
+        $data = $form->getData();
+        $date = \DateTime::createFromFormat('d.m.Y', $data['month']);
+        $dateStart = (clone $date)->modify('first day of this month');
+        $dateEnd = (clone $date)->modify('last day of this month');
+
+        $doctors = $this->doctorRepository->findBy(['user' => $this->getUser()]);
+
+        return $this->render('schedule/my.html.twig', [
+            'title' => 'Мое расписание',
+            'form' => $form->createView(),
+            'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
+            'doctors' => $doctors,
+            'scheduleId' => $this->getScheduleByDate($date)?->getId()
         ]);
     }
 
@@ -142,9 +185,10 @@ class ScheduleController extends DashboardController {
     }
 
     #[Route('/schedule/export/csv/{tempSchedule}', name: 'app_schedule_export_csv')]
-    public function exportCsv(TempSchedule $tempSchedule): Response
+    #[Route('/schedule/export/csv/{tempSchedule}/my', name: 'app_schedule_export_csv_my')]
+    public function exportCsv(TempSchedule $tempSchedule, Request $request): Response
     {
-        $data = $this->dataService->getScheduleById($tempSchedule);
+        $data = $this->dataService->getScheduleById($tempSchedule, $request->get('_route') === 'app_schedule_export_csv_my');
 
         $file = $this->exportService->exportCsv($data);
 
@@ -152,13 +196,21 @@ class ScheduleController extends DashboardController {
     }
 
     #[Route('/schedule/export/xlsx/{tempSchedule}', name: 'app_schedule_export_xlsx')]
-    public function exportXlsx(TempSchedule $tempSchedule): Response
+    #[Route('/schedule/export/xlsx/{tempSchedule}/my', name: 'app_schedule_export_xlsx_my')]
+    public function exportXlsx(TempSchedule $tempSchedule, Request $request): Response
     {
-        $data = $this->dataService->getScheduleById($tempSchedule);
+        $data = $this->dataService->getScheduleById($tempSchedule, $request->get('_route') === 'app_schedule_export_xlsx_my');
 
         $file = $this->exportService->exportXlsx($data);
 
         return $this->file($file, 'schedule.xlsx', ResponseHeaderBag::DISPOSITION_INLINE);
+    }
+
+    function getScheduleByDate(\DateTime $month): ?TempSchedule
+    {
+        $entity = $this->tempScheduleRepository->findOneBy([], ['id' => 'DESC']); // TODO: приделать месяц
+
+        return $entity;
     }
 
     function getDatesFromLastTwoYears(string $modifyStart = '-2 years', string $modifyEnd = 'now') {
