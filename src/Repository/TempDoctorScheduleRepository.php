@@ -42,6 +42,23 @@ class TempDoctorScheduleRepository extends ServiceEntityRepository
     /**
      * @return TempDoctorSchedule[]
      */
+    public function findByDoctor(int $doctorId): array
+    {
+        return
+            $this
+                ->createQueryBuilder('tds')
+                ->join(Doctor::class, 'd', Join::WITH, 'tds.doctor = d')
+                ->join(TempScheduleWeekStudies::class, 'tsws', Join::WITH, 'tds.tempScheduleWeekStudies = tsws')
+                ->join(TempSchedule::class, 'ts', Join::WITH, 'tsws.tempSchedule = ts')
+                ->andWhere('d.id = :doctorId')
+                ->setParameter('doctorId', $doctorId)
+                ->getQuery()
+                ->getResult();
+    }
+
+    /**
+     * @return TempDoctorSchedule[]
+     */
     public function findByTempSchedule(TempSchedule $tempSchedule): array
     {
         return
