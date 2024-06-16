@@ -22,7 +22,7 @@ class AlgorithmWeekService
     // Статистика по врачам
     private array $doctorsStat = [];
     private const EVOLUTION_COUNT = 20;
-    private const POPULATION_COUNT = 2;
+    private const POPULATION_COUNT = 3;
 
     /** @var Competencies[]  */
     private array $modalities;

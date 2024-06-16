@@ -122,20 +122,6 @@ class ScheduleController extends DashboardController {
         ]);
     }
 
-    #[Route('/schedule/list', name: 'app_schedule_list')]
-    public function scheduleList(Request $request): Response {
-        if (!$this->isGranted('ROLE_HR') && !$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException('нет прав');
-        }
-
-        $schedules = $this->tempScheduleRepository->findBy([], ['id' => 'DESC']);
-
-        return $this->render('schedule/list.html.twig', [
-            'title' => 'Составленные расписания',
-            'schedules' => $schedules
-        ]);
-    }
-
     #[Route('/schedule/temp/{tempSchedule}', name: 'app_schedule_temp')]
     public function tempSchedule(TempSchedule $tempSchedule): Response {
         if (!$this->isGranted('ROLE_HR') && !$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
@@ -164,7 +150,7 @@ class ScheduleController extends DashboardController {
 
         $this->dataService->approveSchedule($tempSchedule);
 
-        return $this->redirectToRoute('app_schedule_list');
+        return $this->redirectToRoute('app_schedule_run');
     }
 
     #[Route('/schedule/run', name: 'app_schedule_run')]
@@ -191,9 +177,13 @@ class ScheduleController extends DashboardController {
                 ],
                 'empty_data' => '01.01.2024',
             ])
-            ->add('count', NumberType::class, [
-                'label' => 'Количество',
-                'html5' => true,
+            ->add('count', ChoiceType::class, [
+                'label' => 'Источник данных исследований',
+                'choices' => [
+                    '1' => 1,
+                    '2' => 2,
+                    '3' => 3
+                ],
                 'row_attr'=>['class'=>'form-group mb-2 mr-2'],
                 'label_attr'=>['class'=>'col-form-label mr-2'],
                 'attr'=>[
@@ -237,6 +227,7 @@ class ScheduleController extends DashboardController {
             return $this->render('schedule/run.html.twig', [
                 'title' => 'Построить график',
                 'form' => $form->createView(),
+                'schedules' => $this->tempScheduleRepository->findBy([], ['id' => 'DESC']),
             ]);
         }
 
@@ -248,11 +239,9 @@ class ScheduleController extends DashboardController {
         $this->algorithmService->run($dateStart, $dateEnd, $data['count'], $data['maxDoctorsCount'], $data['isPredicated']);
 
         return $this->render('schedule/run.html.twig', [
-            'title' => 'Построить график',
+            'title' => 'Составленные расписания',
             'form' => $form->createView(),
-            'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
-            'doctors' => $this->doctorRepository->findAll(),
-            'scheduleId' => 6 // TODO: получать из алгоритма
+            'schedules' => $this->tempScheduleRepository->findBy([], ['id' => 'DESC'])
         ]);
     }
 
