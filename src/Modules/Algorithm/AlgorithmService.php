@@ -40,14 +40,12 @@ class AlgorithmService
         ini_set('memory_limit', '1024M');
 
         $this->initializeEnv();
-        // Список возможных решений
         $this->initializePopulation();
 
         for ($generation = 0; $generation < $this->generations; $generation++) {
             $this->population = $this->evolve($this->population);
         }
 
-        //Выбираем лучших из лучших
         $solution = $this->getBestSolution();
         //TODO: Анализ результата, предложения по возможным улучшениям
         file_put_contents(
@@ -68,8 +66,8 @@ class AlgorithmService
         $newPopulation = [];
 
         for ($i = 0; $i < $this->populationSize; $i++) {
-            $parent1 = $this->selectParent($population); // Из 3 рандомных выбирается лучший вариант
-            $parent2 = $this->selectParent($population); // Еще из 3 рандомных выбирается лучший вариант
+            $parent1 = $this->selectParent($population);
+            $parent2 = $this->selectParent($population);
 
             $offspring = $this->crossover($parent1, $parent2);
 
@@ -99,7 +97,6 @@ class AlgorithmService
 
     private function crossover(array $parent1, array $parent2): array
     {
-        // TODO работает не правильно (отсутствует проверка на корректность итоговых пересеченных данных)
         if (rand(0, 100) / 100.0 < $this->crossoverRate) {
             $crossoverPoint = rand(0, count($parent1) - 1);
             $child = array_merge(array_slice($parent1, 0, $crossoverPoint), array_slice($parent2, $crossoverPoint));

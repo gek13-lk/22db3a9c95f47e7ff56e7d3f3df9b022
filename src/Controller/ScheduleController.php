@@ -244,7 +244,8 @@ class ScheduleController extends DashboardController {
         $date = \DateTime::createFromFormat('Y-m-d', $request->get('date', $task->getDate()->format('Y-m-d')))->setTime(0,0);
         $timeStart = \DateTime::createFromFormat('Y-m-d H:i', $task->getDate()->format('Y-m-d') . ' ' . $request->get('timeStart', $task->getWorkTimeStart()->format('H:i')));
         $timeEnd = \DateTime::createFromFormat('Y-m-d H:i', $task->getDate()->format('Y-m-d') . ' ' . $request->get('timeEnd', $task->getWorkTimeEnd()->format('H:i')));
-        if($timeEnd->getTimestamp() < $timeEnd->getTimestamp()) {
+
+        if($timeEnd->getTimestamp() < $timeStart->getTimestamp()) {
             $timeEnd->modify('+1day');
         }
 
