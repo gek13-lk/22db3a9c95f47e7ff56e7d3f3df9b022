@@ -37,7 +37,7 @@ final class WeekStudiesCrudController extends AbstractCrudController {
         $trainingModelButton = Action::new('trainigModel', 'Обновить прогнозы')
             ->linkToCrudAction('training_model')
             ->createAsGlobalAction()
-            ->setCssClass('btn btn-primary');
+            ->setCssClass('btn btn-primary training-model');
 
         return $actions
             ->disable(Action::DELETE)
