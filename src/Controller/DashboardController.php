@@ -132,7 +132,7 @@ class DashboardController extends AbstractDashboardController
                     ->setPermission(new Expression('"ROLE_ADMIN" in role_names or "ROLE_HR" in role_names or "ROLE_MANAGER" in role_names')),
                 MenuItem::linkToRoute('Календарь', null, 'calendar'),
                 MenuItem::linkToRoute('Составить график', null, 'app_schedule_run')
-                    ->setPermission('ROLE_MANAGER'),
+                    ->setPermission(new Expression('"ROLE_ADMIN" in role_names or "ROLE_MANAGER" in role_names')),
             ]);
 
         yield MenuItem::subMenu('Сотрудники', 'icon-contact_mail')

@@ -23,37 +23,6 @@
             flex: 1;
         }
 
-        .table-responsive {
-            min-height: 480px;
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            right: 0;
-        }
-
-        thead > tr:first-child > th:first-child,
-        tbody > tr > td:first-child {
-            position: sticky;
-            left: 0;
-            z-index: 1010;
-        }
-
-        thead {
-            position: sticky;
-            top: 0;
-            z-index: 1020;
-            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.04);
-        }
-
-        .cal-toprow {
-            width: 120px;
-            min-width: 120px;
-            color: #3e5569;
-            background-color: #f7f9fb !important;
-            border: 1px solid #ebebeb !important;
-        }
-
         .export-button {
             min-width: 100%;
         }
@@ -62,8 +31,175 @@
             float: right;
             margin: 0 0 0 10px !important;
         }
+
+        /* TABLE */
+        #scheduler.table-responsive {
+            min-height: 480px;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        #scheduler .table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        #scheduler .cal-toprow {
+            width: 120px;
+            min-width: 120px;
+            color: #3e5569;
+            background-color: #f7f9fb !important;
+            border: 1px solid #ebebeb !important;
+        }
+
+        #scheduler .cal-view-part-start {
+            background-color: #005ce5
+        }
+
+
+        #scheduler .weekend {
+            background-color: #ebebeb;
+        }
+
+        #scheduler .cal-part-start,
+        #scheduler .cal-part-end {
+            min-width: 100px;
+            background-color: #ebebeb;
+        }
+
+        #scheduler .cal-schedule {
+            min-width: 150px;
+        }
+
+        #scheduler .cal-view-result {
+            min-width: 150px;
+        }
+
+        /* LOCK HEADER AND FIRST COLUMN */
+        #scheduler .table thead td,
+        #scheduler .table thead th {
+            border: 1px solid #005ae0;
+        }
+
+        #scheduler .table td,
+        #scheduler .table th {
+            padding: 5px !important;
+            vertical-align: top;
+            border: 1px solid #d2d2d2;
+        }
+
+        #scheduler .table thead > tr:first-child > th:first-child {
+            background-color: #06f;
+            border: 1px solid #005ae0;
+        }
+
+        #scheduler .table tbody > tr:nth-of-type(odd) > td:first-child {
+            background-color: #f2f2f2;
+            border: 1px solid #d2d2d2;
+        }
+
+        #scheduler .table tbody > tr:nth-of-type(even) > td:first-child {
+            background-color: #f7fafe;
+            border: 1px solid #d2d2d2;
+        }
+
+        #scheduler .table thead > tr:first-child > th:first-child,
+        #scheduler .table tbody > tr > td:first-child {
+            position: sticky;
+            left: -8px;
+            z-index: 1010;
+        }
+
+        #scheduler .table thead {
+            position: sticky;
+            top: 0px;
+            z-index: 1020;
+        }
+
+        /* USER TASKS */
+        #scheduler .details {
+            position: relative;
+            border-radius: 4px;
+            background: #fff;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            border: 1px solid #ebecee;
+            padding: 0px 0px 5px 10px;
+            margin: 2px;
+            z-index: 1;
+        }
+        #scheduler .details.drag:hover {
+            cursor: grab;
+        }
+        #scheduler .details.drag:active {
+            cursor: grabbing;
+        }
+
+        #scheduler .details.ui-draggable-dragging {
+            z-index: 1000;
+        }
+
+        #scheduler .details-uren {
+            font-size: 12px;
+            color: #333;
+            font-weight: 500;
+            margin: 0;
+            right: 0px;
+            text-align: right;
+            padding-right: 10px;
+        }
+
+        #scheduler .details-task {
+            margin-top: 5px;
+            margin-bottom: 2px;
+            font-size: 12px;
+            padding: 2px 5px;
+            font-weight: 600;
+            line-height: 1.4;
+            border-radius: 2px;
+            width: 94%;
+        }
+
+        /*EDIT*/
+        .opt-tools {
+            height: 100%;
+            width: 25px;
+            right: -21px;
+            position: absolute;
+            border: 1px solid #e8e8e8;
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+        .opt-edit,
+        .opt-trash {
+            height: 50%;
+            line-height: 25px;
+            text-align: center;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .opt-edit {
+            border-bottom: 1px solid #e8e8e8;
+            border-top-right-radius: 8px;
+            background-color: #fff;
+            color: #ff8e00;
+        }
+
+        .opt-edit:hover {
+            color: #fff;
+            background-color: #ff8e00;
+        }
+        .opt-trash {
+            border-bottom-right-radius: 8px;
+            background-color: #fff;
+            color: #cc0000;
+        }
+        .opt-trash:hover {
+            color: #fff;
+            background-color: #cc0000;
+        }
     </style>
-    <div class="col-12 table-responsive">
+    <div class="col-12 table-responsive" id="scheduler">
         <table class="table table-striped table-bordered">
             <thead class="cal-thead">
             <tr>
@@ -73,8 +209,8 @@
                 <th class="cal-view" rowspan="2">Ставка</th>
                 <th class="cal-view" rowspan="2">Таб. №</th>
                 <th class="cal-view-month" colspan="{{ calendars|length + 2 }}">Числа месяца</th>
-                <th class="cal-view" rowspan="2">Норма часов по графику</th>
-                <th class="cal-view" rowspan="2">Норма часов за полный месяц</th>
+                <th class="cal-view-result" rowspan="2">Норма часов по графику</th>
+                <th class="cal-view-result" rowspan="2">Норма часов за полный месяц</th>
             </tr>
             <tr>
                 {% for calendar in calendars %}
@@ -99,30 +235,61 @@
                     <td class="cal-userinfo"></td>
                     {% set partStart = 0 %}
                     {% set partEnd = 0 %}
-                    {% for calendar in calendars %}
-                        {% set schedule = null %}
-                        {% if schedule and loop.index0 < 15 %}
-                            {% set partStart = partStart + schedule.work_hours %}
-                        {% endif %}
 
-                        {% if schedule and loop.index0 >= 15 %}
-                            {% set partEnd = partEnd + schedule.work_hours %}
-                        {% endif %}
+
+                    {% set scheduleDoctor = findSchedule(scheduleId, doctor.id) %}
+                    {% for calendar in calendars %}
+                        {% set is_first_part = loop.index0 < 15 %}
+                        {% set is_last_part = loop.index0 >= 15 %}
 
                         {% if loop.index0 == 15 %}
-                            <th class="cal-part-start">{{ partStart }}</th>
+                            <td class="cal-part-start">{{ partStart|round(2) }}</td>
                         {% endif %}
 
-                        <th class="cal-schedule"></th>
+                        {% set filterScheduleDoctor = scheduleDoctor|filter(s => s.date == calendar.date) %}
+                        <td class="cal-schedule ui-droppable {% if calendar.holiday %}weekend{% endif %}" data-date="{{ calendar.date|date('Y-m-d') }}" data-doctor-id="{{ doctor.id }}">
+                            {% for schedule in filterScheduleDoctor %}
+                                {% if is_first_part %}
+                                    {% set partStart = partStart + schedule.workHours %}
+                                {% endif %}
+                                {% if is_last_part %}
+                                    {% set partEnd = partEnd + schedule.workHours %}
+                                {% endif %}
+
+                                {# @var schedule \App\Entity\TempDoctorSchedule #}
+                                <div class="drag details ui-draggable ui-draggable-handle" data-taskid="{{ schedule.id }}" data-doctor-id="{{ doctor.id }}" data-hour="{{ schedule.workHours|default(0)|round(2) }}">
+                                    <h3 class="details-task" style=" background: #7E7E7E; color: #FFFFFF">{{ schedule.tempScheduleWeekStudies.weekStudies.competency.modality }}</h3>
+                                    <div class="details-uren">
+                                        {{ schedule.workTimeStart ? schedule.workTimeStart|date('H:i')  : '---' }} - {{ schedule.workTimeEnd ? schedule.workTimeEnd|date('H:i')  : '---' }}
+                                    </div>
+                                    <div class="details-uren">
+                                        {{ schedule.workHours ? schedule.workHours|round(2)  : 0 }} часов
+                                    </div>
+                                    <div class="details-uren">
+                                        обед {{ schedule.offMinutes ? schedule.offMinutes|round(2)  : 0 }} минут
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </td>
                         {% if loop.last %}
-                            <th class="cal-part-end">{{ partEnd }}</th>
+                            <td class="cal-part-end">{{ partEnd|round(2) }}</td>
                         {% endif %}
                     {% endfor %}
-                    <td class="cal-userinfo">{{ partStart + partEnd }}</td>
+                    <td class="cal-part-main">{{ (partStart + partEnd)|round(2) }}</td>
                     <td class="cal-userinfo">155</td>
                 </tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
+{% endblock %}
+
+{% block body_javascript %}
+    {{ parent() }}
+    <script src="{{ asset('js/jquery-ui.min.js') }}"></script>
+    <script src="{{ asset('js/bootstrap-show-modal.js') }}"></script>
+    {% if can_edit is defined and can_edit %}
+        <script src="{{ asset('js/schedule.js') }}"></script>
+    {% endif %}
+
 {% endblock %}

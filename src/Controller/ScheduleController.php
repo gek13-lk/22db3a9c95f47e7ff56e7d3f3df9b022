@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\TempDoctorSchedule;
 use App\Entity\TempSchedule;
 use App\Modules\Algorithm\AlgorithmWeekService;
 use App\Modules\Algorithm\DataService;
@@ -9,12 +10,12 @@ use App\Modules\Algorithm\ExportService;
 use App\Modules\Algorithm\SetTimeAlgorithmService;
 use App\Repository\CalendarRepository;
 use App\Repository\DoctorRepository;
-use App\Repository\TempDoctorScheduleRepository;
 use App\Repository\TempScheduleRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
@@ -74,7 +75,8 @@ class ScheduleController extends DashboardController {
             'form' => $form->createView(),
             'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
-            'scheduleId' => $this->getScheduleByDate($date)?->getId()
+            'scheduleId' => $this->getScheduleByDate($date)?->getId() ?? 1,
+            'can_edit' => $this->isGranted('ROLE_MANAGER') || $this->isGranted('ROLE_ADMIN') ? 1 : 0
         ]);
     }
 
@@ -116,17 +118,21 @@ class ScheduleController extends DashboardController {
             'form' => $form->createView(),
             'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
-            'scheduleId' => $this->getScheduleByDate($date)?->getId()
+            'scheduleId' => $this->getScheduleByDate($date)?->getId() ?? 1
         ]);
     }
 
     #[Route('/schedule/run', name: 'app_schedule_run')]
     public function run(Request $request): Response {
-        $this->denyAccessUnlessGranted('ROLE_MANAGER');
+        if (!$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
 
         $data = [
             'month' => '01.01.2024',
             'count' => 1,
+            'maxDoctorsCount' => 260,
+            'isPredicated' => false
         ];
 
         $form = $this->createFormBuilder(options: ['attr'=>['class'=>'form-inline']])
@@ -143,6 +149,27 @@ class ScheduleController extends DashboardController {
             ->add('count', NumberType::class, [
                 'label' => 'Количество',
                 'html5' => true,
+                'row_attr'=>['class'=>'form-group mb-2 mr-2'],
+                'label_attr'=>['class'=>'col-form-label mr-2'],
+                'attr'=>[
+                    'class'=>'form-control',
+                ],
+            ])
+            ->add('maxDoctorsCount', NumberType::class, [
+                'label' => 'Количество врачей',
+                'html5' => true,
+                'row_attr'=>['class'=>'form-group mb-2 mr-2'],
+                'label_attr'=>['class'=>'col-form-label mr-2'],
+                'attr'=>[
+                    'class'=>'form-control',
+                ],
+            ])
+            ->add('isPredicated', ChoiceType::class, [
+                'label' => 'Источник данных исследований',
+                'choices' => [
+                    'Исходные данные' => false,
+                    'Спрогнозированные данные' => true
+                ],
                 'row_attr'=>['class'=>'form-group mb-2 mr-2'],
                 'label_attr'=>['class'=>'col-form-label mr-2'],
                 'attr'=>[
@@ -173,7 +200,7 @@ class ScheduleController extends DashboardController {
         $dateStart = (clone $date)->modify('first day of this month');
         $dateEnd = (clone $date)->modify('last day of this month');
 
-        $this->algorithmService->run($dateStart, $dateEnd, $data['count']);
+        $this->algorithmService->run($dateStart, $dateEnd, $data['count'], $data['maxDoctorsCount'], $data['isPredicated']);
 
         return $this->render('schedule/run.html.twig', [
             'title' => 'Построить график',
@@ -206,9 +233,22 @@ class ScheduleController extends DashboardController {
         return $this->file($file, 'schedule.xlsx', ResponseHeaderBag::DISPOSITION_INLINE);
     }
 
+    #[Route('/schedule/{task}/delete', name: 'app_schedule_task_delete', methods: ["DELETE"])]
+    public function delete(TempDoctorSchedule $task, EntityManagerInterface $entityManager): Response
+    {
+        if (!$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
+
+        $entityManager->remove($task);
+        $entityManager->flush();
+
+        return new JsonResponse();
+    }
+
     function getScheduleByDate(\DateTime $month): ?TempSchedule
     {
-        $entity = $this->tempScheduleRepository->findOneBy([], ['id' => 'DESC']); // TODO: приделать месяц
+        $entity = $this->tempScheduleRepository->findOneBy(['id' => 36], ['id' => 'DESC']); // TODO: приделать месяц
 
         return $entity;
     }
