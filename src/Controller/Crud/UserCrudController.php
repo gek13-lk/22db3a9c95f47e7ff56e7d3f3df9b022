@@ -13,6 +13,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
@@ -97,6 +98,20 @@ final class UserCrudController extends AbstractCrudController {
             ->renderAsBadges()
             ->setSortable(false)
             ->hideOnDetail();
+
+        yield EmailField::new('email', 'Адрес электронной почты')
+            ->setRequired(true)
+            ->onlyOnForms();
+
+        yield TextField::new('surname', 'Фамилия')
+            ->setRequired(true)
+            ->onlyOnForms();
+        yield TextField::new('firstname', 'Имя')
+            ->setRequired(true)
+            ->onlyOnForms();
+        yield TextField::new('middlename', 'Отчество')
+            ->setRequired(true)
+            ->onlyOnForms();
 
 
         yield FormField::addColumn()
