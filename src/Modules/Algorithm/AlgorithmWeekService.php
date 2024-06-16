@@ -19,7 +19,7 @@ class AlgorithmWeekService
     private array $calendar;
     private array $doctorsStat = [];
     private const EVOLUTION_COUNT = 20;
-    private const POPULATION_COUNT = 10;
+    private const POPULATION_COUNT = 2;
 
     /** @var Competencies[]  */
     private array $modalities;
@@ -30,11 +30,12 @@ class AlgorithmWeekService
     private array $doctors;
     private \DateTime $endDay;
 
-    private const AVERAGE_SCORE = 100000;
+    private const AVERAGE_SCORE = 10000000;
     private const LOW_LEVEL = 'LOW_LEVEL';
     private const MIDDLE_LEVEL = 'MIDDLE_LEVEL';
     private const HIGH_LEVEL = 'HIGH_LEVEL';
     private const SUPER_HIGH_LEVEL = 'SUPER_HIGH_LEVEL';
+    private int $maxDoctorsCount = 0;
 
     public function __construct(private EntityManagerInterface $entityManager, private SetTimeAlgorithmService $timeAlgorithmService)
     {
@@ -48,8 +49,9 @@ class AlgorithmWeekService
     }
 
     // Основной метод для генерации расписания
-    public function run(\DateTime $startDay, \DateTime $endDay, int $countSchedule): array
+    public function run(\DateTime $startDay, \DateTime $endDay, int $countSchedule, int $maxDoctorsCount = 260, bool $isPredicated = false): array
     {
+        $this->maxDoctorsCount = $maxDoctorsCount;
         $this->endDay = $endDay;
         $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers(
             $startDay, $endDay
@@ -91,15 +93,16 @@ class AlgorithmWeekService
     {
         $population = [];
         //TODO: Это для отладки
-        for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
-            $schedule = $this->createRandomSchedule();
-            $tempScheduleEntity = $this->saveTempSchedule($schedule, 1);
-        }
+//        for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
+//            $schedule = $this->createRandomSchedule();
+//            //dd($schedule);
+//            $tempScheduleEntity = $this->saveTempSchedule($schedule, 1);
+//        }
 
         //TODO: Это рабочий вариант
-        /*for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
+        for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
             $population[] = $this->createRandomSchedule();
-        }*/
+        }
 
         return $population;
     }
@@ -253,10 +256,10 @@ class AlgorithmWeekService
                             $this->addDoctorStat($doctor, $currentDateString, $doctorTimeStat, $modalityWeek, $modalityCompetency, $ostPerDayCount, $modalityDoctorMaxCountPerShift);
                         } elseif ($ostPerDayCount >= $modalityDoctorMinimalCountPerShift) {
                             //TODO: Возможно Можно заменить на максимум?
-                            $countPerShift = rand(
-                                (int)round($modalityDoctorMinimalCountPerShift),
-                                (int)floor($modalityDoctorMaxCountPerShift)
-                            );
+                            /*rand(
+                                (int)round($modalityDoctorMinimalCountPerShift),*/
+                            $countPerShift = (int)floor($modalityDoctorMaxCountPerShift);
+                            //);
                             $ostPerDayCount = $ostPerDayCount - $countPerShift;
                             $this->addDoctorStat($doctor, $currentDateString, $doctorTimeStat, $modalityWeek, $modalityCompetency, $countPerShift, $modalityDoctorMaxCountPerShift);
                         } else {
@@ -406,6 +409,14 @@ class AlgorithmWeekService
         array $doctorsAlreadyInDay,
         \DateTime $currentDay
     ): ?Doctor {
+        $doctorsCount = count(array_unique($this->doctorsInSchedule));
+
+        $isMaxCount = false;
+
+        if ($doctorsCount === $this->maxDoctorsCount) {
+            $isMaxCount = true;
+        }
+
         $doctors = [];
         //Пытаемся получить врачей, которые подходят и которым получится продолжить цикл графика
         // (стараемся не вводить новых врачей в расписание)
@@ -419,6 +430,12 @@ class AlgorithmWeekService
             $doctors = array_filter($doctorsIn, function (Doctor $doctor) use ($currentDay) {
                 return !$this->isDayOff($doctor, $currentDay) && $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDay, $this->doctorsStat);
             });
+
+            if ($isMaxCount) {
+                $doctors = array_filter($doctors, function (Doctor $doctor) {
+                   return in_array($doctor->getId(), $this->doctorsInSchedule);
+                });
+            }
         }
 
         /* -------------------- Если таких врачей нет ---------------------------- */
@@ -432,6 +449,12 @@ class AlgorithmWeekService
             $doctors = array_filter($doctors, function (Doctor $doctor) use ($currentDay) {
                 return !$this->isDayOff($doctor, $currentDay) && $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDay, $this->doctorsStat);
             });
+
+            if ($isMaxCount) {
+                $doctors = array_filter($doctors, function (Doctor $doctor) {
+                    return in_array($doctor->getId(), $this->doctorsInSchedule);
+                });
+            }
         }
 
         /* -------------------- Если таких врачей нет ---------------------------- */
@@ -446,6 +469,12 @@ class AlgorithmWeekService
             $doctors = array_filter($doctorsIn, function (Doctor $doctor) use ($currentDay) {
                 return !$this->isDayOff($doctor, $currentDay) && $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDay, $this->doctorsStat);
             });
+
+            if ($isMaxCount) {
+                $doctors = array_filter($doctors, function (Doctor $doctor) {
+                    return in_array($doctor->getId(), $this->doctorsInSchedule);
+                });
+            }
         }
 
         /* -------------------- Если таких врачей нет ---------------------------- */
@@ -459,6 +488,12 @@ class AlgorithmWeekService
             $doctors = array_filter($doctors, function (Doctor $doctor) use ($currentDay) {
                 return !$this->isDayOff($doctor, $currentDay) && $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDay, $this->doctorsStat);
             });
+
+            if ($isMaxCount) {
+                $doctors = array_filter($doctors, function (Doctor $doctor) {
+                    return in_array($doctor->getId(), $this->doctorsInSchedule);
+                });
+            }
         }
 
         if (count($doctors) > 0) {
@@ -473,7 +508,7 @@ class AlgorithmWeekService
     {
         for ($i = 0; $i < self::EVOLUTION_COUNT && count($population)/2 >= $countSchedule; $i++) {
             $newPopulation = [];
-            if ($this->calculateFitness($population[0]) < self::AVERAGE_SCORE) {
+            if ($this->calculateFitness($population[0])) {
                 return $population;
             }
             for ($i = 0; $i < count($population) / 2 && count($population) > 1; $i++) {
@@ -521,7 +556,7 @@ class AlgorithmWeekService
                 foreach ($week as $day) {
                     // TODO (1 проверка)  количество неназначенных исследований
                     if ($day['empty'] !== null) {
-                        $fitness += $day['empty'] * 10; // штраф за неназначенное исследование (ввести очки)
+                        $fitness += $day['empty']; // штраф за неназначенное исследование (ввести очки)
                     }
 
                     // TODO Подсчет загрузки врачей и рабочих дней для выполнения следующих проверок
@@ -547,7 +582,7 @@ class AlgorithmWeekService
         // TODO (2 проверка) Расчет очков на основе равномерности распределения врачей по дням: Если врач не работал в течение недели, то добавляется штраф.
         foreach ($doctorDaysWorked as $daysWorked) {
             if (count($daysWorked) < 5) {
-                $fitness += (5 - count($daysWorked)) * 10;
+                $fitness += (5 - count($daysWorked));
             }
         }
 
@@ -555,7 +590,7 @@ class AlgorithmWeekService
         // TODO (3 проверка) Учет перегрузки врачей
         foreach ($doctorWorkloads as $workload) {
             if ($workload > 5) { // если количество назначений в неделю больше 5, добавляем штраф
-                $fitness += ($workload - 5) * 20; // Штраф за перегрузку врача
+                $fitness += ($workload - 5); // Штраф за перегрузку врача
             }
         }
 
@@ -598,7 +633,7 @@ class AlgorithmWeekService
             }
 
             if ($maxConsecutiveDaysOff > 2) {
-                $fitness += ($maxConsecutiveDaysOff - 2) * 5; // Штраф за большое количество выходных дней подряд
+                $fitness += ($maxConsecutiveDaysOff - 2); // Штраф за большое количество выходных дней подряд
             }
         }
 
@@ -623,9 +658,9 @@ class AlgorithmWeekService
         for ($i = 1; $i <= count($individual); $i++) {
             foreach ($this->modalities as $modality) {
                 $rand = array_rand($individual[$i][$modality->getModality()]);
-                $doctor = $this->getRandomDoctorWhoCan($modality, $individual[$i][$modality->getModality()][$rand]);
+                $doctorsId = array_filter(array_keys($individual[$i][$modality->getModality()][$rand]), fn ($id) => $id !== 'empty');
+                $doctor = $this->getRandomDoctorWhoCan($modality, $doctorsId, new \DateTime($rand));
                 if ($doctor) {
-                    $doctorsId = array_filter(array_flip(array_keys($individual[$i][$modality->getModality()][$rand])), fn ($id) => $id !== 'empty');
                     if ($doctorsId) {
                         $randDoctorId = array_rand($doctorsId);
                         $individual[$i][$modality->getModality()][$rand][$randDoctorId] = $doctor->getId();
