@@ -269,7 +269,7 @@
                                      data-time-end="{{ schedule.workTimeEnd ? schedule.workTimeEnd|date('H:i')  : '' }}"
                                      data-off-minutes="{{ schedule.offMinutes ? schedule.offMinutes|round(2)  : 0 }}"
                                 >
-                                    <h3 class="details-task" style=" background: #7E7E7E; color: #FFFFFF">{{ schedule.tempScheduleWeekStudies.weekStudies.competency.modality }}</h3>
+                                    <h3 class="details-task" style=" background: #7E7E7E; color: #FFFFFF">{{ schedule.tempScheduleWeekStudies.weekStudies ? schedule.tempScheduleWeekStudies.weekStudies.competency.modality : schedule.tempScheduleWeekStudies.predicatedWeekStudies.competency.modality}}</h3>
                                     <div class="details-uren details-time">
                                         <span>{{ schedule.workTimeStart ? schedule.workTimeStart|date('H:i')  : '---' }} - {{ schedule.workTimeEnd ? schedule.workTimeEnd|date('H:i')  : '---' }}</span>
                                     </div>

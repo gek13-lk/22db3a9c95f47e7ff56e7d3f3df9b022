@@ -16,7 +16,7 @@ class TempScheduleWeekStudies
 
     #[ORM\ManyToOne(targetEntity: WeekStudies::class)]
     #[ORM\JoinColumn(nullable: true)]
-    private WeekStudies $weekStudies;
+    private ?WeekStudies $weekStudies = null;
 
     #[ORM\Column(type: 'integer')]
     private int $empty;
@@ -26,7 +26,7 @@ class TempScheduleWeekStudies
 
     #[ORM\ManyToOne(targetEntity: PredictedWeekStudies::class)]
     #[ORM\JoinColumn(nullable: true)]
-    private PredictedWeekStudies $predicatedWeekStudies;
+    private ?PredictedWeekStudies $predicatedWeekStudies = null;
 
     public function getId(): ?int
     {
@@ -44,17 +44,6 @@ class TempScheduleWeekStudies
         return $this;
     }
 
-    public function getWeekStudies(): WeekStudies
-    {
-        return $this->weekStudies;
-    }
-
-    public function setWeekStudies(WeekStudies $weekStudies): TempScheduleWeekStudies
-    {
-        $this->weekStudies = $weekStudies;
-        return $this;
-    }
-
     public function getTempSchedule(): TempSchedule
     {
         return $this->tempSchedule;
@@ -66,14 +55,35 @@ class TempScheduleWeekStudies
         return $this;
     }
 
-    public function getPredicatedWeekStudies(): PredictedWeekStudies
+    /**
+     * @return WeekStudies|null
+     */
+    public function getWeekStudies(): ?WeekStudies
+    {
+        return $this->weekStudies;
+    }
+
+    /**
+     * @param WeekStudies|null $weekStudies
+     */
+    public function setWeekStudies(?WeekStudies $weekStudies): void
+    {
+        $this->weekStudies = $weekStudies;
+    }
+
+    /**
+     * @return PredictedWeekStudies|null
+     */
+    public function getPredicatedWeekStudies(): ?PredictedWeekStudies
     {
         return $this->predicatedWeekStudies;
     }
 
-    public function setPredicatedWeekStudies(PredictedWeekStudies $predicatedWeekStudies): self
+    /**
+     * @param PredictedWeekStudies|null $predicatedWeekStudies
+     */
+    public function setPredicatedWeekStudies(?PredictedWeekStudies $predicatedWeekStudies): void
     {
         $this->predicatedWeekStudies = $predicatedWeekStudies;
-        return $this;
     }
 }
