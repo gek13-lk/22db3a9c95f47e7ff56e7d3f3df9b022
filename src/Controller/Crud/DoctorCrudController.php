@@ -19,6 +19,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
@@ -91,7 +92,7 @@ class DoctorCrudController extends AbstractCrudController {
             ->setFormTypeOption('empty_data', '')
             ->setRequired(true)
             ->onlyWhenCreating();
-        yield TextField::new('info.email', 'Адрес электронной почты')
+        yield EmailField::new('info.email', 'Адрес электронной почты')
             ->setRequired(true)
             ->onlyOnForms();
 
@@ -165,6 +166,7 @@ class DoctorCrudController extends AbstractCrudController {
                 'ФЛГ' => 'ФЛГ',
                 'ММГ' => 'ММГ',
             ])
+            ->setRequired(false)
             ->setColumns('col-12')
             ->allowMultipleChoices()
             ->renderAsBadges();

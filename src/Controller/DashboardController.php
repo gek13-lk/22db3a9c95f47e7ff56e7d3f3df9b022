@@ -69,20 +69,20 @@ class DashboardController extends AbstractDashboardController
                     if ($dateShel->getWorkTimeEnd()->format('d') > $dateShel->getWorkTimeStart()->format('d')) {
 
                         $calendarEvents[] = [
-                            'title' => 'Смена c ' . $dateShel->getWorkTimeStart()->format('H:i') . ' по ' . "23:59",
+                            'title' => 'Смена c ' . $dateShel->getWorkTimeStart()->format('H:i') . ' до ' . "23:59",
                             'start' => $dateShel->getWorkTimeStart()->format('Y-m-d H:i:s'),
                             'end' => $dateShel->getWorkTimeStart()->format('Y-m-d')." 23:59:59",
                         ];
 
                         $calendarEvents[] = [
-                            'title' => 'Смена c 00:00 по ' .$dateShel->getWorkTimeEnd()->format('H:i'),
+                            'title' => 'Смена c 00:00 до ' .$dateShel->getWorkTimeEnd()->format('H:i'),
                             'start' => $dateShel->getWorkTimeEnd()->format('Y-m-d')." 00:00:00",
                             'end' => $dateShel->getWorkTimeEnd()->format('Y-m-d H:i:s'),
                         ];
 
                     } else {
                         $calendarEvents[] = [
-                            'title' => 'Смена c ' . $dateShel->getWorkTimeStart()->format('H:i') . ' по ' . $dateShel->getWorkTimeEnd()->format('H:i'),
+                            'title' => 'Смена c ' . $dateShel->getWorkTimeStart()->format('H:i') . ' до ' . $dateShel->getWorkTimeEnd()->format('H:i'),
                             'start' => $dateShel->getWorkTimeStart()->format('Y-m-d H:i:s'),
                             'end' => $dateShel->getWorkTimeEnd()->format('Y-m-d H:i:s'),
                         ];
