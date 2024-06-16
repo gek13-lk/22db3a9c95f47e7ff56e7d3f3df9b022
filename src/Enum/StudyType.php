@@ -25,7 +25,7 @@ enum StudyType: string
             self::RG->value => 'РГ',
             self::FLG->value => 'ФЛГ',
             self::MMG->value => 'ММГ',
-            self::DENSITOMETER->value => 'Денситометр',
+            self::DENSITOMETER->value => 'Денситометрия',
             self::CT_WITH_KU_1_ZONE->value => 'КТ с КУ 1 зона',
             self::MRI_WITH_KU_1_ZONE->value => 'МРТ с КУ 1 зона',
             self::CT_WITH_KU_MORE_THAN_1_ZONE->value => 'КТ с КУ 2 и более зон',

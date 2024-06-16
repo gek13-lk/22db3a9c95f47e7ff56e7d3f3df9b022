@@ -31,6 +31,9 @@ class PredictedWeekStudies
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private bool $isNew = true;
 
+    #[ORM\Column(type: 'date', nullable: true)]
+    private ?\DateTime $startOfWeek = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -99,6 +102,18 @@ class PredictedWeekStudies
     public function setIsNotNew(): self
     {
         $this->setIsNew(false);
+
+        return $this;
+    }
+
+    public function getStartOfWeek(): \DateTime
+    {
+        return $this->startOfWeek;
+    }
+
+    public function setStartOfWeek(\DateTime $startOfWeek): self
+    {
+        $this->startOfWeek = $startOfWeek;
 
         return $this;
     }
