@@ -230,4 +230,16 @@ class DataService
 
         return (array_merge([$title], $scheduleData));
     }
+
+    public function approveSchedule(TempSchedule $tempSchedule): void
+    {
+        $oldSchedule = $this->entityManager->getRepository(TempSchedule::class)->findOneBy(['date' => $tempSchedule->getDate()]);
+        $oldSchedule->setIsApproved(false);
+        $this->entityManager->persist($oldSchedule);
+
+        $tempSchedule->setIsApproved(true);
+        $this->entityManager->persist($tempSchedule);
+
+        $this->entityManager->flush();
+    }
 }
