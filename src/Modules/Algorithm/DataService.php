@@ -6,12 +6,15 @@ namespace App\Modules\Algorithm;
 
 use App\Entity\Competencies;
 use App\Entity\Doctor;
+use App\Entity\PredictedWeekStudies;
 use App\Entity\Studies;
 use App\Entity\TempDoctorSchedule;
 use App\Entity\TempSchedule;
+use App\Entity\WeekStudies;
 use App\Repository\CalendarRepository;
 use App\Repository\DoctorRepository;
 use App\Repository\TempDoctorScheduleRepository;
+use App\Service\PredictionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 
@@ -22,7 +25,8 @@ class DataService
         private CalendarRepository $calendarRepository,
         private DoctorRepository $doctorRepository,
         private TempDoctorScheduleRepository $tempDoctorScheduleRepository,
-        private Security $security
+        private Security $security,
+        private PredictionService $predictionService
     )
     {
     }
@@ -244,5 +248,37 @@ class DataService
         $this->entityManager->persist($tempSchedule);
 
         $this->entityManager->flush();
+    }
+
+    public function getPredictedData(\DateTime $date)
+    {
+        $weekNumbers = $this->entityManager->getRepository(PredictedWeekStudies::class)->findBy([
+            'weekNumber' => $date->format('m'),
+            'year' => $date->format('Y'),
+            'isNew' => true
+        ]);
+
+        if (!empty($weekNumbers)) {
+            $result = $weekNumbers;
+        } else {
+            $result = $this->predictionService->getPredictedDataByDate($date);
+        }
+
+        $weekStudies = [];
+
+        /** @var WeekStudies $value */
+        foreach ($result as $value) {
+            $weekStudies[$value->getId()]['competency'] = $value->getCompetency()->getModality();
+            $weekStudies[$value->getId()]['weekNumber'] = $value->getWeekNumber();
+            $weekStudies[$value->getId()]['year'] = $value->getYear();
+            $weekStudies[$value->getId()]['count'] = $value->getCount();
+        }
+
+        $title[] = 'Модальность';
+        $title[] = 'Номер недели';
+        $title[] = 'Год';
+        $title[] = 'Количество';
+
+        return (array_merge([$title], $weekStudies));
     }
 }

@@ -1,0 +1,12 @@
+{% extends 'schedule/index.html.twig' %}
+
+{% block page_actions %}
+    <div class="col" style="margin-bottom: 50px">
+        {{ form(form) }}
+        <a href="{{ path('train_export_csv', { 'date': date|date('d.m.Y') }) }}" type="button" class="btn btn-success">CSV</a>
+        <a href="{{ path('train_export_xlsx', { 'date': date|date('d.m.Y') }) }}" type="button" class="btn btn-success">XLSX</a>
+    </div>
+{% endblock %}
+
+{% block main %}
+{% endblock %}
