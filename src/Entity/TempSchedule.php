@@ -14,6 +14,7 @@ class TempSchedule
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
+
     #[ORM\Column(type: 'datetime')]
     private \DateTime $createdAt;
 
@@ -25,6 +26,9 @@ class TempSchedule
 
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $fitness = null;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false, "comment" => "Утвержден руководителем"])]
+    private bool $isApproved = false;
 
     public function __construct() {
         $this->createdAt = new \DateTime();
@@ -75,6 +79,17 @@ class TempSchedule
     public function setDate(?\DateTimeInterface $date): TempSchedule
     {
         $this->date = $date;
+        return $this;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->isApproved;
+    }
+
+    public function setIsApproved(bool $isApproved): TempSchedule
+    {
+        $this->isApproved = $isApproved;
         return $this;
     }
 }
