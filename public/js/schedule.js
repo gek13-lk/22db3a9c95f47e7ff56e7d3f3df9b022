@@ -59,8 +59,6 @@ $(function() {
                 },
                 complete: () => {$("#loading-wrapper").fadeOut(500);},
             });
-
-
         }
     });
 
@@ -126,6 +124,92 @@ $(function() {
                     },
                 });
 
+            }
+        }).show();
+    });
+
+    // Modal remove task ?
+    $(document).on("click", ".opt-edit", function () {
+        var $task = $(this).parent().parent();
+
+        $.showConfirm({
+            title:"Изменить",
+            body: '<div class="form-group"><label>Начало смены<input type="time" name="timeStart" class="form-control" value="'+$task.data('time-start')+'" /></label></div>'+
+                '<div class="form-group"><label>Конец смены<input type="time" name="timeEnd" class="form-control" value="'+$task.data('time-end')+'" /></label></div>'+
+                '<div class="form-group"><label>Обед (минут)<input type="number" name="offMinutes" class="form-control" value="'+$task.data('off-minutes')+'" /></label></div>',
+            textTrue:'Сохранить',
+            textFalse:'Отменить',
+            onSubmit: function (result, modal) {
+                if (!result) return;
+
+                var timeStart = $(modal.bodyElement).find('input[name=timeStart]').val();
+                var timeEnd = $(modal.bodyElement).find('input[name=timeEnd]').val();
+                var offMinutes = $(modal.bodyElement).find('input[name=offMinutes]').val();
+
+                $.ajax({
+                    url: '/schedule/'+ $task.data('taskid')+'/edit',
+                    type: 'PUT',
+                    processing: true,
+                    data: { timeStart: timeStart, timeEnd: timeEnd, offMinutes: offMinutes },
+                    beforeSend: () => {$("#loading-wrapper").fadeIn(500);},
+                    success: function(data){
+                        var date = parseInt($task.parent().data('date').substr(8,2));
+                        var month = parseInt($task.parent().data('date').substr(5,2));
+                        var years = parseInt($task.parent().data('date').substr(0,4));
+
+                        var $tdResult;
+                        var $tdResultMain = $task.closest('tr').find('.cal-part-main');
+
+                        if (date <= 15) {
+                            $tdResult =$task.closest('tr').find('.cal-part-start');
+                        } else {
+
+                            $tdResult =$task.closest('tr').find('.cal-part-end');
+                        }
+
+                        var dateStart = new Date(
+                            years,
+                            month -1,
+                            date,
+                            timeStart.substr(0,2),
+                            timeStart.substr(3,2),
+                        );
+
+                        var dateEnd = new Date(
+                            years,
+                            month -1,
+                            date,
+                            timeEnd.substr(0,2),
+                            timeEnd.substr(3,2),
+                        );
+
+                        if (dateEnd < dateStart) {
+                            dateEnd.setDate(dateEnd.getDate()+1);
+                        }
+
+                        var hour = (dateEnd.getTime() - dateStart.getTime());
+                        hour /= 1000 * 60;
+                        hour -= offMinutes;
+                        hour /= 60;
+
+
+                        changeResult($tdResult, (-1) * $task.data('hour') + rounded(hour,2));
+                        changeResult($tdResultMain, (-1) * $task.data('hour') + rounded(hour,2));
+
+                        $task.data('hour', rounded(hour,2));
+                        $task.data('time-start', timeStart);
+                        $task.data('time-end', timeEnd);
+                        $task.data('off-minutes', offMinutes);
+
+                        $task.find('.details-time > span').html(timeStart + ' - ' + timeEnd);
+                        $task.find('.details-hour > span').html(rounded(hour,2));
+                        $task.find('.details-off-minutes > span').html(offMinutes);
+                    },
+                    error: function(result) {
+                        alert('Ошибка удаления! Обновите страницу и попробуйте еще раз!')
+                    },
+                    complete: () => {$("#loading-wrapper").fadeOut(500);},
+                });
             }
         }).show();
     });
