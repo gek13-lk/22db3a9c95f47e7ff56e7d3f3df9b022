@@ -52,5 +52,20 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
+VOLUME /app/var/
+
+# https://getcomposer.org/doc/03-cli.md#composer-allow-superuser
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
+COPY --link ./ ./
+
 RUN set -eux; \
-    mkdir -p /app/var/cache /app/var/log /app/var/session
+	composer install --no-cache --prefer-dist --no-dev --no-autoloader --no-scripts --no-progress
+
+
+RUN set -eux; \
+	mkdir -p var/cache var/log; \
+	composer dump-autoload --classmap-authoritative --no-dev; \
+	composer dump-env prod; \
+	composer run-script --no-dev post-install-cmd; \
+	chmod +x bin/console; sync;
