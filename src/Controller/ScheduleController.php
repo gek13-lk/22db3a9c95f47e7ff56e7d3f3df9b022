@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\TempDoctorSchedule;
 use App\Entity\TempSchedule;
 use App\Modules\Algorithm\AlgorithmWeekService;
 use App\Modules\Algorithm\DataService;
@@ -10,9 +11,11 @@ use App\Modules\Algorithm\SetTimeAlgorithmService;
 use App\Repository\CalendarRepository;
 use App\Repository\DoctorRepository;
 use App\Repository\TempScheduleRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
@@ -72,7 +75,8 @@ class ScheduleController extends DashboardController {
             'form' => $form->createView(),
             'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
-            'scheduleId' => $this->getScheduleByDate($date)?->getId() ?? 1
+            'scheduleId' => $this->getScheduleByDate($date)?->getId() ?? 1,
+            'can_edit' => $this->isGranted('ROLE_MANAGER') || $this->isGranted('ROLE_ADMIN') ? 1 : 0
         ]);
     }
 
@@ -227,6 +231,19 @@ class ScheduleController extends DashboardController {
         $file = $this->exportService->exportXlsx($data);
 
         return $this->file($file, 'schedule.xlsx', ResponseHeaderBag::DISPOSITION_INLINE);
+    }
+
+    #[Route('/schedule/{task}/delete', name: 'app_schedule_task_delete', methods: ["DELETE"])]
+    public function delete(TempDoctorSchedule $task, EntityManagerInterface $entityManager): Response
+    {
+        if (!$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
+
+        $entityManager->remove($task);
+        $entityManager->flush();
+
+        return new JsonResponse();
     }
 
     function getScheduleByDate(\DateTime $month): ?TempSchedule
