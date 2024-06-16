@@ -27,7 +27,7 @@ class ScheduleController extends DashboardController {
         private DoctorRepository $doctorRepository,
         private TempScheduleRepository $tempScheduleRepository,
         private DataService $dataService,
-        private ExportService $exportService
+        private ExportService $exportService,
     )
     {
     }
@@ -116,6 +116,51 @@ class ScheduleController extends DashboardController {
             'doctors' => $doctors,
             'scheduleId' => $this->getScheduleByDate($date)?->getId() ?? 1
         ]);
+    }
+
+    #[Route('/schedule/list', name: 'app_schedule_list')]
+    public function scheduleList(Request $request): Response {
+        if (!$this->isGranted('ROLE_HR') && !$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
+
+        $schedules = $this->tempScheduleRepository->findBy([], ['id' => 'DESC']);
+
+        return $this->render('schedule/list.html.twig', [
+            'title' => 'Составленные расписания',
+            'schedules' => $schedules
+        ]);
+    }
+
+    #[Route('/schedule/{tempSchedule}', name: 'app_schedule_temp')]
+    public function tempSchedule(TempSchedule $tempSchedule): Response {
+        if (!$this->isGranted('ROLE_HR') && !$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
+
+        $date = $tempSchedule->getDate();
+        $dateStart = (clone $date)->modify('first day of this month');
+        $dateEnd = (clone $date)->modify('last day of this month');
+
+        $doctors = $this->doctorRepository->findAll();
+
+        return $this->render('schedule/schedule.html.twig', [
+            'title' => 'Расписание',
+            'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
+            'doctors' => $doctors,
+            'scheduleId' => $tempSchedule->getId()
+        ]);
+    }
+
+    #[Route('/schedule/approve/{tempSchedule}', name: 'app_schedule_approve')]
+    public function approve(TempSchedule $tempSchedule): Response {
+        if (!$this->isGranted('ROLE_HR') && !$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('нет прав');
+        }
+
+        $this->dataService->approveSchedule($tempSchedule);
+
+        return $this->redirectToRoute('app_schedule_list');
     }
 
     #[Route('/schedule/run', name: 'app_schedule_run')]
