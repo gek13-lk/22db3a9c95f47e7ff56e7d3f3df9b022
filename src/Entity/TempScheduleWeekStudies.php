@@ -15,6 +15,7 @@ class TempScheduleWeekStudies
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: WeekStudies::class)]
+    #[ORM\JoinColumn(nullable: true)]
     private WeekStudies $weekStudies;
 
     #[ORM\Column(type: 'integer')]
@@ -22,6 +23,10 @@ class TempScheduleWeekStudies
 
     #[ORM\ManyToOne(targetEntity: TempSchedule::class)]
     private TempSchedule $tempSchedule;
+
+    #[ORM\ManyToOne(targetEntity: PredictedWeekStudies::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    private PredictedWeekStudies $predicatedWeekStudies;
 
     public function getId(): ?int
     {
@@ -58,6 +63,17 @@ class TempScheduleWeekStudies
     public function setTempSchedule(TempSchedule $tempSchedule): TempScheduleWeekStudies
     {
         $this->tempSchedule = $tempSchedule;
+        return $this;
+    }
+
+    public function getPredicatedWeekStudies(): PredictedWeekStudies
+    {
+        return $this->predicatedWeekStudies;
+    }
+
+    public function setPredicatedWeekStudies(PredictedWeekStudies $predicatedWeekStudies): self
+    {
+        $this->predicatedWeekStudies = $predicatedWeekStudies;
         return $this;
     }
 }
