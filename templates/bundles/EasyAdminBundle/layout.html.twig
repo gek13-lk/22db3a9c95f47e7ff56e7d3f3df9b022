@@ -109,9 +109,9 @@
                         <li class="dropdown">
                             {% set user_menu_avatar %}
                                 {% if null == ea.userMenu.avatarUrl %}
-                                    <img class="user-avatar" src="{{ asset('img/user/user' ~ (app.user.id % 20) ~ '.png') }}" />
+                                    <img class="user-avatar" style="border-radius: 100%" src="{{ asset('img/user/user' ~ (app.user.id % 20) ~ '.png') }}" />
                                 {% else %}
-                                    <img class="user-avatar" src="{{ ea.userMenu.avatarUrl }}" />
+                                    <img class="user-avatar" style="border-radius: 100%" src="{{ ea.userMenu.avatarUrl }}" />
                                 {% endif %}
                             {% endset %}
                             {% set user_menu_username %}
