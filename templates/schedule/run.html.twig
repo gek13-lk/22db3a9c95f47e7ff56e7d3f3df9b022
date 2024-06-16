@@ -1,0 +1,13 @@
+{% extends 'schedule/index.html.twig' %}
+
+{% block page_actions %}
+    <div class="col">
+        {{ form(form) }}
+    </div>
+{% endblock %}
+
+{% block main %}
+    {% if calendars is defined and calendars %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}

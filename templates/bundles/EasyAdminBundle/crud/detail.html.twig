@@ -1,0 +1,97 @@
+{# @var ea \EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext #}
+{# @var entities \EasyCorp\Bundle\EasyAdminBundle\Collection\EntityCollection #}
+{# @var paginator \EasyCorp\Bundle\EasyAdminBundle\Orm\EntityPaginator #}
+{% extends '@!EasyAdmin/crud/detail.html.twig' %}
+
+{% block page_actions %}{% endblock %}
+
+{% block main %}
+    {% block detail_fields %}
+        {% for field in entity.fields %}
+            {% if field.isFormLayoutField %}
+                {{ _self.render_layout_field(field) }}
+            {% else %}
+                {{ _self.render_field_contents(entity, field) }}
+            {% endif %}
+        {% endfor %}
+    {% endblock detail_fields %}
+
+    {% block delete_form %}
+        {{ include('@EasyAdmin/crud/includes/_delete_form.html.twig', { entity_id: entity.primaryKeyValue }, with_context = false) }}
+    {% endblock delete_form %}
+{% endblock %}
+
+{% macro render_field_contents(entity, field) %}
+    <div class="form-group {{ field.cssClass }}">
+        {% if field.label is same as (false) %}
+            {# a FALSE label value means that the field doesn't even display the <label> element;
+               use an empty string to not display a label but keep the <label> element to not mess with the layout #}
+        {% else %}
+            <label for="fullName">
+                    {{ field.label|trans|raw }}
+            </label>
+        {% endif %}
+
+        <div class="form-control">{{ include(field.templatePath, { field: field, entity: entity }, with_context = false) }}</div>
+    </div>
+{% endmacro %}
+
+{% macro render_layout_field(field) %}
+    {% if field.formType == 'EasyCorp\\Bundle\\EasyAdminBundle\\Form\\Type\\Layout\\EaFormTabListType' %}
+        {{ _self.render_tab_list(field) }}
+    {% elseif field.formType == 'EasyCorp\\Bundle\\EasyAdminBundle\\Form\\Type\\Layout\\EaFormTabPaneGroupOpenType' %}
+        {{ _self.render_tab_group_open(field) }}
+    {% elseif field.formType == 'EasyCorp\\Bundle\\EasyAdminBundle\\Form\\Type\\Layout\\EaFormTabPaneGroupCloseType' %}
+        {{ _self.render_tab_group_close(field) }}
+    {% elseif field.formType == 'EasyCorp\\Bundle\\EasyAdminBundle\\Form\\Type\\Layout\\EaFormTabPaneOpenType' %}
+        {{ _self.render_tab_open(field) }}
+    {% elseif field.formType == 'EasyCorp\\Bundle\\EasyAdminBundle\\Form\\Type\\Layout\\EaFormTabPaneCloseType' %}
+        {{ _self.render_tab_close(field) }}
+    {% elseif field.formType == 'EasyCorp\\Bundle\\EasyAdminBundle\\Form\\Type\\Layout\\EaFormColumnGroupOpenType' %}
+        {{ _self.render_column_group_open(field) }}
+    {% elseif field.formType == 'EasyCorp\\Bundle\\EasyAdminBundle\\Form\\Type\\Layout\\EaFormColumnGroupCloseType' %}
+        {{ _self.render_column_group_close(field) }}
+    {% elseif field.formType == 'EasyCorp\\Bundle\\EasyAdminBundle\\Form\\Type\\Layout\\EaFormColumnOpenType' %}
+        {{ _self.render_column_open(field) }}
+    {% elseif field.formType == 'EasyCorp\\Bundle\\EasyAdminBundle\\Form\\Type\\Layout\\EaFormColumnCloseType' %}
+        {{ _self.render_column_close(field) }}
+    {% elseif field.formType == 'EasyCorp\\Bundle\\EasyAdminBundle\\Form\\Type\\Layout\\EaFormFieldsetOpenType' %}
+        {{ _self.render_fieldset_open(field) }}
+    {% elseif field.formType == 'EasyCorp\\Bundle\\EasyAdminBundle\\Form\\Type\\Layout\\EaFormFieldsetCloseType' %}
+        {{ _self.render_fieldset_close(field) }}
+    {% endif %}
+{% endmacro %}
+
+{% macro render_column_group_open(field) %}
+    {# if columns are inside tabs, don't add a '.row' element because the tab pane already opens it #}
+    {% if not field.getFormTypeOption('ea_is_inside_tab')|default(false) %}
+<div class="row w-100">
+    {% endif %}
+    {% endmacro %}
+
+    {% macro render_column_group_close(field) %}
+    {# if columns are inside tabs, don't add a '.row' element because the tab pane already opens it #}
+    {% if not field.getFormTypeOption('ea_is_inside_tab')|default(false) %}
+</div>
+    {% endif %}
+{% endmacro %}
+
+{% macro render_column_open(field) %}
+    {% set field_icon = field.getCustomOption('icon') %}
+    {% set column_has_title = field_icon != null or field.label != false or field.label != null or field.label != '' or field.help != null %}
+
+<div class="form-column {{ not column_has_title ? 'form-column-no-header' }} {{ field.cssClass }}">
+    <div class="card">
+    {% if column_has_title %}
+        {% if field.label %}<div class="card-header">
+            <div class="card-title">{{ field.label|trans(domain = ea.i18n.translationDomain)|raw }}</div>
+        </div>{% endif %}
+    {% endif %}
+        <div class="card-body">
+    {% endmacro %}
+
+    {% macro render_column_close(field) %}
+        </div>
+    </div>
+</div>
+    {% endmacro %}

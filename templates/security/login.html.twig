@@ -1,0 +1,46 @@
+{% extends '@!EasyAdmin/page/content.html.twig' %}
+
+{% block page_title %}
+    Референс-центр - Вход
+{% endblock %}
+
+{% block head_stylesheets %}
+    <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('css/main.min.css') }}"/>
+{% endblock %}
+
+{% block body %}
+    <body class="authentication">
+    <div class="container">
+        <div class="row justify-content-md-center">
+            <div class="col-xl-5 col-md-6 col-sm-12">
+                <div class="login-screen">
+                    <div class="login-box">
+                        <a href="#" class="login-logo">
+                            Референс-центр. <h3>Графики</h3>
+                        </a>
+                        <h4>Добро пожаловать!</h4> <br/>
+                        <h5>Введите логин и пароль.</h5>
+
+                        {{ form_start(loginForm) }}
+                        {{ form_row(loginForm.csrf_token) }}
+                        {{ form_row(loginForm.username) }}
+                        {{ form_row(loginForm.password) }}
+
+                        <div class="actions">
+                            <a href="{{ forgot_password_path|default('#') }}">Восстановить пароль</a>
+                            <button type="submit" class="btn btn-info">Войти</button>
+                        </div>
+                        <hr>
+                        <div class="m-0">
+                        <span class="additional-link">Нет аккаунта? <a href="{{ path('app_register') }}"
+                                                                       class="btn btn-secondary">Зарегистрироваться</a></span>
+                        </div>
+                        {{ form_end(loginForm) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </body>
+{% endblock %}

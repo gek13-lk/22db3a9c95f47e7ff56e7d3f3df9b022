@@ -3,15 +3,18 @@ version: '3.8'
 services:
   app:
     build:
-      context: ./docker/php
+      context: ./
+      dockerfile: ./docker/php/Dockerfile
     environment:
       PHP_IDE_CONFIG: ${PHP_IDE_CONFIG:-serverName=docker}
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
       XDEBUG_TRIGGER: 'yes'
     volumes:
       - ./:/app:cached
+      - cache-data:/app/var:cached
     depends_on:
       - rabbitmq
+      - db
     networks:
       - app-network
 
@@ -43,6 +46,20 @@ services:
     ports:
       - "8000:8000"
 
+  worker:
+    build:
+      context: ./docker/django
+    command: >
+      /bin/sh -c "
+      python manage.py run_worker
+      "
+    volumes:
+      - ./docker/django/:/usr/src/app/
+    depends_on:
+      - rabbitmq
+    networks:
+      - app-network
+
   db:
     image: postgres:16-alpine
     ports:
@@ -69,7 +86,35 @@ services:
     networks:
       - app-network
 
+
+  migrate:
+    build:
+      context: ./
+      dockerfile: ./docker/php/Dockerfile
+    environment:
+      PHP_IDE_CONFIG: ${PHP_IDE_CONFIG:-serverName=docker}
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+      XDEBUG_TRIGGER: 'yes'
+    volumes:
+      - ./:/app:cached
+      - cache-data:/app/var:cached
+    command:  >
+      /bin/sh -c "
+      php bin/console doctrine:database:create --if-not-exists &&
+      php bin/console doctrine:migration:migrate &&
+      php bin/console app:sync:privileges &&
+      php bin/console app:holiday:update &&
+      chown 777 -R var/cache
+      "
+    depends_on:
+      - rabbitmq
+      - db
+      - app
+    networks:
+      - app-network
+
 volumes:
+  cache-data:
   db-data:
   rabbitmq-data:
 

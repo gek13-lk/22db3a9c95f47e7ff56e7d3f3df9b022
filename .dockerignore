@@ -1,0 +1,5 @@
+.idea
+docker
+var
+vendor
+docker-compose.yaml

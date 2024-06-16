@@ -7,11 +7,23 @@ namespace App\Modules\Algorithm;
 use App\Entity\Competencies;
 use App\Entity\Doctor;
 use App\Entity\Studies;
+use App\Entity\TempDoctorSchedule;
+use App\Entity\TempSchedule;
+use App\Repository\CalendarRepository;
+use App\Repository\DoctorRepository;
+use App\Repository\TempDoctorScheduleRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 
 class DataService
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private CalendarRepository $calendarRepository,
+        private DoctorRepository $doctorRepository,
+        private TempDoctorScheduleRepository $tempDoctorScheduleRepository,
+        private Security $security
+    )
     {
     }
 
@@ -138,5 +150,84 @@ class DataService
         }
 
         return date('Y-m-d', mt_rand($secondDate->getTimestamp(), $firstDate->getTimestamp()));
+    }
+
+    public function getScheduleById(TempSchedule $tempSchedule, bool $onlyMy = false)
+    {
+        $doctorSchedules = $this->tempDoctorScheduleRepository->findByTempSchedule($tempSchedule);
+
+        $dateStart = (clone $doctorSchedules[0]->getDate())->modify('first day of this month');
+        $dateEnd = $doctorSchedules[0]->getDate()->modify('last day of this month');
+
+        $calendars = $this->calendarRepository->getRange($dateStart, $dateEnd);
+
+        $title[] = 'Врач';
+        $title[] = 'Модальность';
+        $title[] = 'Дополнительные модальности';
+        $title[] = 'Ставка';
+        $title[] = 'Таб';
+
+        $i = 1;
+        foreach ($calendars as $calendar) {
+            $title[] = $calendar->getDate()->format('d.m.Y');
+            if($i === 15) {
+                $title[] = 'Итого за 1 пол. месяца';
+            }
+            $i++;
+        }
+        $title[] = 'Итого за 2 пол. месяца';
+        $title[] = 'Норма часов по графику';
+        $title[] = 'Норма часов за полный месяц';
+
+        if ($onlyMy) {
+            $doctors = $this->doctorRepository->findBy(['user' => $this->security->getUser()]);
+        } else {
+            $doctors = $this->doctorRepository->findAll();
+        }
+
+        /** @var Doctor $doctor */
+        foreach ($doctors as $doctor) {
+            $workHours = 0;
+            $allWorkHours = 0;
+            $scheduleData[$doctor->getId()] = [
+                'doctor' => $doctor->getFio() ?? $doctor->getId(),
+                'modality' =>  \implode(',',  $doctor->getCompetency()),
+                'addonModality' =>  \implode(',',  $doctor->getAddonCompetencies()),
+                "stavka" => $doctor->getStavka(),
+                "tab" => ""
+            ];
+            $doctorSchedules = $this->tempDoctorScheduleRepository->findByTempScheduleAndDoctor($tempSchedule->getId(), $doctor->getId());
+            $i = 1;
+            foreach ($calendars as $calendar) {
+                $sch = array_filter($doctorSchedules, fn(TempDoctorSchedule $sch) => $sch->getDate() == $calendar->getDate());
+                if(!empty($sch)){
+                    /** @var TempDoctorSchedule $doctorSchedule */
+                    foreach ($sch as $doctorSchedule) {
+                        $schedule = [$doctorSchedule->getTempScheduleWeekStudies()->getWeekStudies()->getCompetency()->getModality(),
+                            ' с ' . $doctorSchedule->getWorkTimeStart()->format('d.m.Y H:m:s') ?? '---',
+                            ' до ' . $doctorSchedule->getWorkTimeEnd()->format('d.m.Y H:m:s') ?? '---',
+                            ($doctorSchedule->getWorkHours() ?? '---') . ' часов',
+                            ($doctorSchedule->getOffMinutes() ?? '---'). ' минут',
+                        ];
+                        $scheduleData[$doctor->getId()][$calendar->getDate()->format('d.m.Y')] = \implode(' ', $schedule);
+                        $workHours += $doctorSchedule->getWorkHours() ?? 0;
+                    }
+                } else {
+                    $scheduleData[$doctor->getId()][$calendar->getDate()->format('d.m.Y')] = null;
+                }
+                if($i == 15) {
+                    $scheduleData[$doctor->getId()]['Итого за 1 пол. месяца'] = $workHours;
+                    $allWorkHours += $workHours;
+                    $workHours = 0;
+                }
+                $i++;
+            }
+
+            $scheduleData[$doctor->getId()]['Итого за 2 пол. месяца'] = $workHours;
+            $scheduleData[$doctor->getId()]['Норма часов по графику'] = $allWorkHours + $workHours;
+            $scheduleData[$doctor->getId()]['Норма часов за полный месяц'] = 155;
+        }
+
+        return (array_merge([$title], $scheduleData));
     }
 }

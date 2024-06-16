@@ -17,7 +17,7 @@ enum StudyType: string
     case CT_WITH_KU_MORE_THAN_1_ZONE = 'ct_with_ku_more_than_1_zone';
     case MRI_WITH_KU_MORE_THAN_1_ZONE = 'mri_with_ku_more_than_1_zone';
 
-    private static function labels(): array
+    public static function labels(): array
     {
         return [
             self::CT->value => 'КТ',

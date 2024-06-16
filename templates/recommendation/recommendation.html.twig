@@ -1,0 +1,32 @@
+{% extends '@!EasyAdmin/page/content.html.twig' %}
+
+{% block main %}
+    {% for key, groupRecommendation in recommendations %}
+    <div class='col-md-3'>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    {{ key }}
+                </div>
+            </div>
+            <div style="height: 500px; overflow-y: scroll;">
+            {% for recommendation in groupRecommendation %}
+            <div class="card-body">
+            <div class="events-container">
+                <div class="event-list">
+                    <div class="event-icon bg-warning">
+                        <i class="fa-solid fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="event-info">
+                        <div class="event-title">{{ recommendation.problem }}</div>
+                        <div class="event-date">{{ recommendation.solution }}</div>
+                    </div>
+                </div>
+                </div>
+                </div>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endblock %}

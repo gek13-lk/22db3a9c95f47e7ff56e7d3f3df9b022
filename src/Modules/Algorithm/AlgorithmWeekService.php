@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Algorithm;
 
+use App\Entity\Calendar;
 use App\Entity\Competencies;
 use App\Entity\Doctor;
+use App\Entity\OffDoctorDays;
 use App\Entity\TempDoctorSchedule;
 use App\Entity\TempSchedule;
 use App\Entity\TempScheduleWeekStudies;
@@ -14,6 +16,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class AlgorithmWeekService
 {
+    private array $calendar;
     private array $doctorsStat = [];
     private const EVOLUTION_COUNT = 20;
     private const POPULATION_COUNT = 10;
@@ -22,7 +25,7 @@ class AlgorithmWeekService
     private array $modalities;
     private array $doctorsInSchedule = [];
     private string $currentDay;
-
+    private array $offDoctorDays;
     private array $weeksNumber;
     private array $doctors;
     private \DateTime $endDay;
@@ -32,29 +35,37 @@ class AlgorithmWeekService
     private const MIDDLE_LEVEL = 'MIDDLE_LEVEL';
     private const HIGH_LEVEL = 'HIGH_LEVEL';
     private const SUPER_HIGH_LEVEL = 'SUPER_HIGH_LEVEL';
+    private int $maxDoctorsCount = 0;
 
-    public function __construct(private EntityManagerInterface $entityManager)
+    public function __construct(private EntityManagerInterface $entityManager, private SetTimeAlgorithmService $timeAlgorithmService)
     {
         $this->modalities = $this->entityManager->getRepository(Competencies::class)->findAll();
 
         $this->doctors = $this->entityManager->getRepository(Doctor::class)->findAll();
+        /*$this->doctors = $this->entityManager->getRepository(Doctor::class)->findBy([
+            'id' => 61
+        ]);*/
+        $this->offDoctorDays = $this->entityManager->getRepository(OffDoctorDays::class)->findAll();
     }
 
     // Основной метод для генерации расписания
-    public function run(\DateTime $startDay, \DateTime $endDay, int $countSchedule): void
+    public function run(\DateTime $startDay, \DateTime $endDay, int $countSchedule, int $maxDoctorsCount = 260, bool $isPredicated = false): array
     {
+        $this->maxDoctorsCount = $maxDoctorsCount;
         $this->endDay = $endDay;
         $this->weeksNumber = $this->entityManager->getRepository(WeekStudies::class)->getAllWeekNumbers(
             $startDay, $endDay
         );
+        $this->calendar = $this->entityManager->getRepository(Calendar::class)->getRange($startDay, $endDay);
         set_time_limit(600);
         ini_set('memory_limit', '-1');
-        // Инициализация начальной популяции
+        // Инициализация начальной популяции (список расписаний, рандомно составленных на основе ограничений)
         $population = $this->initializePopulation();
 
-        // Эволюция популяции
+        // Эволюция популяции  (попытки улучшения расписания)
         $evolutionPopulation = $this->evolvePopulation(array_values($population), $countSchedule);
 
+        // Расчитываем баллы расписания (оцениваем его)
         $evolutionPopulation = array_map(
             fn($ep) => [
                 'schedule' => $ep,
@@ -68,21 +79,30 @@ class AlgorithmWeekService
 
         $bestPopulation = [];
 
+        // Выбираем наилучшие расписания по оценкам и сохраняем в БД
         for ($i = 0; $i < $countSchedule; $i++) {
             $tempScheduleEntity = $this->saveTempSchedule($evolutionPopulation[$i]['schedule'], $evolutionPopulation[$i]['fitnessScore']);
             $bestPopulation[$tempScheduleEntity->getId()] = $evolutionPopulation[$i]['schedule'];
         }
 
-        dd($bestPopulation);
+        return $bestPopulation;
     }
 
     // Метод для инициализации начальной популяции
     private function initializePopulation(): array
     {
         $population = [];
+        //TODO: Это для отладки
         for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
-            $population[] = $this->createRandomSchedule();
+            $schedule = $this->createRandomSchedule();
+            //dd($schedule);
+            $tempScheduleEntity = $this->saveTempSchedule($schedule, 1);
         }
+
+        //TODO: Это рабочий вариант
+        /*for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
+            $population[] = $this->createRandomSchedule();
+        }*/
 
         return $population;
     }
@@ -94,14 +114,15 @@ class AlgorithmWeekService
         $this->entityManager->persist($tempScheduleEntity);
 
         foreach ($randomSchedule as $weekNumber => $scheduleForModality) {
+            $weekStudiesByWeek = $this->entityManager->getRepository(WeekStudies::class)->findBy([
+                'weekNumber' => $weekNumber,
+            ]);
             foreach ($scheduleForModality as $modality => $scheduleWeek) {
-                $competency = $this->entityManager->getRepository(Competencies::class)->findOneBy([
-                    'modality' => $modality
-                ]);
-                $weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findOneBy([
-                    'weekNumber' => $weekNumber,
-                    'competency' => $competency
-                ]);
+                /** @var Competencies $competency */
+                $competency = current(array_filter($this->modalities, fn(Competencies $comp) => $comp->getModality() === $modality));
+                /** @var WeekStudies $weekStudies */
+                $weekStudies = current(array_filter($weekStudiesByWeek, fn(WeekStudies $ws) => $ws->getCompetency() === $competency));
+
                 $tempScheduleWeekStudies = new TempScheduleWeekStudies();
                 $tempScheduleWeekStudies->setTempSchedule($tempScheduleEntity);
                 $tempScheduleWeekStudies->setWeekStudies($weekStudies);
@@ -113,11 +134,16 @@ class AlgorithmWeekService
                             continue;
                         }
 
-                        $doctor = $this->entityManager->getRepository(Doctor::class)->find($idDoctor);
+                        $doctor = current(array_filter($this->doctors, fn(Doctor $doc) => $doc->getId() === $idDoctor));
                         $tempDoctorSchedule = new TempDoctorSchedule();
                         $tempDoctorSchedule->setDoctor($doctor);
                         $tempDoctorSchedule->setDate(new \DateTime($day));
                         $tempDoctorSchedule->setTempScheduleWeekStudies($tempScheduleWeekStudies);
+                        $tempDoctorSchedule->setOffMinutes($stat['time']['off'] ?? null);
+                        $tempDoctorSchedule->setWorkHours($stat['time']['hours'] ?? null);
+                        $tempDoctorSchedule->setWorkTimeEnd($stat['time']['end'] ?? null);
+                        $tempDoctorSchedule->setWorkTimeStart($stat['time']['start'] ?? null);
+                        $tempDoctorSchedule->setStudyCount($stat['get'] ?? null);
                         $this->entityManager->persist($tempDoctorSchedule);
                     }
                 }
@@ -132,20 +158,55 @@ class AlgorithmWeekService
         return $tempScheduleEntity;
     }
 
+    private function addDoctorStat(Doctor $doctor, string $currentDay, array $time, WeekStudies $modalityWeek, Competencies $modalityCompetency, int $countPerShift, $modalityDoctorMaxCountPerShift): void
+    {
+        if (!isset($this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['get'])) {
+            $this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['get'] = 0;
+            //$this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['doMax'] = 0;
+        }
+
+        if (!isset($this->doctorsStat[$doctor->getId()]['coefficient'])) {
+            $this->doctorsStat[$doctor->getId()]['coefficient'] = 0;
+            $this->doctorsStat[$doctor->getId()]['shiftCount'] = 0;
+        }
+
+        $this->doctorsStat[$doctor->getId()]['days'][$currentDay] = $time;
+        $this->doctorsStat[$doctor->getId()]['lastShiftType'] = $time['lastShiftType'];
+        $this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['get'] += $countPerShift;
+        //$this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['doMax'] = (int)$modalityDoctorMaxCountPerShift - $countPerShift;
+        $this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['time'] = $time;
+        $this->doctorsInDay[] = $doctor->getId();
+        $this->doctorsInSchedule[] = $doctor->getId();
+        $this->doctorsStat[$doctor->getId()]['coefficient'] += $countPerShift * $modalityCompetency->getCoefficient();
+        $this->doctorsStat[$doctor->getId()]['shiftCount']++;
+    }
+
+    private array $schedule = [];
+    private array $doctorsInDay = [];
+    private array $doctorsTwoOffInWeek = [];
+
     // Метод для создания случайного расписания
     private function createRandomSchedule(): array
     {
-        $schedule = [];
+        $this->schedule = [];
         $this->doctorsStat = [];
         $this->doctorsInSchedule = [];
         foreach ($this->weeksNumber as $weekNumber) {
+            $this->doctorsTwoOffInWeek = [];
             //Перемешиваем модальности в неделе
+            //TODO: Убрать запрос
             /** @var WeekStudies[] $weekStudies */
             $weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
                 'weekNumber' => $weekNumber['weekNumber'],
                 'year' => $weekNumber['year'],
             ]);
             shuffle($weekStudies);
+            /*$comp = $this->entityManager->getRepository(Competencies::class)->find(3);
+            $weekStudies = $this->entityManager->getRepository(WeekStudies::class)->findBy([
+                'year' => 2024,
+                'competency' => $comp,
+                'weekNumber' => $weekNumber['weekNumber']
+                ], ['startOfWeek' => 'ASC']);*/
 
             $dayCount = 6;
 
@@ -162,26 +223,28 @@ class AlgorithmWeekService
                 $modalityDayCount = (int)($modalityWeek->getCount() / 7);
                 $cyclePerDayCount = floor($modalityDayCount / $modalityCompetency->getMinimalCountPerShift());
                 $ostPerDayCount = 0;
-
+                $modalityHourMinCount = $modalityCompetency->getMinimalCountPerShift() / 8;
+                $modalityHourMaxCount = $modalityCompetency->getMaxCountPerShift() / 8;
                 for ($day = 0; $day <= $dayCount; $day++) {
                     $currentDate = (clone $modalityWeek->getStartOfWeek())->modify('+ ' . $day . ' days');
                     $currentDateString = $currentDate->format('Y-m-d');
                     $this->currentDay = $currentDateString;
                     //TODO: Можно остатки раскидывать по врачам, у которых есть компетенции в этом дне
-                    $doctorsInDay = [];
-                    $schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString]['empty'] = 0;
+                    $this->doctorsInDay = [];
+                    $this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString]['empty'] = 0;
                     //Добавляем остаток с предыдущего дня (если есть)
                     $ostPerDayCount = $ostPerDayCount + $modalityDayCount;
 
                     //TODO: Если у нас количество исследований изначально меньше минимальной нормы,
                     // то мы должны попытаться раскидать это на врачей, которым уже назначены другие исследования в этот день, чтобы не брать нового врача
                     for ($i = 0; $i <= $cyclePerDayCount; $i++) {
-                        $schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString]['empty'] = $ostPerDayCount;
-                        $doctor = $this->getRandomDoctorWhoCan($modalityCompetency, $doctorsInDay);
+                        $this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString]['empty'] = $ostPerDayCount;
+                        $doctor = $this->getRandomDoctorWhoCan($modalityCompetency, $this->doctorsInDay, $currentDate);
 
                         if ($doctor) {
-                            $modalityDoctorMinimalCountPerShift = round($modalityCompetency->getMinimalCountPerShift() * $doctor->getStavka());
-                            $modalityDoctorMaxCountPerShift = floor($modalityCompetency->getMaxCountPerShift() * $doctor->getStavka());
+                            $doctorTimeStat = $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDate, $this->doctorsStat);
+                            $modalityDoctorMinimalCountPerShift = round($modalityHourMinCount * $doctorTimeStat['hours']);
+                            $modalityDoctorMaxCountPerShift = floor($modalityHourMaxCount * $doctorTimeStat['hours']);
                         }
 
                         if (!$doctor) {
@@ -189,59 +252,42 @@ class AlgorithmWeekService
                             // из других модальностей получится что-то взять
                             continue 2;
                         } elseif ($ostPerDayCount >= $modalityDoctorMinimalCountPerShift && $ostPerDayCount <= $modalityDoctorMaxCountPerShift) {
-                            $schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString][$doctor->getId()]['get'] = $ostPerDayCount;
-                            $schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString][$doctor->getId()]['doMax'] = (int)$modalityDoctorMaxCountPerShift - $ostPerDayCount;
-                            $doctorsInDay[] = $doctor->getId();
-                            $this->doctorsStat[$doctor->getId()]['coefficient'] = $ostPerDayCount * $modalityCompetency->getCoefficient();
-                            $this->doctorsStat[$doctor->getId()]['shiftCount']++;
                             $ostPerDayCount = 0;
-                            $schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString]['empty'] = $ostPerDayCount;
-                            $this->doctorsInSchedule[] = $doctor->getId();
-                            continue 2;
+                            $this->addDoctorStat($doctor, $currentDateString, $doctorTimeStat, $modalityWeek, $modalityCompetency, $ostPerDayCount, $modalityDoctorMaxCountPerShift);
                         } elseif ($ostPerDayCount >= $modalityDoctorMinimalCountPerShift) {
                             //TODO: Возможно Можно заменить на максимум?
-                            $countPerShift = rand(
-                                (int)round($modalityDoctorMinimalCountPerShift),
-                                (int)floor($modalityDoctorMaxCountPerShift)
-                            );
-                            $schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString][$doctor->getId()]['get'] = $countPerShift;
-                            $schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString][$doctor->getId()]['doMax'] = (int)$modalityDoctorMaxCountPerShift - $countPerShift;
+                            /*rand(
+                                (int)round($modalityDoctorMinimalCountPerShift),*/
+                            $countPerShift = (int)floor($modalityDoctorMaxCountPerShift);
+                            //);
                             $ostPerDayCount = $ostPerDayCount - $countPerShift;
-                            $doctorsInDay[] = $doctor->getId();
-                            $this->doctorsInSchedule[] = $doctor->getId();
-                            $this->doctorsStat[$doctor->getId()]['coefficient'] = $countPerShift * $modalityCompetency->getCoefficient();
-                            $this->doctorsStat[$doctor->getId()]['shiftCount']++;
+                            $this->addDoctorStat($doctor, $currentDateString, $doctorTimeStat, $modalityWeek, $modalityCompetency, $countPerShift, $modalityDoctorMaxCountPerShift);
                         } else {
-                            $ostPerDayCount = $this->setOnActiveDoctors($schedule, $ostPerDayCount, $currentDateString, $modalityCompetency->getModality(), $modalityWeek->getWeekNumber());
+                            //$ostPerDayCount = $this->setOnActiveDoctors($ostPerDayCount, $currentDateString, $modalityCompetency->getModality(), $modalityWeek->getWeekNumber());
 
                             //TODO: Возможно это делать только на последнем дне недели ?
                             if ($ostPerDayCount > 0) {
-                                $schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString][$doctor->getId()]['get'] = $ostPerDayCount;
-                                $schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString][$doctor->getId()]['doMax'] = (int)$modalityDoctorMaxCountPerShift - $ostPerDayCount;
-                                $doctorsInDay[] = $doctor->getId();
-                                $this->doctorsInSchedule[] = $doctor->getId();
-                                $this->doctorsStat[$doctor->getId()]['coefficient'] = $ostPerDayCount * $modalityCompetency->getCoefficient();
-                                $this->doctorsStat[$doctor->getId()]['shiftCount']++;
                                 $ostPerDayCount = 0;
+                                $this->addDoctorStat($doctor, $currentDateString, $doctorTimeStat, $modalityWeek, $modalityCompetency, $ostPerDayCount, $modalityDoctorMaxCountPerShift);
                             }
 
-                            $schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString]['empty'] = $ostPerDayCount;
+                            $this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDateString]['empty'] = $ostPerDayCount;
                             continue 2;
                         }
                     }
-
-                    //TODO: После составления расписания на день, пытаемся уравновесить нагрузку по врачам
                 }
             }
         }
 
-        return $schedule;
+        $this->timeAlgorithmService->timeBalance($this->schedule);
+
+        return $this->schedule;
     }
 
     // Пытаемся раскидать по врачам, которые уже в расписании
-    private function setOnActiveDoctors(array $schedule, int $ostatok, string $currentDateString, string $modality, int $weekNumber): int
+    private function setOnActiveDoctors(int $ostatok, string $currentDateString, string $modality, int $weekNumber): int
     {
-        foreach ($schedule[$weekNumber][$modality][$currentDateString] as $key => $doctorDaySchedule) {
+        foreach ($this->schedule[$weekNumber][$modality][$currentDateString] as $key => $doctorDaySchedule) {
             if ($key === 'empty') {
                 continue;
             }
@@ -267,21 +313,48 @@ class AlgorithmWeekService
         return $ostatok;
     }
 
-    private function isDayOff(Doctor $doctor): bool
+    private function isHoliday(\DateTime $currentDay): bool
     {
+        /** @var Calendar[] $calendarDay */
+        $calendarDay = array_filter($this->calendar, fn(Calendar $day) => $day->getDate() == $currentDay);
+
+        return (bool) current($calendarDay)->getHoliday();
+    }
+
+    //TODO: Посмотреть количество запросов из-за первой строки в методе. Есть еще в проставлении времени схожий момент
+    private function isDayOff(Doctor $doctor, \DateTime $currentDay): bool
+    {
+        /* Есть запрошенный и утвержденный выходной (отгул) на этот день */
+        $offDay = array_filter(
+            $this->offDoctorDays, fn(OffDoctorDays $offDays) => $doctor === $offDays->getDoctor() &&
+            $offDays->getDate() == $currentDay && $offDays->isApproved()
+        );
+
+        if (!empty($offDay)) {
+            if(!isset($this->doctorsStat[$doctor->getId()]['shiftCount'])) {
+                $this->doctorsStat[$doctor->getId()]['shiftCount'] = 0;
+            }
+            //TODO: Тут вопрос - если отпросился, его график же не сдвигается никаким образом?
+            // + изначально не закладываю логику, что отпросится могут на выходной день.
+            if (!current($offDay)->isVacation()) {
+                $this->doctorsStat[$doctor->getId()]['shiftCount']++;
+            }
+
+            return true;
+        }
+
         $doctorWorkSchedule = $doctor->getWorkSchedule();
 
-        //TODO: Мб добавить здесь добавление какого-то по дефолту??
+        //TODO: добавить здесь добавление какого-то "наилучшего" для расписания графика работы
         if (!$doctorWorkSchedule) {
             return true;
         }
 
-        if(!in_array($doctor->getId(), $this->doctorsStat)) {
-            $this->doctorsStat[$doctor->getId()] = [
-                'offCount' => 0,
-                'shiftCount' => 0,
-                'lastOffDay' => null,
-            ];
+        // Если сотрудник выбрал выходные по выходным дням.
+        if ($doctorWorkSchedule->isHolidayOff() && $this->isHoliday($currentDay)) {
+            $this->doctorsStat[$doctor->getId()]['offCount'] = 0;
+            $this->doctorsStat[$doctor->getId()]['shiftCount'] = 0;
+            return true;
         }
 
         // Инициализация
@@ -292,12 +365,22 @@ class AlgorithmWeekService
             return false;
         }
 
-        if(!in_array('offCount', $this->doctorsStat[$doctor->getId()])) {
+        if (!isset($this->doctorsStat[$doctor->getId()]['offCount'])) {
             $this->doctorsStat[$doctor->getId()]['offCount'] = 0;
         }
 
-        if(!in_array('lastOffDay', $this->doctorsStat[$doctor->getId()])) {
-            $this->doctorsStat[$doctor->getId()]['lastOffDay'] = 0;
+        if (!isset($this->doctorsStat[$doctor->getId()]['lastOffDay'])) {
+            $this->doctorsStat[$doctor->getId()]['lastOffDay'] = null;
+        }
+
+        //Выходные (2 дня подряд, раз в неделю) для графика День - ночь
+        if ($doctorWorkSchedule->getType() === 'День-ночь' && !in_array($doctor->getId(), $this->doctorsTwoOffInWeek) && $this->doctorsStat[$doctor->getId()]['offCount'] == 1) {
+            if ($this->doctorsStat[$doctor->getId()]['lastOffDay'] != $this->currentDay) {
+                $this->doctorsStat[$doctor->getId()]['offCount']++;
+                $this->doctorsStat[$doctor->getId()]['lastOffDay'] = $this->currentDay;
+            }
+
+            return false;
         }
 
         // Выходные закончились
@@ -305,7 +388,6 @@ class AlgorithmWeekService
             $this->doctorsStat[$doctor->getId()]['lastOffDay'] != $this->currentDay) {
             $this->doctorsStat[$doctor->getId()]['offCount'] = 0;
             $this->doctorsStat[$doctor->getId()]['shiftCount'] = 0;
-
             return false;
         }
 
@@ -315,7 +397,6 @@ class AlgorithmWeekService
                 $this->doctorsStat[$doctor->getId()]['offCount']++;
                 $this->doctorsStat[$doctor->getId()]['lastOffDay'] = $this->currentDay;
             }
-
             return true;
         }
 
@@ -325,10 +406,18 @@ class AlgorithmWeekService
     // Метод для получения случайного врача с нужной компетенцией
     private function getRandomDoctorWhoCan(
         Competencies $competency,
-        array $doctorsAlreadyInDay
+        array $doctorsAlreadyInDay,
+        \DateTime $currentDay
     ): ?Doctor {
-        $doctors = [];
+        $doctorsCount = count(array_unique($this->doctorsInSchedule));
 
+        $isMaxCount = false;
+
+        if ($doctorsCount === $this->maxDoctorsCount) {
+            $isMaxCount = true;
+        }
+
+        $doctors = [];
         //Пытаемся получить врачей, которые подходят и которым получится продолжить цикл графика
         // (стараемся не вводить новых врачей в расписание)
         if (!empty($this->doctorsInSchedule)) {
@@ -338,11 +427,18 @@ class AlgorithmWeekService
                     && in_array($competency->getModality(), $doctor->getCompetency())
             );
 
-            $doctors = array_filter($doctorsIn, function (Doctor $doctor) {
-                return !$this->isDayOff($doctor);
+            $doctors = array_filter($doctorsIn, function (Doctor $doctor) use ($currentDay) {
+                return !$this->isDayOff($doctor, $currentDay) && $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDay, $this->doctorsStat);
             });
+
+            if ($isMaxCount) {
+                $doctors = array_filter($doctors, function (Doctor $doctor) {
+                   return in_array($doctor->getId(), $this->doctorsInSchedule);
+                });
+            }
         }
 
+        /* -------------------- Если таких врачей нет ---------------------------- */
         //Поиск врачей по основной компетенции
         if (empty($doctors)) {
             $doctors = array_filter($this->doctors,
@@ -350,11 +446,18 @@ class AlgorithmWeekService
                     && in_array($competency->getModality(), $doctor->getCompetency())
             );
 
-            $doctors = array_filter($doctors, function (Doctor $doctor) {
-                return !$this->isDayOff($doctor);
+            $doctors = array_filter($doctors, function (Doctor $doctor) use ($currentDay) {
+                return !$this->isDayOff($doctor, $currentDay) && $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDay, $this->doctorsStat);
             });
+
+            if ($isMaxCount) {
+                $doctors = array_filter($doctors, function (Doctor $doctor) {
+                    return in_array($doctor->getId(), $this->doctorsInSchedule);
+                });
+            }
         }
 
+        /* -------------------- Если таких врачей нет ---------------------------- */
         //Пытаемся получить врачей по доп компетенции, которые подходят и которым получится продолжить цикл графика
         if (empty($doctors)) {
             $doctorsIn = array_filter($this->doctors,
@@ -363,11 +466,18 @@ class AlgorithmWeekService
                     && in_array($competency->getModality(), $doctor->getAddonCompetencies())
             );
 
-            $doctors = array_filter($doctorsIn, function (Doctor $doctor) {
-                return !$this->isDayOff($doctor);
+            $doctors = array_filter($doctorsIn, function (Doctor $doctor) use ($currentDay) {
+                return !$this->isDayOff($doctor, $currentDay) && $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDay, $this->doctorsStat);
             });
+
+            if ($isMaxCount) {
+                $doctors = array_filter($doctors, function (Doctor $doctor) {
+                    return in_array($doctor->getId(), $this->doctorsInSchedule);
+                });
+            }
         }
 
+        /* -------------------- Если таких врачей нет ---------------------------- */
         //Поиск врачей по доп компетенции
         if (empty($doctors)) {
             $doctors = array_filter($this->doctors,
@@ -375,12 +485,17 @@ class AlgorithmWeekService
                     && in_array($competency->getModality(), $doctor->getAddonCompetencies())
             );
 
-            $doctors = array_filter($doctors, function (Doctor $doctor) {
-                return !$this->isDayOff($doctor);
+            $doctors = array_filter($doctors, function (Doctor $doctor) use ($currentDay) {
+                return !$this->isDayOff($doctor, $currentDay) && $this->timeAlgorithmService->getTimeByDoctor($doctor, $currentDay, $this->doctorsStat);
             });
+
+            if ($isMaxCount) {
+                $doctors = array_filter($doctors, function (Doctor $doctor) {
+                    return in_array($doctor->getId(), $this->doctorsInSchedule);
+                });
+            }
         }
 
-        //TODO: Проверка на месячную норму
         if (count($doctors) > 0) {
             return $doctors[array_rand($doctors)];
         } else {
@@ -388,7 +503,7 @@ class AlgorithmWeekService
         }
     }
 
-    // Метод для эволюции популяции
+    // Метод для эволюции популяции (попытки улучшения расписания)
     private function evolvePopulation(array $population, int $countSchedule): array
     {
         for ($i = 0; $i < self::EVOLUTION_COUNT && count($population)/2 >= $countSchedule; $i++) {

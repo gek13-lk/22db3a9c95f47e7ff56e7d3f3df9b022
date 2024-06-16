@@ -4,44 +4,38 @@ namespace App\Controller;
 
 use App\Entity\TempSchedule;
 use App\Modules\Algorithm\RecommendationService;
-use App\Modules\Navbar\DefaultNavItem;
-use App\Modules\Navbar\NavElementInterface;
-use App\Modules\Navbar\NavItemInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-class RecommendationController extends AbstractController implements NavElementInterface {
+class RecommendationController extends DashboardController {
 
-    public function __construct(
-        private RecommendationService $service
-    ) {
-
+    public function __construct(private readonly EntityManagerInterface $em)
+    {
     }
-    #[Route('/recommendation/{tempSchedule}', name: 'app_recommendation')]
-    public function index(TempSchedule $tempSchedule): Response {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-        $user = $this->getUser();
 
-        $recommendations = $this->service->getRecommendation($tempSchedule);
+    #[Route('/recommendations', name: 'recommendation_list')]
+    public function index(): Response
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $schedules = $this->em->getRepository(TempSchedule::class)->findAll();
 
         return $this->render('recommendation/index.html.twig', [
-            'controller_name' => 'RecommendationController',
-            'username' => $user->getUserIdentifier(),
-            'recommendations' => $recommendations
+            'title' => 'Рекомендации',
+            'schedules' => $schedules
         ]);
     }
 
-    public function getNavItem(): NavItemInterface {
-        return new DefaultNavItem(
-            'Расписание',
-            '<i class="fa fa-thumbs-up"></i>',
-            'app_recommendation'
-        );
-    }
+    #[Route('/recommendation/{tempSchedule}', name: 'recommendation')]
+    public function recommendation(TempSchedule $tempSchedule, RecommendationService $service): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
-    public static function getPriority(): int {
-        return 0;
+        $recommendations = $service->getRecommendation($tempSchedule);
+
+        return $this->render('recommendation/recommendation.html.twig', [
+            'title' => 'Рекомендации',
+            'recommendations' => $recommendations
+        ]);
     }
 }

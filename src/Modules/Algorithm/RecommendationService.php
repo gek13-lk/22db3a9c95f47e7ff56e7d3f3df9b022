@@ -26,8 +26,8 @@ class RecommendationService
                 'doctor' => $schedule->getDoctor()->getId(),
                 "date" => $schedule->getDate()->format('d.m.Y'),
                 "doctorWorkSchedule" => $schedule->getDoctor()->getWorkSchedule()->getType(),
-                "doctorWorkTimeStart" => $schedule->getWorkTimeStart() ?? null,
-                "doctorWorkTimeEnd" => $schedule->getWorkTimeEnd() ?? null,
+                "doctorWorkTimeStart" => $schedule->getWorkTimeStart() ? $schedule->getWorkTimeStart()->format('H:m:s'): null,
+                "doctorWorkTimeEnd" => $schedule->getWorkTimeEnd() ? $schedule->getWorkTimeEnd()->format('H:m:s'): null,
                 "doctorOffMinutes" => $schedule->getOffMinutes(),
                 "doctorWorkHours" => $schedule->getWorkHours(),
                 "doctorModality" => $schedule->getDoctor()->getCompetency(),
@@ -42,8 +42,15 @@ class RecommendationService
         return $recommendations;
     }
 
-    public function generateRecommendations($scheduleData)
+    public function generateRecommendations($scheduleData): array
     {
+        //TODO: На empty - проверки не хватает, если нет возможности закрыть все потребности.
+        // Типа добавьте столько то врачей, чтобы закрыть потребность. Тут можно дернуть мой сервис,
+        // как-то его под это подстроить, чтобы он прям вернул количество врачей, например из текущего списка,
+        // только мы бы отдали, мол нужно ЕЩЕ столько то врачей с такими то режимами работы
+
+        //TODO: Рекомендацию + в фитнес функцию сделай, проверку empty по модальностям. Мол если где-то намного больше empty,
+        // чем на других модальностях, предложи сбалансировать + это мне тоже надо запилить
         $recommendations = [];
         $doctorWorkloads = [];
         $doctorDaysWorked = [];
@@ -148,7 +155,10 @@ class RecommendationService
             // Учет перегрузки врачей
             foreach ($doctorWorkloads as $doctorId => $workload) {
                 if ($workload > 5) {
-                    $recommendations[] = "Доктор $doctorId перегружен. Рассмотрите возможность перераспределения задач.";
+                    $recommendations['Учет перегрузки врачей'][] = [
+                        "problem" => "Доктор $doctorId перегружен",
+                        "solution" => "Рассмотрите возможность перераспределения задач",
+                    ];
                 }
             }
 
@@ -156,7 +166,10 @@ class RecommendationService
             $avgWorkload = array_sum($doctorWorkloads) / count($doctorWorkloads);
             foreach ($doctorWorkloads as $doctorId => $workload) {
                 if (abs($workload - $avgWorkload) > 2) {
-                    $recommendations[] = "Нагрузка на доктора $doctorId отклоняется от средней. Попробуйте сбалансировать задачи.";
+                    $recommendations['Проверка равномерности распределения задач'][] = [
+                        "problem" => "Нагрузка на доктора $doctorId отклоняется от средней",
+                        "solution" => "Попробуйте сбалансировать задачи",
+                    ];
                 }
             }
 
@@ -165,7 +178,10 @@ class RecommendationService
                 $days = array_keys($daysWorked);
                 for ($i = 1; $i < count($days); $i++) {
                     if ($days[$i] - $days[$i - 1] > 1) {
-                        $recommendations[] = "Доктор $doctorId имеет большие перерывы между рабочими днями. Сократите перерывы.";
+                        $recommendations['Минимизация перерывов'][] = [
+                            "problem" => "Доктор $doctorId имеет большие перерывы между рабочими днями",
+                            "solution" => "Сократите перерывы",
+                        ];
                     }
                 }
             }
@@ -190,8 +206,12 @@ class RecommendationService
                     $maxConsecutiveDaysOff = $currentConsecutiveDaysOff;
                 }
 
+                //TODO: а если сутки через трое ?
                 if ($maxConsecutiveDaysOff > 2) {
-                    $recommendations[] = "Доктор $doctorId имеет более 2 выходных дней подряд. Попробуйте их сократить.";
+                    $recommendations['Минимизация выходных дней подряд'][] = [
+                        "problem" => "Доктор $doctorId имеет более 2 выходных дней подряд",
+                        "solution" => "Попробуйте их сократить",
+                    ];
                 }
             }
 
@@ -202,7 +222,10 @@ class RecommendationService
                     if ($start !== null && $end !== null) {
                         $workDuration = (strtotime($end) - strtotime($start)) / 60; // Время работы в минутах
                         if ($workDuration > 480) { // если работа длится более 8 часов
-                            $recommendations[] = "Доктор $doctorId работает более 8 часов подряд. Попробуйте сократить длительность смены.";
+                            $recommendations['Учет времени работы и перерывов'][] = [
+                                "problem" => "Доктор $doctorId работает более 8 часов подряд",
+                                "solution" => "Попробуйте сократить длительность смены",
+                            ];
                         }
                     }
                 }
@@ -211,7 +234,10 @@ class RecommendationService
             // Учет минут перерыва
             foreach ($doctorOffMinutes as $doctorId => $offMinutes) {
                 if ($offMinutes < 30) { // если перерывов менее 30 минут
-                    $recommendations[] = "Доктор $doctorId имеет недостаточно времени на перерывы. Увеличьте количество или длительность перерывов.";
+                    $recommendations['Учет минут перерыва'][] = [
+                        "problem" => "Доктор $doctorId имеет недостаточно времени на перерывы",
+                        "solution" => "Увеличьте количество или длительность перерывов",
+                    ];
                 }
             }
 
@@ -225,7 +251,10 @@ class RecommendationService
                 }
                 foreach ($shiftCounts as $shiftType => $count) {
                     if ($count > 3) {
-                        $recommendations[] = "Доктор $doctorId имеет слишком много смен типа '$shiftType'. Убедитесь в чередовании смен.";
+                        $recommendations['Учет смен'][] = [
+                            "problem" => "Доктор $doctorId имеет слишком много смен типа '$shiftType'",
+                            "solution" => "Убедитесь в чередовании смен",
+                        ];
                     }
                 }
             }
@@ -233,7 +262,10 @@ class RecommendationService
             // Учет соответствия компетенций и модальностей исследований
             foreach ($doctorModalityAssignments as $doctorId => $modality) {
                 if (!in_array($modality['studyModality'], $modality['doctorModality'])) {
-                    $recommendations[] = "Доктор $doctorId назначен на исследование" . $modality['studyModality'] . ", которое не соответствует его компетенциям.";
+                    $recommendations['Учет соответствия компетенций и модальностей исследований'][] = [
+                        "problem" => "Доктор $doctorId назначен на исследование" . $modality['studyModality']. ", которое не соответствует его компетенциям.",
+                        "solution" => "Назначте другого врача",
+                    ];
                 }
             }
 
@@ -241,10 +273,16 @@ class RecommendationService
             foreach ($shiftDoctors as $date => $shifts) {
                 foreach ($shifts as $shiftType => $doctors) {
                     if (count($doctors) < 2) {
-                        $recommendations[] = "В смене '$shiftType' на дату $date недостаточно врачей (меньше 2). Рассмотрите возможность добавления врачей.";
+                        $recommendations['Анализ нехватки или чрезмерного количества врачей в смене'][] = [
+                            "problem" => "В смене '$shiftType' на дату $date недостаточно врачей (меньше 2)",
+                            "solution" => "Рассмотрите возможность добавления врачей",
+                        ];
                     }
                     if (count($doctors) > 5) {
-                        $recommendations[] = "В смене '$shiftType' на дату $date слишком много врачей (более 5). Рассмотрите возможность перераспределения.";
+                        $recommendations['Анализ нехватки или чрезмерного количества врачей в смене'][] = [
+                            "problem" => "В смене '$shiftType' на дату $date слишком много врачей (более 5)",
+                            "solution" => "Рассмотрите возможность перераспределения",
+                        ];
                     }
                 }
             }
@@ -252,16 +290,82 @@ class RecommendationService
             // Учет недельных и месячных часов работы врача
             foreach ($doctorWeeklyHours as $doctorId => $weeklyHours) {
                 foreach ($weeklyHours['hours'] as $weekNumber => $hours) {
-                    $expectedWeeklyHours = 40 * $weeklyHours['rate'];
+                    $expectedWeeklyHours = 36 * $weeklyHours['rate'];
                     if ($hours > $expectedWeeklyHours) {
-                        $recommendations[] = "Доктор $doctorId работает более $expectedWeeklyHours часов в неделю. Попробуйте сократить часы работы.";
+                        $recommendations['Учет недельных и месячных часов работы врача'][] = [
+                            "problem" => "Доктор $doctorId работает более $expectedWeeklyHours часов в неделю",
+                            "solution" => "Попробуйте сократить часы работы",
+                        ];
                     }
                 }
             }
             foreach ($doctorMonthlyHours as $doctorId => $monthlyHours) {
                 foreach ($monthlyHours['hours'] as $month => $hours) {
                     if ($hours > 155 * $weeklyHours['rate']) {
-                        $recommendations[] = "Доктор $doctorId работает более " . (155 * $weeklyHours['rate']) . " часов в месяц. Попробуйте сократить часы работы.";
+                        $recommendations['Учет недельных и месячных часов работы врача'][] = [
+                            "problem" => "Доктор $doctorId работает более " . (155 * $weeklyHours['rate']) . " часов в месяц ",
+                            "solution" => "Попробуйте сократить часы работы",
+                        ];
+                    }
+                }
+            }
+
+            //Запрет на дневную смену после ночной
+            foreach ($doctorShifts as $doctorId => $shifts) {
+                for ($i = 1; $i < count($shifts); $i++) {
+                    if ($shifts[$i - 1] == 'Ночные смены' && strpos($shifts[$i], 'Дневные смены') !== false) {
+                        $recommendations['Запрет на дневную смену после ночной'][] = [
+                            "problem" => "Доктор $doctorId имеет дневную смену сразу после ночной",
+                            "solution" => "Пересмотрите график",
+                        ];
+                    }
+                }
+            }
+
+            //Запрет на три подряд смены по 11-12 часов
+            foreach ($doctorWorkTimes as $doctorId => $workTimes) {
+                $consecutiveLongShifts = 0;
+                foreach ($workTimes as $workTime) {
+                    list($start, $end) = $workTime;
+                    $workDuration = (strtotime($end) - strtotime($start)) / 3600; // Время работы в часах
+                    if ($workDuration >= 11) {
+                        $consecutiveLongShifts++;
+                        if ($consecutiveLongShifts >= 3) {
+                            $recommendations['Запрет на три подряд смены по 11-12 часов'][] = [
+                                "problem" => "Доктор $doctorId имеет три подряд смены по 11-12 часов",
+                                "solution" => "Пересмотрите график",
+                            ];
+                            break;
+                        }
+                    } else {
+                        $consecutiveLongShifts = 0;
+                    }
+                }
+            }
+
+            //Равномерное распределение часов в течение месяца
+            foreach ($doctorMonthlyHours as $doctorId => $monthlyHours) {
+                foreach ($monthlyHours as $month => $hours) {
+                    $halfMonthHours = $hours / 2;
+                    if (abs($halfMonthHours - ($hours / 2)) > 20) { // допустимое отклонение в часах
+                        $recommendations['Равномерное распределение часов в течение месяца'][] = [
+                            "problem" => "Доктор $doctorId имеет неравномерное распределение часов в месяце",
+                            "solution" => "Попробуйте сбалансировать",
+                        ];
+                    }
+                }
+            }
+
+            //Обязательный перерыв в 48 часов
+            foreach ($doctorDaysWorked as $doctorId => $daysWorked) {
+                $days = array_keys($daysWorked);
+                for ($i = 1; $i < count($days); $i++) {
+                    if ($days[$i] - $days[$i - 1] > 2) { // проверка на перерыв более 48 часов (2 дня)
+                        $recommendations['Обязательный перерыв в 48 часов'][] = [
+                            "problem" => "Доктор $doctorId не имеет обязательного перерыва в 48 часов между сменами",
+                            "solution" => "Попробуйте сбалансировать",
+                        ];
+                        break;
                     }
                 }
             }
