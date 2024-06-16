@@ -14,11 +14,21 @@ class TempSchedule
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
+
     #[ORM\Column(type: 'datetime')]
     private \DateTime $createdAt;
 
+    #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Максимальное количество врачей (входные данные)"])]
+    private int $doctorsMaxCount;
+
+    #[ORM\Column(name:'date', type: 'date', nullable: true, options: ["comment" => "Дата начала расписания"])]
+    private \DateTimeInterface|null $date = null;
+
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $fitness = null;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false, "comment" => "Утвержден руководителем"])]
+    private bool $isApproved = false;
 
     public function __construct() {
         $this->createdAt = new \DateTime();
@@ -47,6 +57,39 @@ class TempSchedule
     public function setFitness(?int $fitness = null): TempSchedule
     {
         $this->fitness = $fitness;
+        return $this;
+    }
+
+    public function getDoctorsMaxCount(): int
+    {
+        return $this->doctorsMaxCount;
+    }
+
+    public function setDoctorsMaxCount(int $doctorsMaxCount): TempSchedule
+    {
+        $this->doctorsMaxCount = $doctorsMaxCount;
+        return $this;
+    }
+
+    public function getDate(): ?\DateTimeInterface
+    {
+        return $this->date;
+    }
+
+    public function setDate(?\DateTimeInterface $date): TempSchedule
+    {
+        $this->date = $date;
+        return $this;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->isApproved;
+    }
+
+    public function setIsApproved(bool $isApproved): TempSchedule
+    {
+        $this->isApproved = $isApproved;
         return $this;
     }
 }
