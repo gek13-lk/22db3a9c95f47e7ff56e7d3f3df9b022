@@ -257,16 +257,21 @@
                                 {% endif %}
 
                                 {# @var schedule \App\Entity\TempDoctorSchedule #}
-                                <div class="drag details ui-draggable ui-draggable-handle" data-taskid="{{ schedule.id }}" data-doctor-id="{{ doctor.id }}" data-hour="{{ schedule.workHours|default(0)|round(2) }}">
+                                <div class="drag details ui-draggable ui-draggable-handle" data-taskid="{{ schedule.id }}" data-doctor-id="{{ doctor.id }}"
+                                     data-hour="{{ schedule.workHours ? schedule.workHours|round(2)  : 0 }}"
+                                     data-time-start="{{ schedule.workTimeStart ? schedule.workTimeStart|date('H:i')  : '' }}"
+                                     data-time-end="{{ schedule.workTimeEnd ? schedule.workTimeEnd|date('H:i')  : '' }}"
+                                     data-off-minutes="{{ schedule.offMinutes ? schedule.offMinutes|round(2)  : 0 }}"
+                                >
                                     <h3 class="details-task" style=" background: #7E7E7E; color: #FFFFFF">{{ schedule.tempScheduleWeekStudies.weekStudies.competency.modality }}</h3>
-                                    <div class="details-uren">
-                                        {{ schedule.workTimeStart ? schedule.workTimeStart|date('H:i')  : '---' }} - {{ schedule.workTimeEnd ? schedule.workTimeEnd|date('H:i')  : '---' }}
+                                    <div class="details-uren details-time">
+                                        <span>{{ schedule.workTimeStart ? schedule.workTimeStart|date('H:i')  : '---' }} - {{ schedule.workTimeEnd ? schedule.workTimeEnd|date('H:i')  : '---' }}</span>
                                     </div>
-                                    <div class="details-uren">
-                                        {{ schedule.workHours ? schedule.workHours|round(2)  : 0 }} часов
+                                    <div class="details-uren details-hour">
+                                        <span>{{ schedule.workHours ? schedule.workHours|round(2)  : 0 }}</span> часов
                                     </div>
-                                    <div class="details-uren">
-                                        обед {{ schedule.offMinutes ? schedule.offMinutes|round(2)  : 0 }} минут
+                                    <div class="details-uren details-off-minutes">
+                                        обед <span>{{ schedule.offMinutes ? schedule.offMinutes|round(2)  : 0 }}</span> минут
                                     </div>
                                 </div>
                             {% endfor %}
