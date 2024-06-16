@@ -211,13 +211,19 @@ class DoctorCrudController extends AbstractCrudController {
             ->renderAsBadges()
             ->onlyOnForms();
         yield IntegerField::new('workSchedule.hoursPerShift', 'Количество часов за смену')
-            ->setFormTypeOption('attr', ['min' => 1, 'max' => 12])
+            ->setFormTypeOption('attr', ['min' => 1, 'max' => 24])
             ->onlyOnForms();
         yield IntegerField::new('workSchedule.shiftPerCycle', 'Смен за цикл')
             ->setFormTypeOption('attr', ['min' => 1, 'max' => 12])
             ->onlyOnForms();
         yield IntegerField::new('workSchedule.daysOff', 'Количество выходных дней за цикл')
             ->setFormTypeOption('attr', ['min' => 1, 'max' => 12])
+            ->onlyOnForms();
+        yield IntegerField::new('workSchedule.shiftStartTimeHour', 'Желаемое время начала смены (час)')
+            ->setFormTypeOption('attr', ['min' => 1, 'max' => 24])
+            ->onlyOnForms();
+        yield IntegerField::new('workSchedule.shiftStartTimeMinutes', 'Желаемое время начала смены (Минуты)')
+            ->setFormTypeOption('attr', ['min' => 1, 'max' => 60])
             ->onlyOnForms();
     }
 
