@@ -171,6 +171,8 @@ class DashboardController extends AbstractDashboardController
             ->setSubItems([
                 MenuItem::linkToCrud('Справочник', null, Competencies::class),
                 MenuItem::linkToCrud('История по неделям', null, WeekStudies::class),
+                MenuItem::linkToRoute('Экспорт прогноза', null, 'train_export')
+                    ->setPermission(new Expression('"ROLE_ADMIN" in role_names or "ROLE_HR" in role_names or "ROLE_MANAGER" in role_names')),
             ]);
 
         yield MenuItem::subMenu('Рекомендации', 'fa fa-thumbs-up')

@@ -118,7 +118,7 @@ class ScheduleController extends DashboardController {
             'form' => $form->createView(),
             'calendars' => $this->calendarRepository->getRange($dateStart, $dateEnd),
             'doctors' => $doctors,
-            'scheduleId' => $this->getApproveScheduleByDate($date)?->getId()
+            'scheduleId' => $this->getApproveScheduleByDateMy($date)?->getId()
         ]);
     }
 
@@ -316,7 +316,14 @@ class ScheduleController extends DashboardController {
 
     function getApproveScheduleByDate(\DateTime $month): ?TempSchedule
     {
-        $entity = $this->tempScheduleRepository->findOneBy(['date' => $month,], ['isApproved' => 'DESC', 'id' => 'DESC']);
+        $entity = $this->tempScheduleRepository->findOneBy(['date' => $month], ['isApproved' => 'DESC', 'id' => 'DESC']);
+
+        return $entity;
+    }
+
+    function getApproveScheduleByDateMy(\DateTime $month): ?TempSchedule
+    {
+        $entity = $this->tempScheduleRepository->findOneBy(['date' => $month, 'isApproved' => true], ['id' => 'DESC']);
 
         return $entity;
     }

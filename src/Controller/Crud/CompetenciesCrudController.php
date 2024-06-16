@@ -42,8 +42,6 @@ final class CompetenciesCrudController extends AbstractCrudController {
             ->setLabel('ID');
         yield TextField::new('modality')
             ->setLabel('Наименование');
-        yield TextField::new('contrast')
-            ->setLabel('Контрастное усиление');
         yield NumberField::new('minimalCountPerShift')
             ->setLabel('Мин. кол-во исследований за смену, шт.')
             ->setFormTypeOptions([
