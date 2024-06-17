@@ -252,7 +252,11 @@ class DataService
 
     public function getPredictedData(\DateTime $date)
     {
-        $result = $this->predictionService->getPredictedDataByDate($date);
+
+        $dateStart = (clone $date)->modify('first day of this month');
+        $dateEnd = (clone $date)->modify('last day of this month');
+
+        $result =  $this->entityManager->getRepository(PredictedWeekStudies::class)->getAllWeekNumbersEntity($dateStart, $dateEnd);
 
         $weekStudies = [];
 

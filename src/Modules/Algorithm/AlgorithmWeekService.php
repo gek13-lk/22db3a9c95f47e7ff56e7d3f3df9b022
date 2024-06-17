@@ -60,7 +60,7 @@ class AlgorithmWeekService
     }
 
     // Основной метод для генерации расписания
-    public function run(\DateTime $startDay, \DateTime $endDay, int $countSchedule, int $maxDoctorsCount = 260, bool $isPredicated = false): array
+    public function run(\DateTime $startDay, \DateTime $endDay, int $countSchedule, int $maxDoctorsCount = 260, bool $isPredicated = false): void
     {
         $this->maxDoctorsCount = $maxDoctorsCount;
         $this->endDay = $endDay;
@@ -83,30 +83,18 @@ class AlgorithmWeekService
         // Инициализация начальной популяции (список расписаний, рандомно составленных на основе ограничений)
         $population = $this->initializePopulation();
 
-        // Эволюция популяции  (попытки улучшения расписания)
-        $evolutionPopulation = $this->evolvePopulation(array_values($population), $countSchedule);
-
         // Расчитываем баллы расписания (оцениваем его)
-        $evolutionPopulation = array_map(
+        $population = array_map(
             fn($ep) => [
                 'schedule' => $ep,
                 'fitnessScore' => $this->calculateFitness($ep)
             ],
-            $evolutionPopulation);
-
-        usort($evolutionPopulation, function ($a, $b) {
-            return ($a['fitnessScore'] - $b['fitnessScore']);
-        });
-
-        $bestPopulation = [];
+            $population);
 
         // Выбираем наилучшие расписания по оценкам и сохраняем в БД
         for ($i = 0; $i < $countSchedule; $i++) {
-            $tempScheduleEntity = $this->saveTempSchedule($evolutionPopulation[$i]['schedule'], $evolutionPopulation[$i]['fitnessScore'], $startDay);
-            $bestPopulation[$tempScheduleEntity->getId()] = $evolutionPopulation[$i]['schedule'];
+            $this->saveTempSchedule($population[$i]['schedule'], $population[$i]['fitnessScore'], $startDay);
         }
-
-        return $bestPopulation;
     }
 
     // Метод для инициализации начальной популяции

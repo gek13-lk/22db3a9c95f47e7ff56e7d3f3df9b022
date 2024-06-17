@@ -32,6 +32,22 @@ class PredictedWeekStudiesRepository extends ServiceEntityRepository
                 ->getResult();
     }
 
+    public function getAllWeekNumbersEntity(\DateTime $from, \DateTime $to): array
+    {
+        return
+            $this
+                ->createQueryBuilder('ws')
+                ->andWhere('ws.startOfWeek >= :from')
+                ->andWhere('ws.startOfWeek <= :to')
+                ->andWhere('ws.isNew = true')
+                ->setParameter('from', $from)
+                ->setParameter('to', $to)
+                ->orderBy('ws.weekNumber', 'ASC')
+                ->distinct()
+                ->getQuery()
+                ->getResult();
+    }
+
     public function findByYearAndWeeks(int $year, array $weeks): array
     {
         return $this->createQueryBuilder('pws')
