@@ -116,11 +116,12 @@ class AlgorithmWeekService
         return $population;
     }
 
-    private function saveTempSchedule(array $randomSchedule, int $fitness): TempSchedule
+    private function saveTempSchedule(array $randomSchedule, int $fitness, \DateTime $day): TempSchedule
     {
         $tempScheduleEntity = new TempSchedule();
         $tempScheduleEntity->setFitness($fitness);
         $tempScheduleEntity->setDoctorsMaxCount($this->maxDoctorsCount);
+        $tempScheduleEntity->setDate($day);
         $this->entityManager->persist($tempScheduleEntity);
         $firstDate = null;
 
