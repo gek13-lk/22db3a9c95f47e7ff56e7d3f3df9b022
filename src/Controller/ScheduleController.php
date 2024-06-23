@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\TempDoctorSchedule;
@@ -250,7 +252,7 @@ class ScheduleController extends DashboardController {
         $user = $this->getUser();
         $event = new NotificationEvent(
             $user,
-            'Сгенерирован график на '.$dateStart->format('m-Y'),
+            'Сгенерирован график на '.$this->getDate($dateStart),
             (string) $repository->getLastSchedule()?->getId()
         );
         $dispatcher->dispatch($event, NotificationEvent::NAME);
@@ -368,5 +370,25 @@ class ScheduleController extends DashboardController {
         }
 
         return $dates;
+    }
+
+    private function getDate(\DateTime $startDate): string
+    {
+        $monthRussian = match($startDate->format('m')) {
+            '01' => 'Январь',
+            '02' => 'Февраль',
+            '03' => 'Март',
+            '04' => 'Апрель',
+            '05' => 'Май',
+            '06' => 'Июнь',
+            '07' => 'Июль',
+            '08' => 'Август',
+            '09' => 'Сентябрь',
+            '10' => 'Октябрь',
+            '11' => 'Ноябрь',
+            default => 'Декабрь',
+        };
+
+        return $monthRussian.' '.$startDate->format('Y');
     }
 }
