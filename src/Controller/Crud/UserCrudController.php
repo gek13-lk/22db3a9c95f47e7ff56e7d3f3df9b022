@@ -12,6 +12,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
+use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\FormField;
@@ -99,10 +100,6 @@ final class UserCrudController extends AbstractCrudController {
             ->setSortable(false)
             ->hideOnDetail();
 
-        yield EmailField::new('email', 'Адрес электронной почты')
-            ->setRequired(true)
-            ->onlyOnForms();
-
         yield TextField::new('surname', 'Фамилия')
             ->setRequired(true)
             ->onlyOnForms();
@@ -113,6 +110,14 @@ final class UserCrudController extends AbstractCrudController {
             ->setRequired(true)
             ->onlyOnForms();
 
+        yield EmailField::new('email', 'Адрес электронной почты')
+            ->setRequired(true)
+            ->onlyOnForms();
+
+        yield BooleanField::new('emailNotification', 'Почтовые уведомления')
+            ->onlyOnForms();
+        yield BooleanField::new('systemNotification', 'Системные уведомления')
+            ->onlyOnForms();
 
         yield FormField::addColumn()
             ->onlyOnDetail();
@@ -131,11 +136,13 @@ final class UserCrudController extends AbstractCrudController {
 
         yield ChoiceField::new('privileges')
             ->setLabel('Привилегии')
+            ->setRequired(false)
             ->setChoices($privileges ?? [])
-            ->setColumns('col-12')
+            ->setColumns('col-md-6 col-xxl-5')
             ->allowMultipleChoices()
-            ->formatValue(fn($value) => $value?:'---')
+            ->autocomplete()
             ->renderAsBadges()
+            ->setSortable(false)
             ->onlyOnDetail();
 
         yield FormField::addColumn()
@@ -153,6 +160,13 @@ final class UserCrudController extends AbstractCrudController {
         yield TextField::new('middlename', 'Отчество')
             ->onlyOnDetail();
 
+        yield FormField::addColumn()
+            ->onlyOnDetail();
+
+        yield BooleanField::new('emailNotification', 'Включены почтовые уведомления')
+            ->onlyOnDetail();
+        yield BooleanField::new('systemNotification', 'Включены системные уведомления')
+            ->onlyOnDetail();
     }
 
     /**
