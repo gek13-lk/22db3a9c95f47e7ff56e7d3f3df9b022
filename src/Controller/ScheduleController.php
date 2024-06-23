@@ -237,13 +237,9 @@ class ScheduleController extends DashboardController {
         $dateStart = (clone $date)->modify('first day of this month');
         $dateEnd = (clone $date)->modify('last day of this month');
 
-        $this->algorithmService->run($dateStart, $dateEnd, $data['count'], $data['maxDoctorsCount'], $data['isPredicated']);
+        $this->algorithmService->run($dateStart, $dateEnd, $data['count'], $data['maxDoctorsCount']);
 
-        return $this->render('schedule/run.html.twig', [
-            'title' => 'Составленные расписания',
-            'form' => $form->createView(),
-            'schedules' => $this->tempScheduleRepository->findBy([], ['id' => 'DESC'])
-        ]);
+        return $this->redirectToRoute('app_schedule_run');
     }
 
     #[Route('/schedule/export/csv/{tempSchedule}', name: 'app_schedule_export_csv')]

@@ -39,6 +39,9 @@ class TempDoctorSchedule
     #[ORM\Column(type: 'integer', nullable: true, options: ["comment" => "Планируемое количество исследований"])]
     private ?int $studyCount = null;
 
+    #[ORM\Column(type: 'float', nullable: true, options: ["comment" => "Планируемый коэффициент УЕ"])]
+    private ?float $coefficient = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -130,6 +133,17 @@ class TempDoctorSchedule
     public function setStudyCount(?int $studyCount): TempDoctorSchedule
     {
         $this->studyCount = $studyCount;
+        return $this;
+    }
+
+    public function getCoefficient(): ?float
+    {
+        return $this->coefficient;
+    }
+
+    public function setCoefficient(?float $coefficient): TempDoctorSchedule
+    {
+        $this->coefficient = $coefficient;
         return $this;
     }
 }
