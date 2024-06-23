@@ -19,4 +19,9 @@ class TempScheduleRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, TempSchedule::class);
     }
+
+    public function getLastSchedule(): ?TempSchedule
+    {
+        return $this->findOneBy([], ['id' => 'DESC']);
+    }
 }

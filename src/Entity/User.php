@@ -60,6 +60,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: MLLogs::class, mappedBy: 'user')]
     private Collection $logs;
 
+    /** @var Collection<Notification> */
+    #[ORM\OneToMany(targetEntity: Notification::class, mappedBy: 'user')]
+    private Collection $notification;
+
     public function __toString(): string {
         return $this->getUserIdentifier();
     }
@@ -67,6 +71,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __construct()
     {
         $this->logs = new ArrayCollection();
+        $this->notification = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -228,6 +233,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->logs->contains($logs)) {
             $this->logs[] = $logs;
+        }
+
+        return $this;
+    }
+
+    public function getNotification(): Collection
+    {
+        return $this->notification;
+    }
+
+    public function addNotification(Notification $notification): self
+    {
+        if (!$this->notification->contains($notification)) {
+            $this->notification[] = $notification;
         }
 
         return $this;
