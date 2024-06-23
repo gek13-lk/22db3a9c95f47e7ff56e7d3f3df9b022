@@ -252,17 +252,11 @@ class DataService
 
     public function getPredictedData(\DateTime $date)
     {
-        $weekNumbers = $this->entityManager->getRepository(PredictedWeekStudies::class)->findBy([
-            'weekNumber' => $date->format('m'),
-            'year' => $date->format('Y'),
-            'isNew' => true
-        ]);
 
-        if (!empty($weekNumbers)) {
-            $result = $weekNumbers;
-        } else {
-            $result = $this->predictionService->getPredictedDataByDate($date);
-        }
+        $dateStart = (clone $date)->modify('first day of this month');
+        $dateEnd = (clone $date)->modify('last day of this month');
+
+        $result =  $this->entityManager->getRepository(PredictedWeekStudies::class)->getAllWeekNumbersEntity($dateStart, $dateEnd);
 
         $weekStudies = [];
 
