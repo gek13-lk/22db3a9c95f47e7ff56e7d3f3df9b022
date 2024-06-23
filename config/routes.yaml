@@ -11,6 +11,5 @@ controllers.api:
     type: attribute
     prefix: api
 
-dashboard:
-    path: /
-    controller: App\Controller\DashboardController::index
+easyadmin:
+    path: '/'
