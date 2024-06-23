@@ -4,6 +4,8 @@ namespace App\Controller;
 
 use App\Entity\TempDoctorSchedule;
 use App\Entity\TempSchedule;
+use App\Entity\User;
+use App\Listener\NotificationEvent;
 use App\Modules\Algorithm\AlgorithmWeekService;
 use App\Modules\Algorithm\DataService;
 use App\Modules\Algorithm\ExportService;
@@ -12,6 +14,7 @@ use App\Repository\CalendarRepository;
 use App\Repository\DoctorRepository;
 use App\Repository\TempScheduleRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -68,7 +71,7 @@ class ScheduleController extends DashboardController {
         $dateStart = (clone $date)->modify('first day of this month');
         $dateEnd = (clone $date)->modify('last day of this month');
 
-            $doctors = $this->doctorRepository->findAll();
+        $doctors = $this->doctorRepository->findAll();
 
         return $this->render('schedule/index.html.twig', [
             'title' => 'Расписание',
@@ -155,7 +158,11 @@ class ScheduleController extends DashboardController {
     }
 
     #[Route('/schedule/run', name: 'app_schedule_run')]
-    public function run(Request $request): Response {
+    public function run(
+        Request $request,
+        TempScheduleRepository $repository,
+        EventDispatcherInterface $dispatcher
+    ): Response {
         if (!$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException('нет прав');
         }
@@ -238,6 +245,15 @@ class ScheduleController extends DashboardController {
         $dateEnd = (clone $date)->modify('last day of this month');
 
         $this->algorithmService->run($dateStart, $dateEnd, $data['count'], $data['maxDoctorsCount']);
+
+        /** @var User $user */
+        $user = $this->getUser();
+        $event = new NotificationEvent(
+            $user,
+            'Сгенерирован график на '.$dateStart->format('m-Y'),
+            (string) $repository->getLastSchedule()?->getId()
+        );
+        $dispatcher->dispatch($event, NotificationEvent::NAME);
 
         return $this->redirectToRoute('app_schedule_run');
     }
