@@ -60,7 +60,7 @@ class AlgorithmWeekService
     }
 
     // Основной метод для генерации расписания
-    public function run(\DateTime $startDay, \DateTime $endDay, int $countSchedule, int $maxDoctorsCount = 260, bool $isPredicated = false): array
+    public function run(\DateTime $startDay, \DateTime $endDay, int $countSchedule = 1, int $maxDoctorsCount = 260, bool $isPredicated = false): array
     {
         $this->maxDoctorsCount = $maxDoctorsCount;
         $this->endDay = $endDay;
@@ -183,6 +183,7 @@ class AlgorithmWeekService
                         $tempDoctorSchedule->setWorkTimeEnd($stat['time']['end'] ?? null);
                         $tempDoctorSchedule->setWorkTimeStart($stat['time']['start'] ?? null);
                         $tempDoctorSchedule->setStudyCount($stat['get'] ?? null);
+                        $tempDoctorSchedule->setCoefficient($stat['coeff'] ?? null);
                         $this->entityManager->persist($tempDoctorSchedule);
                     }
                 }
@@ -202,6 +203,7 @@ class AlgorithmWeekService
     {
         if (!isset($this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['get'])) {
             $this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['get'] = 0;
+            $this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['coeff'] = 0;
             //$this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['doMax'] = 0;
         }
 
@@ -213,6 +215,7 @@ class AlgorithmWeekService
         $this->doctorsStat[$doctor->getId()]['days'][$currentDay] = $time;
         $this->doctorsStat[$doctor->getId()]['lastShiftType'] = $time['lastShiftType'];
         $this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['get'] += $countPerShift;
+        $this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['coeff'] += $countPerShift * $modalityCompetency->getCoefficient();
         //$this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['doMax'] = (int)$modalityDoctorMaxCountPerShift - $countPerShift;
         $this->schedule[$modalityWeek->getWeekNumber()][$modalityCompetency->getModality()][$currentDay][$doctor->getId()]['time'] = $time;
         $this->doctorsInDay[$currentDay][] = $doctor->getId();
