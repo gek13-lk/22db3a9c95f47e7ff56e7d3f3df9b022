@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\PredictedWeekStudies;
 use App\Entity\User;
+use App\Entity\WeekStudies;
+use App\Enum\StudyType;
 use App\Messenger\Message\MLMessage;
 use App\Modules\Algorithm\DataService;
 use App\Modules\Algorithm\ExportService;
 use App\Service\MLService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,7 +48,8 @@ class WeekStudiesController extends AbstractController
     }
 
     #[Route('/train/export', name: 'train_export')]
-    public function schedule(Request $request): Response {
+    public function schedule(Request $request, EntityManagerInterface $em
+    ): Response {
         if (!$this->isGranted('ROLE_HR') && !$this->isGranted('ROLE_MANAGER') && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException('нет прав');
         }
@@ -78,8 +83,52 @@ class WeekStudiesController extends AbstractController
         return $this->render('train/train.html.twig', [
             'title' => 'Расписание',
             'form' => $form->createView(),
-            'date' => $dateStart
+            'date' => $dateStart,
+            'columnEvents' => $this->processWeekStudies($em),
         ]);
+    }
+
+    private function processWeekStudies(EntityManagerInterface $em): array
+    {
+        $series = [];
+        $categories = [];
+
+        foreach (StudyType::cases() as $modality) {
+            $seriesData = [];
+
+            $weekStudies = $em->getRepository(WeekStudies::class)->getByCompetency($modality, 2023);
+            foreach ($weekStudies as $study) {
+                $weekNumber = $study->getWeekNumber();
+                $count = $study->getCount();
+
+                $seriesData['Исходные данные за 2023 год']['data'][$weekNumber] = $count;
+
+                if (!in_array($weekNumber, $categories)) {
+                    $categories[] = $weekNumber;
+                }
+            }
+
+            $weekStudiesPredicted = $em->getRepository(PredictedWeekStudies::class)->getByCompetency($modality, 2025);
+            foreach ($weekStudiesPredicted as $predictedStudy) {
+                $weekNumber = $predictedStudy->getWeekNumber();
+                $count = $predictedStudy->getCount();
+
+                $seriesData['Прогнозируемые данные на 2025 год']['data'][$weekNumber] = $count;
+
+                if (!in_array($weekNumber, $categories)) {
+                    $categories[] = $weekNumber;
+                }
+            }
+
+            sort($categories);
+
+            $modalityValue = $modality->value;
+            foreach ($seriesData as $name => $data) {
+                $series[$modalityValue][] = ['name' => $name, 'data' => $data['data']];
+            }
+        }
+
+        return ['series' => $series, 'categories' => $categories];
     }
 
     function getDatesFromLastTwoYears(string $modifyStart = '-2 years', string $modifyEnd = 'now') {

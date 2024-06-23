@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Competencies;
 use App\Entity\WeekStudies;
 use App\Enum\StudyType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -148,5 +149,17 @@ class WeekStudiesRepository extends ServiceEntityRepository
         $stmt = $conn->prepare($sql);
 
         return $stmt->executeQuery()->fetchAllAssociative();
+    }
+
+    public function getByCompetency(StudyType $type, int $year): array
+    {
+        return $this->createQueryBuilder('ws')
+            ->join(Competencies::class, 'c', 'WITH', 'ws.competency = c')
+            ->where('c.code = :type')
+            ->setParameter('type', $type->value)
+            ->andWhere('ws.year = :year')
+            ->setParameter('year', $year)
+            ->getQuery()
+            ->getResult();
     }
 }
