@@ -15,6 +15,7 @@
         "doctrine/orm": "^3.1",
         "easycorp/easyadmin-bundle": "*",
         "guzzlehttp/guzzle": "^7.8",
+        "nelmio/api-doc-bundle": "^4.28",
         "phpoffice/phpspreadsheet": "^2.1",
         "scienta/doctrine-json-functions": "^6.1",
         "symfony/asset": "6.4.*",
