@@ -28,12 +28,12 @@ def season_from_month(month):
 
 def generate_param_dist():
     param_dist = {
-        'n_estimators': np.random.choice([500, 1000, 1500], size=2),
+        'n_estimators': np.random.choice([500, 1000, 1500, 2000], size=2),
         'learning_rate': np.random.choice([0.01, 0.05, 0.1, 0.2, 0.001], size=2),
-        'max_depth': np.random.choice([6, 8, 10], size=2),
-        'min_samples_split': np.random.choice([5, 10, 15], size=2),
+        'max_depth': np.random.choice([6, 8, 10, 12], size=2),
+        'min_samples_split': np.random.choice([2, 5, 10, 15], size=2),
         'min_samples_leaf': np.random.choice([1, 2, 4, 8], size=2),
-        'subsample': np.random.choice([0.6, 0.7, 0.8], size=2),
+        'subsample': np.random.choice([0.6, 0.7, 0.8, 0.9], size=2),
         'max_features': np.random.choice(['sqrt', 'log2', None], size=2),
         'warm_start': [True, False]
     }
@@ -51,7 +51,7 @@ def train_single_model(column, df, X, param_dist):
     while True:
         try:
             model = GradientBoostingRegressor(random_state=42)
-            random_search = RandomizedSearchCV(estimator=model, param_distributions=param_dist, n_iter=50, cv=4, n_jobs=-1, scoring=make_scorer(non_negative_error), random_state=42)
+            random_search = RandomizedSearchCV(estimator=model, param_distributions=param_dist, n_iter=50, cv=5, n_jobs=-1, scoring=make_scorer(non_negative_error), random_state=42)
             random_search.fit(X_filtered, y_filtered)
             best_model = random_search.best_estimator_
 

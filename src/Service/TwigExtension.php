@@ -29,6 +29,8 @@ class TwigExtension extends AbstractExtension
             'userId' => $user?->getId(),
             'username' => $user?->getFirstname() ?? $user?->getUsername(),
             'first_word' => $user ? strtoupper($user->getUsername()[0]) : null,
+            'notifications' => $user?->getLastThreeUnreadNotifications(),
+            'notificationCount' => $user?->getUnreadNotifications()?->count(),
         ];
     }
 }

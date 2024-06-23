@@ -42,7 +42,7 @@
             {{ include(ea.templatePath('flash_messages')) }}
         {% endblock flash_messages %}
 
-
+    {% set globalVars = getGlobalVariables() %}
     <header class="header">
         <div class="container-fluid">
             <div class="row gutters">
@@ -64,45 +64,25 @@
                             <div class="dropdown-menu dropdown-menu-right" style="min-width: 320px" aria-labelledby="notifications">
                                 <div class="dropdown-menu-header">
                                     <h5>Уведомления</h5>
-                                    <p class="m-0 sub-title">5 непрочитанных</p>
+                                    <p class="m-0 sub-title">{{ globalVars.notificationCount }} непрочитанных</p>
                                 </div>
                                 <ul class="header-notifications">
-                                    <li>
-                                        <a href="#" class="clearfix">
-                                            <div class="avatar">
-                                                <img src="/img/hospital/appointment.svg" alt="Medical Admin Dashboards"/>
-                                                <span class="notify-iocn icon-layers text-danger"></span>
-                                            </div>
-                                            <div class="details">
-                                                <p>21.06.2024</p>
-                                                <h6>Сгенерирован график на 01-2024</h6>
-                                            </div>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="#" class="clearfix">
-                                            <div class="avatar">
-                                                <img src="/img/hospital/appointment.svg" alt="Medical Admin Dashboards"/>
-                                                <span class="notify-iocn icon-layers text-info"></span>
-                                            </div>
-                                            <div class="details">
-                                                <p>21.06.2024</p>
-                                                <h6>Сгенерирован график на 01-2024</h6>
-                                            </div>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="#" class="clearfix">
-                                            <div class="avatar">
-                                                <img src="/img/hospital/appointment.svg" alt="Medical Admin Dashboards"/>
-                                                <span class="notify-iocn icon-person_add text-success"></span>
-                                            </div>
-                                            <div class="details">
-                                                <p>17.06.2024</p>
-                                                <h6>Сгенерирован график на 01-2024</h6>
-                                            </div>
-                                        </a>
-                                    </li>
+                                    {% for notification in globalVars.notifications %}
+                                        {% if notification.id %}
+                                            <li>
+                                                <a {% if notification.link is not empty %}href="{{ path('app_schedule_temp', {'tempSchedule': notification.link}) }}" {% else %} href="" {% endif %} class="clearfix">
+                                                    <div class="avatar">
+                                                        <img src="/img/hospital/appointment.svg" alt="Medical Admin Dashboards"/>
+                                                        <span class="notify-iocn icon-layers text-danger"></span>
+                                                    </div>
+                                                    <div class="details">
+                                                        <p>{{ notification.date|date('d.m.Y H:i') }}</p>
+                                                        <h6>{{ notification.text }}</h6>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
                                 </ul>
                             </div>
                         </li>

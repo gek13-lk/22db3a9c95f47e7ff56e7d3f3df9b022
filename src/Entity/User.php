@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -241,6 +242,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getNotification(): Collection
     {
         return $this->notification;
+    }
+
+    public function getUnreadNotifications(): Collection
+    {
+        return $this->notification->filter(function ($notification) {
+            return !$notification->isRead();
+        });
+    }
+
+    public function getLastThreeUnreadNotifications(): ArrayCollection
+    {
+        $criteria = Criteria::create()
+            ->where(Criteria::expr()->eq('isRead', false))
+            ->orderBy(['id' => 'DESC'])
+            ->setMaxResults(3);
+
+        return $this->notification->matching($criteria);
     }
 
     public function addNotification(Notification $notification): self
