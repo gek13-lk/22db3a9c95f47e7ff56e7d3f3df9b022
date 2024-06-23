@@ -1,7 +1,7 @@
 nelmio_api_doc:
     documentation:
         info:
-            title: Референс центр
+            title: Референс-центр
             description: Планирование
             version: 1.0.0
     areas: # to filter documented areas

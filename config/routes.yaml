@@ -9,6 +9,7 @@ controllers.api:
         path: ../src/Controller/Api/
         namespace: App\Controller\Api
     type: attribute
+    prefix: api
 
 easyadmin:
     path: '/'

@@ -22,10 +22,9 @@ final class Version20240623081146 extends AbstractMigration
 
         $adminUserId = $this->connection->fetchOne("SELECT id FROM \"user\" WHERE username = 'admin'");
         $scheduleIds = $this->connection->fetchAllAssociative("SELECT id FROM temp_schedule ORDER BY id DESC LIMIT 3");
-        $this->addSql("INSERT INTO notification (text, link, date, is_read, user_id) VALUES ('Сгенерирован график на 01-2024', ?, '2024-06-17 00:00:00', false, ?)", [$scheduleIds[0]['id'] ?? null, $adminUserId]);
-        $this->addSql("INSERT INTO notification (text, link, date, is_read, user_id) VALUES ('Сгенерирован график на 01-2024', ?, '2024-06-21 00:00:00', false, ?)", [$scheduleIds[1]['id'] ?? null, $adminUserId]);
-        $this->addSql("INSERT INTO notification (text, link, date, is_read, user_id) VALUES ('Сгенерирован график на 01-2024', ?, '2024-06-21 00:00:00', false, ?)", [$scheduleIds[2]['id'] ?? null, $adminUserId]);
-
+        $this->addSql("INSERT INTO notification (text, link, date, is_read, user_id) VALUES ('Сгенерирован график на Январь 2024', ?, '2024-06-17 22:08:00', false, ?)", [$scheduleIds[0]['id'] ?? null, $adminUserId]);
+        $this->addSql("INSERT INTO notification (text, link, date, is_read, user_id) VALUES ('Сгенерирован график на Январь 2024', ?, '2024-06-21 09:11:00', false, ?)", [$scheduleIds[1]['id'] ?? null, $adminUserId]);
+        $this->addSql("INSERT INTO notification (text, link, date, is_read, user_id) VALUES ('Сгенерирован график на Январь 2024', ?, '2024-06-21 09:57:00', false, ?)", [$scheduleIds[2]['id'] ?? null, $adminUserId]);
     }
 
     public function down(Schema $schema): void

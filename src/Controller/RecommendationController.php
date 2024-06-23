@@ -15,7 +15,7 @@ class RecommendationController extends DashboardController {
     }
 
     #[Route('/recommendations', name: 'recommendation_list')]
-    public function index(): Response
+    public function recommendations(): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 

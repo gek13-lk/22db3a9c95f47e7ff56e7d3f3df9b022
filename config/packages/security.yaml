@@ -55,6 +55,7 @@ security:
                 path: app_logout
 
     access_control:
+         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
          - { path: ^/login, roles: PUBLIC_ACCESS }
          - { path: ^/register, roles: PUBLIC_ACCESS }
          - { path: ^/*, roles: IS_AUTHENTICATED_FULLY }
