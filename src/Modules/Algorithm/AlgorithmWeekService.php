@@ -23,7 +23,7 @@ class AlgorithmWeekService
     // Статистика по врачам
     private array $doctorsStat = [];
     private const EVOLUTION_COUNT = 20;
-    private const POPULATION_COUNT = 3;
+    private const POPULATION_COUNT = 1;
 
     /** @var Competencies[]  */
     private array $modalities;
@@ -128,12 +128,11 @@ class AlgorithmWeekService
         return $population;
     }
 
-    private function saveTempSchedule(array $randomSchedule, int $fitness, \DateTime $day): TempSchedule
+    private function saveTempSchedule(array $randomSchedule, int $fitness): TempSchedule
     {
         $tempScheduleEntity = new TempSchedule();
         $tempScheduleEntity->setFitness($fitness);
         $tempScheduleEntity->setDoctorsMaxCount($this->maxDoctorsCount);
-        $tempScheduleEntity->setDate($day);
         $this->entityManager->persist($tempScheduleEntity);
         $firstDate = null;
 
@@ -315,6 +314,7 @@ class AlgorithmWeekService
             }
         }
 
+        //Балансировка времени работы у врача (между сменами)
         $this->timeAlgorithmService->timeBalance($this->schedule);
 
         return $this->schedule;
