@@ -6,7 +6,101 @@
         <a href="{{ path('train_export_csv', { 'date': date|date('d.m.Y') }) }}" type="button" class="btn btn-success">CSV</a>
         <a href="{{ path('train_export_xlsx', { 'date': date|date('d.m.Y') }) }}" type="button" class="btn btn-success">XLSX</a>
     </div>
+    <div class="col-sm-12 col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">КТ</div>
+            </div>
+            <div class="card-body">
+                <div id="basic-column-graph-ct" class="primary-graph"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">КТ с КУ 1 зона</div>
+            </div>
+            <div class="card-body">
+                <div id="basic-column-graph-ct_with_ku_1_zone" class="primary-graph"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">КТ с КУ 2 и более зон</div>
+            </div>
+            <div class="card-body">
+                <div id="basic-column-graph-ct_with_ku_more_than_1_zone" class="primary-graph"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Денситометрия</div>
+            </div>
+            <div class="card-body">
+                <div id="basic-column-graph-densitometer" class="primary-graph"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">ФЛГ</div>
+            </div>
+            <div class="card-body">
+                <div id="basic-column-graph-flg" class="primary-graph"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">ММГ</div>
+            </div>
+            <div class="card-body">
+                <div id="basic-column-graph-mmg" class="primary-graph"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">МРТ</div>
+            </div>
+            <div class="card-body">
+                <div id="basic-column-graph-mri" class="primary-graph"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">МРТ с КУ 1 зона</div>
+            </div>
+            <div class="card-body">
+                <div id="basic-column-graph-mri_with_ku_1_zone" class="primary-graph"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">МРТ с КУ 2 и более зон</div>
+            </div>
+            <div class="card-body">
+                <div id="basic-column-graph-mri_with_ku_more_than_1_zone" class="primary-graph"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">РГ</div>
+            </div>
+            <div class="card-body">
+                <div id="basic-column-graph-rg" class="primary-graph"></div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block main %}
+{% endblock %}
+
+{% block body_javascript %}
+    {{ parent() }}
+    <script src="{{ asset('vendor/apex/apexcharts.min.js') }}"></script>
+    <script src="{{ asset('vendor/apex/examples/column/basic-column-graph.js') }}"></script>
+    <script>
+        let columnEvents = {{ columnEvents|json_encode|raw }};
+        $(function() {
+            CustomColumn.init(columnEvents);
+        });
+    </script>
 {% endblock %}

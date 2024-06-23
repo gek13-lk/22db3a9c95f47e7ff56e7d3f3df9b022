@@ -70,7 +70,7 @@ def train_single_model(column, df, X, param_dist):
             random_offsets = random_state.uniform(low=0, high=1, size=len(actual_values_sample))
             predictions_limited = np.maximum(min_thresholds + random_offsets, actual_values_sample)
 
-            condition_met = np.all((1 - predictions_sample / actual_values_sample) < 0.1) and np.all(predictions_sample > 0)
+            condition_met = np.all((1 - predictions_sample / actual_values_sample) < 0.05) and np.all(predictions_sample > 0)
 
             if condition_met:
                 model_path = f"./storage/{column}_model.pkl"

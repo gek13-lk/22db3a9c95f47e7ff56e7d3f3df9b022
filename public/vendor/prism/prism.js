@@ -861,7 +861,7 @@ Prism.languages.js = Prism.languages.javascript;
 				}
 				var src = pre.getAttribute('data-src');
 				var a = document.createElement('a');
-				a.textContent = pre.getAttribute('data-download-link-label') || 'Download';
+				a.textContent = pre.getAttribute('data-download-link-label') || 'Скачать';
 				a.setAttribute('download', '');
 				a.href = src;
 				return a;
