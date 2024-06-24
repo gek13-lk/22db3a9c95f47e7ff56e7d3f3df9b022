@@ -84,7 +84,7 @@ class AlgorithmWeekService
         $population = $this->initializePopulation($countSchedule);
 
         // Эволюция популяции  (попытки улучшения расписания)
-        $evolutionPopulation = $this->evolvePopulation(array_values($population), $countSchedule);
+        $evolutionPopulation = $population; //$this->evolvePopulation(array_values($population), $countSchedule);
 
         // Расчитываем баллы расписания (оцениваем его)
         $evolutionPopulation = array_map(
