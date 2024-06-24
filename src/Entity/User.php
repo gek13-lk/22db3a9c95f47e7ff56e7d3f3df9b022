@@ -65,6 +65,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Notification::class, mappedBy: 'user')]
     private Collection $notification;
 
+    #[ORM\Column(type: 'boolean', nullable: false, options: ['default' => false])]
+    private bool $emailNotification;
+
+    #[ORM\Column(type: 'boolean', nullable: false, options: ['default' => true])]
+    private bool $systemNotification;
+
     public function __toString(): string {
         return $this->getUserIdentifier();
     }
@@ -73,6 +79,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->logs = new ArrayCollection();
         $this->notification = new ArrayCollection();
+        $this->emailNotification = false;
+        $this->systemNotification = true;
     }
 
     public function getId(): ?int
@@ -266,6 +274,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         if (!$this->notification->contains($notification)) {
             $this->notification[] = $notification;
         }
+
+        return $this;
+    }
+
+    public function getEmailNotification(): bool
+    {
+        return $this->emailNotification;
+    }
+
+    public function setEmailNotification(bool $emailNotification): self
+    {
+        $this->emailNotification = $emailNotification;
+
+        return $this;
+    }
+
+    public function getSystemNotification(): bool
+    {
+        return $this->systemNotification;
+    }
+
+    public function setSystemNotification(bool $systemNotification): self
+    {
+        $this->systemNotification = $systemNotification;
 
         return $this;
     }
