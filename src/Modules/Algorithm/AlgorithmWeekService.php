@@ -23,7 +23,7 @@ class AlgorithmWeekService
     // Статистика по врачам
     private array $doctorsStat = [];
     private const EVOLUTION_COUNT = 20;
-    private const POPULATION_COUNT = 1;
+    private const POPULATION_COUNT = 3;
 
     /** @var Competencies[]  */
     private array $modalities;
@@ -81,7 +81,7 @@ class AlgorithmWeekService
         set_time_limit(600);
         ini_set('memory_limit', '-1');
         // Инициализация начальной популяции (список расписаний, рандомно составленных на основе ограничений)
-        $population = $this->initializePopulation();
+        $population = $this->initializePopulation($countSchedule);
 
         // Эволюция популяции  (попытки улучшения расписания)
         $evolutionPopulation = $this->evolvePopulation(array_values($population), $countSchedule);
@@ -110,7 +110,7 @@ class AlgorithmWeekService
     }
 
     // Метод для инициализации начальной популяции
-    private function initializePopulation(): array
+    private function initializePopulation(int $count): array
     {
         $population = [];
         //TODO: Это для отладки
@@ -121,7 +121,7 @@ class AlgorithmWeekService
         }*/
 
         //TODO: Это рабочий вариант
-        for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
+        for ($i = 1; $i <= $count; $i++) {
             $population[] = $this->createRandomSchedule();
         }
 
@@ -603,6 +603,8 @@ class AlgorithmWeekService
     // Метод оценки расписания
     private function calculateFitness(array $schedule): int
     {
+        $emptyPenalty = 10;
+
         $fitness = 0;
         $doctorWorkloads = [];
         $doctorDaysWorked = [];
@@ -611,7 +613,7 @@ class AlgorithmWeekService
             foreach ($modality as $week) {
                 foreach ($week as $day) {
                     if ($day['empty'] !== null) {
-                        $fitness += $day['empty']; // штраф за неназначенное исследование (ввести очки)
+                        $fitness += $day['empty'] * $emptyPenalty; // штраф за неназначенное исследование (ввести очки)
                     }
 
                     $doctors = array_filter(array_keys($day), fn($doctor) => $doctor !== 'empty');
