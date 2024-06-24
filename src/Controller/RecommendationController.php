@@ -8,6 +8,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Рекомендации
+ */
 class RecommendationController extends DashboardController {
 
     public function __construct(private readonly EntityManagerInterface $em)

@@ -30,6 +30,11 @@ class Notification
     #[ORM\Column(type: 'boolean', nullable: false, options: ['default' => false])]
     private bool $isRead;
 
+    public function __construct()
+    {
+        $this->isRead = false;
+    }
+
     public function getId(): ?int
     {
         return $this->id;
