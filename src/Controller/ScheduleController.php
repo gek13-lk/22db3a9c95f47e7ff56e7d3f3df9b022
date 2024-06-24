@@ -246,7 +246,7 @@ class ScheduleController extends DashboardController {
         $dateStart = (clone $date)->modify('first day of this month');
         $dateEnd = (clone $date)->modify('last day of this month');
 
-        $this->algorithmService->run($dateStart, $dateEnd, $data['count'], $data['maxDoctorsCount']);
+        $this->algorithmService->run($dateStart, $dateEnd, (int) $data['count'], (int) $data['maxDoctorsCount']);
 
         /** @var User $user */
         $user = $this->getUser();

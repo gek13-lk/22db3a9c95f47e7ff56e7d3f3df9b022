@@ -284,7 +284,7 @@ final class DashboardController extends AbstractApiController
             throw $this->createAccessDeniedException('нет прав');
         }
 
-        $results = $algorithmWeekService->run($startTime, $endTime, $countSchedules, $maxDoctors);
+        $results = $algorithmWeekService->run($startTime, $endTime, (int) $countSchedules, $maxDoctors);
 
         //TODO: в ДТО
         $result = [];
