@@ -81,10 +81,10 @@ class AlgorithmWeekService
         set_time_limit(600);
         ini_set('memory_limit', '-1');
         // Инициализация начальной популяции (список расписаний, рандомно составленных на основе ограничений)
-        $population = $this->initializePopulation();
+        $population = $this->initializePopulation($countSchedule);
 
         // Эволюция популяции  (попытки улучшения расписания)
-        $evolutionPopulation = $this->evolvePopulation(array_values($population), $countSchedule);
+        $evolutionPopulation = $population; //$this->evolvePopulation(array_values($population), $countSchedule);
 
         // Расчитываем баллы расписания (оцениваем его)
         $evolutionPopulation = array_map(
@@ -110,7 +110,7 @@ class AlgorithmWeekService
     }
 
     // Метод для инициализации начальной популяции
-    private function initializePopulation(): array
+    private function initializePopulation(int $count): array
     {
         $population = [];
         //TODO: Это для отладки
@@ -121,19 +121,18 @@ class AlgorithmWeekService
         }*/
 
         //TODO: Это рабочий вариант
-        for ($i = 1; $i <= self::POPULATION_COUNT; $i++) {
+        for ($i = 1; $i <= $count; $i++) {
             $population[] = $this->createRandomSchedule();
         }
 
         return $population;
     }
 
-    private function saveTempSchedule(array $randomSchedule, int $fitness, \DateTime $day): TempSchedule
+    private function saveTempSchedule(array $randomSchedule, int $fitness): TempSchedule
     {
         $tempScheduleEntity = new TempSchedule();
         $tempScheduleEntity->setFitness($fitness);
         $tempScheduleEntity->setDoctorsMaxCount($this->maxDoctorsCount);
-        $tempScheduleEntity->setDate($day);
         $this->entityManager->persist($tempScheduleEntity);
         $firstDate = null;
 
@@ -315,6 +314,7 @@ class AlgorithmWeekService
             }
         }
 
+        //Балансировка времени работы у врача (между сменами)
         $this->timeAlgorithmService->timeBalance($this->schedule);
 
         return $this->schedule;
@@ -603,6 +603,8 @@ class AlgorithmWeekService
     // Метод оценки расписания
     private function calculateFitness(array $schedule): int
     {
+        $emptyPenalty = 10;
+
         $fitness = 0;
         $doctorWorkloads = [];
         $doctorDaysWorked = [];
@@ -611,7 +613,7 @@ class AlgorithmWeekService
             foreach ($modality as $week) {
                 foreach ($week as $day) {
                     if ($day['empty'] !== null) {
-                        $fitness += $day['empty']; // штраф за неназначенное исследование (ввести очки)
+                        $fitness += $day['empty'];// * $emptyPenalty; // штраф за неназначенное исследование (ввести очки)
                     }
 
                     $doctors = array_filter(array_keys($day), fn($doctor) => $doctor !== 'empty');
