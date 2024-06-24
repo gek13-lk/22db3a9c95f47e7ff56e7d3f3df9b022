@@ -613,7 +613,7 @@ class AlgorithmWeekService
             foreach ($modality as $week) {
                 foreach ($week as $day) {
                     if ($day['empty'] !== null) {
-                        $fitness += $day['empty'] * $emptyPenalty; // штраф за неназначенное исследование (ввести очки)
+                        $fitness += $day['empty'];// * $emptyPenalty; // штраф за неназначенное исследование (ввести очки)
                     }
 
                     $doctors = array_filter(array_keys($day), fn($doctor) => $doctor !== 'empty');
